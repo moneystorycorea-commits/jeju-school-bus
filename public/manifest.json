@@ -1,0 +1,17 @@
+{
+  "name": "제주국제학교 통학 스케줄",
+  "short_name": "제주통학",
+  "description": "제주국제학교 등하교 시간 신청 및 통학 차량 운행 통합 관리 시스템",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1e293b",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
