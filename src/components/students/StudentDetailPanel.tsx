@@ -305,19 +305,16 @@ export const StudentDetailPanel: React.FC = () => {
             <GraduationCap className="w-4 h-4 text-slate-400 shrink-0" />
             학교 / 학년
           </span>
-          <span className="font-extrabold text-slate-900">
-            {school?.shortName || student.schoolId} · <span className="text-blue-700 font-mono font-black">{formatGradeDisplay(student.grade, student.schoolId)}</span>
-          </span>
-
-          {student.gate && (
-            <>
-              <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm">
-                <Home className="w-4 h-4 text-slate-400 shrink-0" />
-                정차 게이트
+          <span className="font-extrabold text-slate-900 flex items-center gap-1.5 flex-wrap">
+            <span>
+              {school?.shortName || student.schoolId} · <span className="text-blue-700 font-mono font-black">{formatGradeDisplay(student.grade, student.schoolId)}</span>
+            </span>
+            {student.gate && (
+              <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                {student.gate}
               </span>
-              <span className="font-bold text-slate-900">{student.gate}</span>
-            </>
-          )}
+            )}
+          </span>
 
           <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm">
             <User className="w-4 h-4 text-slate-400 shrink-0" />
@@ -411,16 +408,16 @@ export const StudentDetailPanel: React.FC = () => {
             )}
           </div>
 
-          {student.notes && (
-            <>
-              <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm">
-                특이사항
-              </span>
-              <div className="p-2.5 sm:p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-800 leading-relaxed">
-                {student.notes}
-              </div>
-            </>
-          )}
+          <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm">
+            특이사항
+          </span>
+          <div className="p-2.5 sm:p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-800 leading-relaxed min-h-[44px] flex items-center">
+            {student.notes ? (
+              <span>{student.notes}</span>
+            ) : (
+              <span className="text-slate-400 font-normal">-</span>
+            )}
+          </div>
         </div>
 
         {/* 요일별 등/하교 현황 요약 (모바일 가로보기 및 데스크탑 5열 그리드 반응형) */}
