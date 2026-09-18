@@ -434,42 +434,42 @@ export const MobileScheduleView: React.FC = () => {
               </button>
             </div>
 
-            {/* 시트 탭 바 (월간 캘린더 기간 보기 / 전체 일정 목록 / 4개교 비교 표) */}
+            {/* 시트 탭 바 (달력 / 전체 일정 목록 / 4개교 비교 표) */}
             <div className="flex items-center gap-1 p-2 bg-slate-100/90 border-b border-slate-200 shrink-0">
               <button
                 type="button"
                 onClick={() => setCalendarTab('calendar')}
-                className={`flex-1 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap ${
                   calendarTab === 'calendar'
                     ? 'bg-blue-600 text-white shadow-xs'
                     : 'text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                <Calendar className="w-3.5 h-3.5" />
-                <span>월간 캘린더 (기간 보기)</span>
+                <Calendar className="w-3.5 h-3.5 shrink-0" />
+                <span>달력</span>
               </button>
               <button
                 type="button"
                 onClick={() => setCalendarTab('list')}
-                className={`flex-1 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap ${
                   calendarTab === 'list'
                     ? 'bg-blue-600 text-white shadow-xs'
                     : 'text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                <ListFilter className="w-3.5 h-3.5" />
+                <ListFilter className="w-3.5 h-3.5 shrink-0" />
                 <span>전체 일정 ({holidays.length}건)</span>
               </button>
               <button
                 type="button"
                 onClick={() => setCalendarTab('matrix')}
-                className={`flex-1 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap ${
                   calendarTab === 'matrix'
                     ? 'bg-blue-600 text-white shadow-xs'
                     : 'text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                <Layers className="w-3.5 h-3.5" />
+                <Layers className="w-3.5 h-3.5 shrink-0" />
                 <span>4개교 비교 표</span>
               </button>
             </div>
