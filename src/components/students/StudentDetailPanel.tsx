@@ -43,28 +43,19 @@ export const StudentDetailPanel: React.FC = () => {
     selectStudent(students[nextIndex].id, false, true);
   };
 
-  // 카드 스와이프 드래그 및 날리기 애니메이션 상태
-  const [dragOffset, setDragOffset] = useState<number>(0);
-  const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [flyDirection, setFlyDirection] = useState<'left' | 'right' | null>(null);
-
-  // 터치 제스처 (손으로 좌우로 쓸어서 이전/다음 학생 넘기기)
+  // 터치 제스처 (손으로 좌우로 쓸어서 이전/다음 학생 즉시 넘기기 - 애니메이션 없이 직관적 전환)
   const touchStartXRef = React.useRef<number | null>(null);
   const touchStartYRef = React.useRef<number | null>(null);
   const isHorizontalSwipeRef = React.useRef<boolean | null>(null);
-  const currentDragOffsetRef = React.useRef<number>(0);
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (flyDirection) return;
     touchStartXRef.current = e.touches[0].clientX;
     touchStartYRef.current = e.touches[0].clientY;
     isHorizontalSwipeRef.current = null;
-    currentDragOffsetRef.current = 0;
-    setIsDragging(true);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchStartXRef.current === null || touchStartYRef.current === null || flyDirection) return;
+    if (touchStartXRef.current === null || touchStartYRef.current === null) return;
     const currentX = e.touches[0].clientX;
     const currentY = e.touches[0].clientY;
     const diffX = currentX - touchStartXRef.current;
@@ -76,81 +67,30 @@ export const StudentDetailPanel: React.FC = () => {
         isHorizontalSwipeRef.current = Math.abs(diffX) > Math.abs(diffY);
       }
     }
-
-    if (isHorizontalSwipeRef.current === true) {
-      const clampedOffset = Math.max(-160, Math.min(160, diffX));
-      currentDragOffsetRef.current = clampedOffset;
-      setDragOffset(clampedOffset);
-    }
   };
 
-  const handleTouchEnd = () => {
-    setIsDragging(false);
-    if (touchStartXRef.current === null || isHorizontalSwipeRef.current !== true || flyDirection) {
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null || isHorizontalSwipeRef.current !== true) {
       touchStartXRef.current = null;
       touchStartYRef.current = null;
       isHorizontalSwipeRef.current = null;
-      setDragOffset(0);
-      currentDragOffsetRef.current = 0;
       return;
     }
 
-    const finalOffset = currentDragOffsetRef.current;
-    const minSwipeThreshold = 45; // 45px 이상 스와이프 시 넘김
+    const endX = e.changedTouches[0].clientX;
+    const diffX = endX - touchStartXRef.current;
+    const minSwipeThreshold = 40; // 40px 이상 이동 시 즉시 넘김
 
-    if (finalOffset < -minSwipeThreshold) {
-      // 왼쪽으로 날려보내기 -> 다음 학생
-      setFlyDirection('left');
-      setTimeout(() => {
-        handleNextStudent();
-        setDragOffset(0);
-        currentDragOffsetRef.current = 0;
-        setFlyDirection(null);
-      }, 180);
-    } else if (finalOffset > minSwipeThreshold) {
-      // 오른쪽으로 날려보내기 -> 이전 학생
-      setFlyDirection('right');
-      setTimeout(() => {
-        handlePrevStudent();
-        setDragOffset(0);
-        currentDragOffsetRef.current = 0;
-        setFlyDirection(null);
-      }, 180);
-    } else {
-      // 원위치 복귀
-      setDragOffset(0);
-      currentDragOffsetRef.current = 0;
+    if (diffX < -minSwipeThreshold) {
+      handleNextStudent();
+    } else if (diffX > minSwipeThreshold) {
+      handlePrevStudent();
     }
 
     touchStartXRef.current = null;
     touchStartYRef.current = null;
     isHorizontalSwipeRef.current = null;
   };
-
-  // 카드 이동 스타일 (순수 수평 슬라이드 - 회전 제거 및 자연스러운 전환)
-  const cardTransformStyle: React.CSSProperties = flyDirection === 'left'
-    ? {
-        transform: 'translateX(-100%)',
-        opacity: 0,
-        transition: 'transform 0.16s ease-in, opacity 0.16s ease-in',
-      }
-    : flyDirection === 'right'
-    ? {
-        transform: 'translateX(100%)',
-        opacity: 0,
-        transition: 'transform 0.16s ease-in, opacity 0.16s ease-in',
-      }
-    : isDragging && dragOffset !== 0
-    ? {
-        transform: `translateX(${dragOffset}px)`,
-        opacity: Math.max(0.7, 1 - Math.abs(dragOffset) / 500),
-        transition: 'none',
-      }
-    : {
-        transform: 'translateX(0px)',
-        opacity: 1,
-        transition: 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease-out',
-      };
 
   useEffect(() => {
     if (!isStudentPanelOpen) return;
@@ -221,8 +161,7 @@ export const StudentDetailPanel: React.FC = () => {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={cardTransformStyle}
-        className="relative bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-[740px] w-full p-5 sm:p-7 md:p-8 flex flex-col gap-3.5 sm:gap-4.5 select-none animate-scaleIn max-h-[92vh] overflow-y-auto z-10 touch-pan-y will-change-transform"
+        className="relative bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-[740px] w-full p-5 sm:p-7 md:p-8 flex flex-col gap-3.5 sm:gap-4.5 select-none max-h-[92vh] overflow-y-auto z-10 touch-pan-y"
       >
         {/* 상단 시퀀스 인디케이터 바 (얇고 세련된 페이지네이션 바) */}
         <div className="w-full flex items-center gap-1">
@@ -287,7 +226,7 @@ export const StudentDetailPanel: React.FC = () => {
             학교 / 학년
           </span>
           <span className="font-extrabold text-slate-900">
-            {school?.name || student.schoolId} · <span className="text-blue-700 font-mono font-black">{formatGradeDisplay(student.grade, student.schoolId)}</span>
+            {school?.shortName || student.schoolId} · <span className="text-blue-700 font-mono font-black">{formatGradeDisplay(student.grade, student.schoolId)}</span>
           </span>
 
           {student.gate && (
