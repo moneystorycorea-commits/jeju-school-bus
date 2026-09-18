@@ -47,31 +47,44 @@ export const TimeAxis: React.FC<TimeAxisProps> = ({ startMinute, endMinute }) =>
       {ticks.map(({ minute, isHour, isHalfHour, minuteInHour }) => {
         const percent = ((minute - startMinute) / duration) * 100;
         const isCurrentActiveSlot = active10MinStart !== null && minute >= active10MinStart && minute < active10MinStart + 10;
+        const isStart = minute === startMinute;
+        const isEnd = minute === endMinute;
 
         return (
           <div
             key={minute}
-            className="absolute top-0 bottom-0 flex flex-col items-center -translate-x-1/2 pointer-events-none"
+            className="absolute top-0 bottom-0 pointer-events-none"
             style={{ left: `${percent}%` }}
           >
-            {isHour ? (
-              <span className={`text-xs font-black pt-0.5 font-mono tracking-tight ${isCurrentActiveSlot ? 'text-blue-700' : 'text-slate-800'}`}>
-                {formatMinute(minute)}
-              </span>
-            ) : isHalfHour ? (
-              <span className={`text-[11px] font-bold pt-0.5 font-mono tracking-tight ${isCurrentActiveSlot ? 'text-blue-600 font-black' : 'text-slate-600'}`}>
-                :{String(minuteInHour).padStart(2, '0')}
-              </span>
-            ) : (
-              <span className={`hidden md:inline-block text-[9.5px] font-semibold pt-1 font-mono ${isCurrentActiveSlot ? 'text-blue-600 font-bold' : 'text-slate-400'}`}>
-                :{String(minuteInHour).padStart(2, '0')}
-              </span>
-            )}
+            {/* 시간 라벨: 시작점은 왼쪽 잘림 방지(translate-x-1), 끝점은 오른쪽 넘침 방지(-translate-x-full), 중간은 -translate-x-1/2 */}
+            <div
+              className={`flex flex-col ${
+                isStart
+                  ? 'translate-x-1 items-start'
+                  : isEnd
+                  ? '-translate-x-full items-end -mr-1'
+                  : '-translate-x-1/2 items-center'
+              }`}
+            >
+              {isHour || isStart ? (
+                <span className={`text-xs font-black pt-0.5 font-mono tracking-tight ${isCurrentActiveSlot ? 'text-blue-700' : 'text-slate-800'}`}>
+                  {formatMinute(minute)}
+                </span>
+              ) : isHalfHour ? (
+                <span className={`text-[11px] font-bold pt-0.5 font-mono tracking-tight ${isCurrentActiveSlot ? 'text-blue-600 font-black' : 'text-slate-600'}`}>
+                  :{String(minuteInHour).padStart(2, '0')}
+                </span>
+              ) : (
+                <span className={`hidden md:inline-block text-[9.5px] font-semibold pt-1 font-mono ${isCurrentActiveSlot ? 'text-blue-600 font-bold' : 'text-slate-400'}`}>
+                  :{String(minuteInHour).padStart(2, '0')}
+                </span>
+              )}
+            </div>
 
             {/* 눈금 바 (시간: 약간 긴 선, 30분: 중간 선, 10분: 짧고 얇은 선) */}
             <div
-              className={`mt-auto ${
-                isHour
+              className={`absolute bottom-0 -translate-x-1/2 ${
+                isHour || isStart
                   ? 'w-px h-2 bg-slate-400'
                   : isHalfHour
                   ? 'w-px h-1.5 bg-slate-300'
