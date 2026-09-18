@@ -15,7 +15,7 @@ export const StudentFormModal: React.FC = () => {
   const [grade, setGrade] = useState('1학년');
   const [emergencyContact, setEmergencyContact] = useState('');
 
-  const [gender, setGender] = useState<'여' | '남'>('여');
+  const [gender, setGender] = useState<'남' | '여'>('남');
   const [gate, setGate] = useState('');
   const [guardianName, setGuardianName] = useState('');
   const [studentPhone, setStudentPhone] = useState('');
@@ -214,11 +214,11 @@ export const StudentFormModal: React.FC = () => {
               <label className="font-bold text-slate-700">성별</label>
               <select
                 value={gender}
-                onChange={(e) => setGender(e.target.value as '여' | '남')}
+                onChange={(e) => setGender(e.target.value as '남' | '여')}
                 className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium bg-white cursor-pointer"
               >
-                <option value="여">여</option>
                 <option value="남">남</option>
+                <option value="여">여</option>
               </select>
             </div>
           </div>
@@ -241,14 +241,7 @@ export const StudentFormModal: React.FC = () => {
               </select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <label className="font-bold text-slate-700">호수 *</label>
-                {building && (
-                  <span className="text-[11px] text-blue-600 font-semibold">
-                    {availableUnits.length}개 호실
-                  </span>
-                )}
-              </div>
+              <label className="font-bold text-slate-700">호수 *</label>
               <select
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
