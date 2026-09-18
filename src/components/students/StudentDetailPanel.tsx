@@ -127,27 +127,29 @@ export const StudentDetailPanel: React.FC = () => {
     isHorizontalSwipeRef.current = null;
   };
 
-  // 카드 이동 및 회전 변환 스타일
+  // 카드 이동 스타일 (순수 수평 슬라이드 - 회전 제거 및 자연스러운 전환)
   const cardTransformStyle: React.CSSProperties = flyDirection === 'left'
     ? {
-        transform: 'translateX(-120%) rotate(-12deg)',
+        transform: 'translateX(-100%)',
         opacity: 0,
-        transition: 'transform 0.18s cubic-bezier(0.4, 0, 1, 1), opacity 0.18s ease-in',
+        transition: 'transform 0.16s ease-in, opacity 0.16s ease-in',
       }
     : flyDirection === 'right'
     ? {
-        transform: 'translateX(120%) rotate(12deg)',
+        transform: 'translateX(100%)',
         opacity: 0,
-        transition: 'transform 0.18s cubic-bezier(0.4, 0, 1, 1), opacity 0.18s ease-in',
+        transition: 'transform 0.16s ease-in, opacity 0.16s ease-in',
       }
     : isDragging && dragOffset !== 0
     ? {
-        transform: `translateX(${dragOffset}px) rotate(${dragOffset * 0.04}deg)`,
+        transform: `translateX(${dragOffset}px)`,
+        opacity: Math.max(0.7, 1 - Math.abs(dragOffset) / 500),
         transition: 'none',
       }
     : {
-        transform: 'translateX(0px) rotate(0deg)',
-        transition: 'transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1)',
+        transform: 'translateX(0px)',
+        opacity: 1,
+        transition: 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease-out',
       };
 
   useEffect(() => {
@@ -213,52 +215,64 @@ export const StudentDetailPanel: React.FC = () => {
         <ChevronRight className="w-6 h-6 sm:w-7 sm:h-7 translate-x-0.5 group-hover:scale-110 transition-transform" />
       </button>
 
-      {/* 카드 스택 래퍼 (카드 겹침 시각 효과) */}
-      <div className="relative max-w-[740px] w-full flex items-center justify-center">
-        {/* 뒤에 겹쳐진 세 번째 카드 */}
-        <div className="absolute inset-x-5 sm:inset-x-8 -bottom-3 top-4 bg-slate-300/40 rounded-3xl border border-slate-300/60 shadow-xs pointer-events-none transform scale-[0.96]" />
+      {/* 메인 활성 카드 */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={cardTransformStyle}
+        className="relative bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-[740px] w-full p-5 sm:p-7 md:p-8 flex flex-col gap-3.5 sm:gap-4.5 select-none animate-scaleIn max-h-[92vh] overflow-y-auto z-10 touch-pan-y will-change-transform"
+      >
+        {/* 상단 시퀀스 인디케이터 바 (얇고 세련된 페이지네이션 바) */}
+        <div className="w-full flex items-center gap-1">
+          {students.map((s) => {
+            const isCurrent = s.id === student.id;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => selectStudent(s.id, false, true)}
+                className={`h-1 rounded-full transition-all duration-300 cursor-pointer ${
+                  isCurrent
+                    ? 'flex-[2.5] bg-blue-600 shadow-2xs'
+                    : 'flex-1 bg-slate-200/80 hover:bg-slate-300'
+                }`}
+                title={`${s.name} 학생 보기`}
+              />
+            );
+          })}
+        </div>
 
-        {/* 뒤에 겹쳐진 두 번째 카드 */}
-        <div className="absolute inset-x-2.5 sm:inset-x-4 -bottom-1.5 top-2 bg-white/90 rounded-3xl border border-slate-200/80 shadow-md pointer-events-none transform scale-[0.98]" />
-
-        {/* 메인 활성 카드 */}
-        <div
-          onClick={(e) => e.stopPropagation()}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          style={cardTransformStyle}
-          className="relative bg-white rounded-3xl border border-slate-200 shadow-2xl w-full p-5 sm:p-7 md:p-8 flex flex-col gap-4 sm:gap-5 select-none animate-scaleIn max-h-[92vh] overflow-y-auto z-10 touch-pan-y will-change-transform"
-        >
-          {/* 모달 헤더 */}
-          <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-100">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="text-lg sm:text-xl font-black text-slate-900">{student.name}</span>
-                {student.gender && (
-                  <span className="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold border border-slate-200">
-                    {student.gender}
-                  </span>
-                )}
-                {school && (
-                  <span className={`text-xs font-black px-2.5 py-0.5 rounded-lg border shadow-2xs ${school.badgeBg}`}>
-                    {school.shortName}
-                  </span>
-                )}
-              </div>
-              <span className="text-[11px] sm:text-xs font-semibold text-slate-400 mt-0.5">
-                학생 정보 및 주간 통학 프로필
-              </span>
+        {/* 모달 헤더 */}
+        <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-100">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <span className="text-lg sm:text-xl font-black text-slate-900">{student.name}</span>
+              {student.gender && (
+                <span className="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold border border-slate-200">
+                  {student.gender}
+                </span>
+              )}
+              {school && (
+                <span className={`text-xs font-black px-2.5 py-0.5 rounded-lg border shadow-2xs ${school.badgeBg}`}>
+                  {school.shortName}
+                </span>
+              )}
             </div>
-
-            <button
-              onClick={closeStudentPanel}
-              className="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 transition cursor-pointer"
-              title="닫기"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <span className="text-[11px] sm:text-xs font-semibold text-slate-400 mt-0.5">
+              학생 정보 및 주간 통학 프로필
+            </span>
           </div>
+
+          <button
+            onClick={closeStudentPanel}
+            className="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 transition cursor-pointer"
+            title="닫기"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
         {/* 상세 정보 그리드 (폰트 크기 및 간격 여유 확보) */}
         <div className="grid grid-cols-[110px_1fr] sm:grid-cols-[130px_1fr] gap-y-2.5 sm:gap-y-3.5 text-xs sm:text-sm md:text-base py-1 items-center">
@@ -416,7 +430,6 @@ export const StudentDetailPanel: React.FC = () => {
             </div>
           </div>
         )}
-        </div>
       </div>
     </div>
   );
