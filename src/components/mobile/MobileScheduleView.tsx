@@ -24,6 +24,40 @@ import {
 } from 'lucide-react';
 import { UserRole, SchoolHoliday } from '@/types';
 
+// 괄호 안 영문 텍스트 제거 (예: 'NLCS 교사연수 휴교 (INSET Day)' -> 'NLCS 교사연수 휴교')
+const cleanHolidayName = (name: string): string => {
+  return name.replace(/\s*\([^)]*[a-zA-Z]+[^)]*\)/g, '').trim();
+};
+
+// 콤팩트 날짜 포맷터 (예: '26/8/17(월)~18(화)' 또는 '26/8/20(목)')
+const formatCompactHolidayRange = (startStr: string, endStr: string): string => {
+  const [sY, sM, sD] = startStr.split('-').map(Number);
+  const [eY, eM, eD] = endStr.split('-').map(Number);
+
+  const dayOfWeekNames = ['일', '월', '화', '수', '목', '금', '토'];
+  const sDate = new Date(sY, sM - 1, sD);
+  const eDate = new Date(eY, eM - 1, eD);
+  const sDayName = dayOfWeekNames[sDate.getDay()];
+  const eDayName = dayOfWeekNames[eDate.getDay()];
+
+  const shortSY = String(sY).slice(-2);
+  const shortEY = String(eY).slice(-2);
+
+  if (startStr === endStr) {
+    return `${shortSY}/${sM}/${sD}(${sDayName})`;
+  }
+
+  if (sY === eY && sM === eM) {
+    return `${shortSY}/${sM}/${sD}(${sDayName})~${eD}(${eDayName})`;
+  }
+
+  if (sY === eY && sM !== eM) {
+    return `${shortSY}/${sM}/${sD}(${sDayName})~${eM}/${eD}(${eDayName})`;
+  }
+
+  return `${shortSY}/${sM}/${sD}(${sDayName})~${shortEY}/${eM}/${eD}(${eDayName})`;
+};
+
 export const MobileScheduleView: React.FC = () => {
   const {
     serviceDate,
@@ -509,11 +543,13 @@ export const MobileScheduleView: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-1.5">
                     {holidays.map((h) => {
                       const sc = schools.find((s) => s.id === h.schoolId);
                       const daysCount = getDaysDifference(h.startDate, h.endDate);
                       const isThisActive = activeHoliday?.id === h.id;
+                      const cleanName = cleanHolidayName(h.name);
+                      const compactRange = formatCompactHolidayRange(h.startDate, h.endDate);
 
                       return (
                         <div
@@ -522,21 +558,21 @@ export const MobileScheduleView: React.FC = () => {
                             setActiveHoliday(h);
                             setCalendarTab('calendar');
                           }}
-                          className={`p-3 rounded-2xl border transition cursor-pointer flex items-center justify-between shadow-2xs active:scale-[0.99] group ${
+                          className={`px-3 py-2 rounded-xl border transition cursor-pointer flex items-center justify-between shadow-2xs active:scale-[0.99] group ${
                             isThisActive
                               ? 'bg-amber-50/90 border-amber-300 ring-2 ring-amber-300'
                               : 'bg-white border-slate-200 hover:border-blue-400 hover:bg-blue-50/60'
                           }`}
                         >
-                          <div className="flex flex-col gap-1">
+                          <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="text-sm">🌴</span>
+                              <span className="text-xs">🌴</span>
                               <span className="font-extrabold text-xs text-slate-900 group-hover:text-blue-900">
-                                {h.name}
+                                {cleanName}
                               </span>
                               {sc && (
                                 <span
-                                  className="text-[10px] font-black px-1.5 py-0.2 rounded"
+                                  className="text-[9.5px] font-black px-1.5 py-0.2 rounded"
                                   style={{
                                     backgroundColor: sc.badgeBg,
                                     color: sc.color,
@@ -547,21 +583,16 @@ export const MobileScheduleView: React.FC = () => {
                               )}
                             </div>
                             <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500">
-                              <span>
-                                {h.startDate} ~ {h.endDate}
+                              <span className="font-bold text-slate-700">
+                                {compactRange}
                               </span>
-                              <span className="font-bold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200/60">
+                              <span className="font-black text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200/60 text-[10px]">
                                 {daysCount}일간
                               </span>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-1 shrink-0">
-                            <span className="text-[11px] font-bold text-blue-700 bg-blue-50 group-hover:bg-blue-600 group-hover:text-white px-2.5 py-1 rounded-lg border border-blue-200 transition flex items-center gap-1 shadow-2xs">
-                              <span>캘린더 기간 보기</span>
-                              <span>➔</span>
-                            </span>
-                          </div>
+                          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-1.5" />
                         </div>
                       );
                     })}
