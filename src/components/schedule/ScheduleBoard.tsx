@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -16,8 +16,18 @@ import {
 import { TimeAxis } from './TimeAxis';
 import { StudentRow } from './StudentRow';
 import { useScheduleStore } from '@/lib/store/useScheduleStore';
-import { Student } from '@/types';
-import { AlertTriangle, CheckCircle2, ArrowUpDown } from 'lucide-react';
+import { Student, School, SchoolHoliday } from '@/types';
+import { AlertTriangle, CheckCircle2, ArrowUpDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { cleanHolidayName } from '@/lib/scheduling/time';
+
+interface SchoolGroup {
+  schoolId: string;
+  school?: School;
+  students: Student[];
+  isOperating: boolean;
+  holiday?: SchoolHoliday;
+  activeCount: number;
+}
 
 export const ScheduleBoard: React.FC = () => {
   const {
@@ -35,6 +45,21 @@ export const ScheduleBoard: React.FC = () => {
   const timelineContainerRef = useRef<HTMLDivElement | null>(null);
   const [sortBy, setSortBy] = useState<'manual' | 'grade' | 'school' | 'name'>('manual');
 
+  // 미운행 학교 아코디언 펼침 상태 (학교 ID -> boolean)
+  const [expandedSchoolIds, setExpandedSchoolIds] = useState<Record<string, boolean>>({});
+
+  // 날짜나 스케줄 타입이 바뀌면 아코디언 접힘 상태로 리셋 (모바일과 동일 동작)
+  useEffect(() => {
+    setExpandedSchoolIds({});
+  }, [serviceDate, scheduleType]);
+
+  const toggleSchoolExpand = (schoolId: string) => {
+    setExpandedSchoolIds((prev) => ({
+      ...prev,
+      [schoolId]: !prev[schoolId],
+    }));
+  };
+
   // 등교: 07:00 (420) ~ 10:30 (630)
   // 하교: 13:30 (810) ~ 18:30 (1110) - 저청초 하교(13:45)에 최대한 밀착
   const startMinute = scheduleType === 'MORNING' ? 420 : 810;
@@ -45,11 +70,26 @@ export const ScheduleBoard: React.FC = () => {
   // 요일별 실제 탑승 학생 수 계산
   const currentWeekday = new Date(serviceDate).getDay() === 0 ? 7 : new Date(serviceDate).getDay();
 
-  const activeCount = students.filter((s) => {
-    const ws = s.weeklySchedule?.[currentWeekday];
+  // 학생별 실제 탑승 여부 판정 (학교 휴일이 아니며, 오늘 요일의 스케줄이 활성화되어 배정된 학생)
+  const isStudentOperating = (student: Student) => {
+    const holiday = holidays.find(
+      (h) =>
+        (h.schoolId === student.schoolId || h.schoolId === 'ALL') &&
+        serviceDate >= h.startDate &&
+        serviceDate <= h.endDate
+    );
+    if (holiday) return false;
+    const ws = student.weeklySchedule?.[currentWeekday];
     if (!ws || !ws.active) return false;
-    return scheduleType === 'MORNING' ? ws.morningActive : ws.afternoonActive;
-  }).length;
+    const isTimeActive = scheduleType === 'MORNING' ? ws.morningActive : ws.afternoonActive;
+    if (!isTimeActive) return false;
+    const schedule = schedules.find(
+      (s) => s.studentId === student.id && s.date === serviceDate && s.type === scheduleType
+    );
+    return !!schedule;
+  };
+
+  const activeCount = students.filter(isStudentOperating).length;
   const inactiveCount = students.length - activeCount;
 
   // 오늘 날짜에 걸쳐 있는 방학
@@ -60,8 +100,6 @@ export const ScheduleBoard: React.FC = () => {
   // 1호차 및 2호차 전담 학교 분류
   // 1호차: NLCS, 저청초, 저청중
   // 2호차: BHA, SJA, KIS
-  const V1_SCHOOLS = useMemo(() => new Set(['NLCS', 'CHEONG', 'CHEONG_MID']), []);
-
   const V1_SCHOOL_PRIORITY: Record<string, number> = {
     NLCS: 1,
     CHEONG: 2,
@@ -74,65 +112,91 @@ export const ScheduleBoard: React.FC = () => {
     KIS: 3,
   };
 
-  const sortStudentList = (list: Student[], priorityMap: Record<string, number>) => {
-    const copy = [...list];
-    if (sortBy === 'name') {
-      return copy.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-    }
-    if (sortBy === 'grade') {
-      return copy.sort((a, b) => {
+  // 학교별 그룹 구성 및 "운행 있는 학교 최상단 정렬" 함수
+  const buildSchoolGroups = (schoolIds: string[], priorityMap: Record<string, number>): SchoolGroup[] => {
+    const groups: SchoolGroup[] = [];
+
+    schoolIds.forEach((schId) => {
+      const schStudents = students.filter((s) => s.schoolId === schId);
+      if (schStudents.length === 0) return;
+
+      const school = schools.find((sc) => sc.id === schId);
+      const holiday = holidays.find(
+        (h) =>
+          (h.schoolId === schId || h.schoolId === 'ALL') &&
+          serviceDate >= h.startDate &&
+          serviceDate <= h.endDate
+      );
+
+      const activeStudents = schStudents.filter(isStudentOperating);
+      const isOperating = !holiday && activeStudents.length > 0;
+
+      // 학생 정렬 (학년순/이름순)
+      const sortedStudents = [...schStudents].sort((a, b) => {
+        if (sortBy === 'name') {
+          return a.name.localeCompare(b.name, 'ko');
+        }
         const parseGrade = (g?: string) => {
           if (!g) return -1;
           const match = g.match(/\d+/);
           return match ? parseInt(match[0], 10) : -1;
         };
         const diff = parseGrade(b.grade) - parseGrade(a.grade);
-        return diff !== 0 ? diff : a.name.localeCompare(b.name, 'ko');
+        if (diff !== 0) return diff;
+        return a.name.localeCompare(b.name, 'ko');
       });
-    }
 
-    // 기본 보기('manual') 및 'school' 정렬:
-    return copy.sort((a, b) => {
+      groups.push({
+        schoolId: schId,
+        school,
+        students: sortedStudents,
+        isOperating,
+        holiday,
+        activeCount: activeStudents.length,
+      });
+    });
+
+    // 💡 핵심: 운행 있는 학교(isOperating === true)를 최우선 정렬하고,
+    // 운행 없는 학교는 아래로 배치한 뒤 아코디언 적용!
+    return groups.sort((a, b) => {
+      if (a.isOperating !== b.isOperating) {
+        return a.isOperating ? -1 : 1;
+      }
       const pA = priorityMap[a.schoolId] ?? 99;
       const pB = priorityMap[b.schoolId] ?? 99;
-      if (pA !== pB) return pA - pB;
-
-      const parseGrade = (g?: string) => {
-        if (!g) return -1;
-        const match = g.match(/\d+/);
-        return match ? parseInt(match[0], 10) : -1;
-      };
-      const gradeDiff = parseGrade(b.grade) - parseGrade(a.grade);
-      if (gradeDiff !== 0) return gradeDiff;
-
-      return a.name.localeCompare(b.name, 'ko');
+      return pA - pB;
     });
   };
 
-  // 1호차 및 2호차 학생 그룹 분리
-  const v1Students = useMemo(() => {
-    const list = students.filter((s) => V1_SCHOOLS.has(s.schoolId));
-    return sortStudentList(list, V1_SCHOOL_PRIORITY);
-  }, [students, sortBy, V1_SCHOOLS]);
+  const v1SchoolGroups = useMemo(() => {
+    return buildSchoolGroups(['NLCS', 'CHEONG', 'CHEONG_MID'], V1_SCHOOL_PRIORITY);
+  }, [students, schools, holidays, schedules, serviceDate, scheduleType, currentWeekday, sortBy]);
 
-  const v2Students = useMemo(() => {
-    const list = students.filter((s) => !V1_SCHOOLS.has(s.schoolId));
-    return sortStudentList(list, V2_SCHOOL_PRIORITY);
-  }, [students, sortBy, V1_SCHOOLS]);
+  const v2SchoolGroups = useMemo(() => {
+    return buildSchoolGroups(['BHA', 'SJA', 'KIS'], V2_SCHOOL_PRIORITY);
+  }, [students, schools, holidays, schedules, serviceDate, scheduleType, currentWeekday, sortBy]);
 
-  const allSortedStudents = useMemo(() => [...v1Students, ...v2Students], [v1Students, v2Students]);
+  const v1Students = useMemo(() => v1SchoolGroups.flatMap((g) => g.students), [v1SchoolGroups]);
+  const v2Students = useMemo(() => v2SchoolGroups.flatMap((g) => g.students), [v2SchoolGroups]);
 
-  const v1ActiveCount = v1Students.filter((s) => {
-    const ws = s.weeklySchedule?.[currentWeekday];
-    if (!ws || !ws.active) return false;
-    return scheduleType === 'MORNING' ? ws.morningActive : ws.afternoonActive;
-  }).length;
+  const v1ActiveCount = useMemo(() => v1Students.filter(isStudentOperating).length, [v1Students, serviceDate, scheduleType, currentWeekday, holidays, schedules]);
+  const v2ActiveCount = useMemo(() => v2Students.filter(isStudentOperating).length, [v2Students, serviceDate, scheduleType, currentWeekday, holidays, schedules]);
 
-  const v2ActiveCount = v2Students.filter((s) => {
-    const ws = s.weeklySchedule?.[currentWeekday];
-    if (!ws || !ws.active) return false;
-    return scheduleType === 'MORNING' ? ws.morningActive : ws.afternoonActive;
-  }).length;
+  // dnd-kit 용 보이는 학생 ID 목록
+  const visibleStudentIds = useMemo(() => {
+    const ids: string[] = [];
+    v1SchoolGroups.forEach((g) => {
+      if (g.isOperating || expandedSchoolIds[g.schoolId]) {
+        g.students.forEach((s) => ids.push(s.id));
+      }
+    });
+    v2SchoolGroups.forEach((g) => {
+      if (g.isOperating || expandedSchoolIds[g.schoolId]) {
+        g.students.forEach((s) => ids.push(s.id));
+      }
+    });
+    return ids;
+  }, [v1SchoolGroups, v2SchoolGroups, expandedSchoolIds]);
 
   // dnd-kit 센서 설정 (Row 정렬용)
   const sensors = useSensors(
@@ -299,7 +363,7 @@ export const ScheduleBoard: React.FC = () => {
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={allSortedStudents.map((s) => s.id)}
+              items={visibleStudentIds}
               strategy={verticalListSortingStrategy}
             >
               {/* ===== [그룹 1: 1호차 전담 운행 - NLCS & 저청] ===== */}
@@ -339,35 +403,92 @@ export const ScheduleBoard: React.FC = () => {
                 </div>
               </div>
 
-              {/* 1호차 학생 목록 */}
-              {v1Students.map((student, idx) => {
-                const schedule = schedules.find(
-                  (s) =>
-                    s.studentId === student.id &&
-                    s.date === serviceDate &&
-                    s.type === scheduleType
-                );
-                const school = schools.find((sc) => sc.id === student.schoolId);
-                const conflict = conflicts.find((c) => c.studentId === student.id);
-                const isNewSchoolGroup =
-                  (sortBy === 'manual' || sortBy === 'school') &&
-                  idx > 0 &&
-                  v1Students[idx - 1].schoolId !== student.schoolId;
+              {/* 1호차 학교 그룹 및 학생 목록 (운행 있는 학교 우선 렌더링 + 미운행 학교 아코디언) */}
+              {v1SchoolGroups.map((group, groupIdx) => {
+                const isExpanded = !!expandedSchoolIds[group.schoolId];
 
                 return (
-                  <StudentRow
-                    key={student.id}
-                    student={student}
-                    schedule={schedule}
-                    school={school}
-                    index={idx}
-                    startMinute={startMinute}
-                    endMinute={endMinute}
-                    timelineContainerRef={timelineContainerRef}
-                    hasConflict={!!conflict}
-                    conflictMessage={conflict?.message}
-                    isNewSchoolGroup={isNewSchoolGroup}
-                  />
+                  <React.Fragment key={group.schoolId}>
+                    {/* 운행이 없는 학교인 경우: 아코디언 헤더 바 */}
+                    {!group.isOperating && (
+                      <div
+                        onClick={() => toggleSchoolExpand(group.schoolId)}
+                        className="flex items-center h-9.5 border-b border-amber-200/90 bg-amber-50/70 hover:bg-amber-100/70 transition-colors select-none cursor-pointer"
+                      >
+                        {/* 좌측 230px 고정 정보 */}
+                        <div className="w-[230px] px-2.5 py-1 border-r border-amber-200 bg-amber-50/95 sticky left-0 z-20 flex items-center shrink-0 h-full shadow-2xs">
+                          <div className="w-5 flex items-center justify-center shrink-0">
+                            <span className="text-amber-500 text-xs">🌴</span>
+                          </div>
+                          <div className="w-14 shrink-0 flex items-center justify-center">
+                            <span
+                              className="text-xs font-black px-2 py-0.5 rounded border shadow-2xs text-white"
+                              style={{ backgroundColor: group.school?.color || '#f59e0b' }}
+                            >
+                              {group.school?.shortName || group.schoolId}
+                            </span>
+                          </div>
+                          <div className="flex-1 min-w-0 pl-1.5 flex items-center">
+                            <span className="text-xs font-extrabold text-amber-900 tracking-tight">
+                              미운행 ({group.students.length}명)
+                            </span>
+                          </div>
+                          <div className="w-6 shrink-0 flex items-center justify-center text-amber-700">
+                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          </div>
+                        </div>
+
+                        {/* 우측 타임라인 영역: 휴일명 및 펼치기/접기 버튼 */}
+                        <div className="relative flex-1 h-full flex items-center justify-between px-3">
+                          <div className="flex items-center gap-2 truncate">
+                            <span className="text-xs font-bold text-amber-950 truncate">
+                              🌴 {group.holiday ? cleanHolidayName(group.holiday.name) : (scheduleType === 'MORNING' ? '등교 셔틀 미이용' : '하교 셔틀 미이용')}
+                            </span>
+                            {group.holiday?.notes && (
+                              <span className="text-[11px] text-amber-700/80 truncate font-normal">
+                                ({group.holiday.notes})
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                            <span className="text-[11px] font-black text-amber-900 bg-amber-200/80 hover:bg-amber-300/80 px-2.5 py-0.5 rounded-md border border-amber-300 shadow-2xs transition flex items-center gap-1">
+                              <span>{isExpanded ? '목록 접기' : '명단 보기'}</span>
+                              {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 운행이 있는 학교이거나, 아코디언이 펼쳐진 경우 학생 행 렌더링 */}
+                    {(group.isOperating || isExpanded) &&
+                      group.students.map((student, sIdx) => {
+                        const schedule = schedules.find(
+                          (s) =>
+                            s.studentId === student.id &&
+                            s.date === serviceDate &&
+                            s.type === scheduleType
+                        );
+                        const conflict = conflicts.find((c) => c.studentId === student.id);
+                        const isNewSchoolGroup = groupIdx > 0 && sIdx === 0;
+
+                        return (
+                          <StudentRow
+                            key={student.id}
+                            student={student}
+                            schedule={schedule}
+                            school={group.school}
+                            index={sIdx}
+                            startMinute={startMinute}
+                            endMinute={endMinute}
+                            timelineContainerRef={timelineContainerRef}
+                            hasConflict={!!conflict}
+                            conflictMessage={conflict?.message}
+                            isNewSchoolGroup={isNewSchoolGroup}
+                          />
+                        );
+                      })}
+                  </React.Fragment>
                 );
               })}
 
@@ -406,35 +527,92 @@ export const ScheduleBoard: React.FC = () => {
                 </div>
               </div>
 
-              {/* 2호차 학생 목록 */}
-              {v2Students.map((student, idx) => {
-                const schedule = schedules.find(
-                  (s) =>
-                    s.studentId === student.id &&
-                    s.date === serviceDate &&
-                    s.type === scheduleType
-                );
-                const school = schools.find((sc) => sc.id === student.schoolId);
-                const conflict = conflicts.find((c) => c.studentId === student.id);
-                const isNewSchoolGroup =
-                  (sortBy === 'manual' || sortBy === 'school') &&
-                  idx > 0 &&
-                  v2Students[idx - 1].schoolId !== student.schoolId;
+              {/* 2호차 학교 그룹 및 학생 목록 (운행 있는 학교 우선 렌더링 + 미운행 학교 아코디언) */}
+              {v2SchoolGroups.map((group, groupIdx) => {
+                const isExpanded = !!expandedSchoolIds[group.schoolId];
 
                 return (
-                  <StudentRow
-                    key={student.id}
-                    student={student}
-                    schedule={schedule}
-                    school={school}
-                    index={v1Students.length + idx}
-                    startMinute={startMinute}
-                    endMinute={endMinute}
-                    timelineContainerRef={timelineContainerRef}
-                    hasConflict={!!conflict}
-                    conflictMessage={conflict?.message}
-                    isNewSchoolGroup={isNewSchoolGroup}
-                  />
+                  <React.Fragment key={group.schoolId}>
+                    {/* 운행이 없는 학교인 경우: 아코디언 헤더 바 */}
+                    {!group.isOperating && (
+                      <div
+                        onClick={() => toggleSchoolExpand(group.schoolId)}
+                        className="flex items-center h-9.5 border-b border-amber-200/90 bg-amber-50/70 hover:bg-amber-100/70 transition-colors select-none cursor-pointer"
+                      >
+                        {/* 좌측 230px 고정 정보 */}
+                        <div className="w-[230px] px-2.5 py-1 border-r border-amber-200 bg-amber-50/95 sticky left-0 z-20 flex items-center shrink-0 h-full shadow-2xs">
+                          <div className="w-5 flex items-center justify-center shrink-0">
+                            <span className="text-amber-500 text-xs">🌴</span>
+                          </div>
+                          <div className="w-14 shrink-0 flex items-center justify-center">
+                            <span
+                              className="text-xs font-black px-2 py-0.5 rounded border shadow-2xs text-white"
+                              style={{ backgroundColor: group.school?.color || '#f59e0b' }}
+                            >
+                              {group.school?.shortName || group.schoolId}
+                            </span>
+                          </div>
+                          <div className="flex-1 min-w-0 pl-1.5 flex items-center">
+                            <span className="text-xs font-extrabold text-amber-900 tracking-tight">
+                              미운행 ({group.students.length}명)
+                            </span>
+                          </div>
+                          <div className="w-6 shrink-0 flex items-center justify-center text-amber-700">
+                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          </div>
+                        </div>
+
+                        {/* 우측 타임라인 영역: 휴일명 및 펼치기/접기 버튼 */}
+                        <div className="relative flex-1 h-full flex items-center justify-between px-3">
+                          <div className="flex items-center gap-2 truncate">
+                            <span className="text-xs font-bold text-amber-950 truncate">
+                              🌴 {group.holiday ? cleanHolidayName(group.holiday.name) : (scheduleType === 'MORNING' ? '등교 셔틀 미이용' : '하교 셔틀 미이용')}
+                            </span>
+                            {group.holiday?.notes && (
+                              <span className="text-[11px] text-amber-700/80 truncate font-normal">
+                                ({group.holiday.notes})
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                            <span className="text-[11px] font-black text-amber-900 bg-amber-200/80 hover:bg-amber-300/80 px-2.5 py-0.5 rounded-md border border-amber-300 shadow-2xs transition flex items-center gap-1">
+                              <span>{isExpanded ? '목록 접기' : '명단 보기'}</span>
+                              {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 운행이 있는 학교이거나, 아코디언이 펼쳐진 경우 학생 행 렌더링 */}
+                    {(group.isOperating || isExpanded) &&
+                      group.students.map((student, sIdx) => {
+                        const schedule = schedules.find(
+                          (s) =>
+                            s.studentId === student.id &&
+                            s.date === serviceDate &&
+                            s.type === scheduleType
+                        );
+                        const conflict = conflicts.find((c) => c.studentId === student.id);
+                        const isNewSchoolGroup = groupIdx > 0 && sIdx === 0;
+
+                        return (
+                          <StudentRow
+                            key={student.id}
+                            student={student}
+                            schedule={schedule}
+                            school={group.school}
+                            index={v1Students.length + sIdx}
+                            startMinute={startMinute}
+                            endMinute={endMinute}
+                            timelineContainerRef={timelineContainerRef}
+                            hasConflict={!!conflict}
+                            conflictMessage={conflict?.message}
+                            isNewSchoolGroup={isNewSchoolGroup}
+                          />
+                        );
+                      })}
+                  </React.Fragment>
                 );
               })}
             </SortableContext>

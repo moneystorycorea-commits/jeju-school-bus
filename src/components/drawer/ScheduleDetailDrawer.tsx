@@ -252,35 +252,26 @@ export const ScheduleDetailDrawer: React.FC = () => {
       .replace('KIS_MAIN', 'KIS 본관');
   };
 
-  // 드로어가 닫혀 있을 때: 오른쪽 가장자리 마우스 호버 감지 스트립 & 플로팅 탭 버튼 렌더링
+  // 드로어가 닫혀 있을 때: 오른쪽 화면 중앙 플로팅 탭 버튼 렌더링 (호버 트립와이어 제거로 X/닫기 클릭 시 재열림 버그 원천 해결)
   if (!isDetailDrawerOpen) {
     return (
-      /* 우측 전체 화면 가장자리 마우스 호버 감지 스트립 (커서를 화면 오른쪽에 대면 자동 열림) */
-      <div
-        onMouseEnter={() => openDetailDrawer(false)}
-        onClick={() => openDetailDrawer(true)}
-        className="fixed right-0 top-0 bottom-0 w-4 hover:w-6 bg-transparent hover:bg-blue-500/10 transition-all z-30 cursor-pointer group select-none no-print flex items-center justify-end"
-        title="커서를 대거나 클릭하면 운행설정 창이 열립니다"
-      >
+      <div className="fixed right-0 top-1/2 -translate-y-1/2 z-30 select-none no-print">
         {/* 오른쪽 가장자리 플로팅 탭 버튼 */}
-        <div
-          onMouseEnter={(e) => {
-            e.stopPropagation();
-            openDetailDrawer(false);
-          }}
+        <button
+          type="button"
           onClick={(e) => {
             e.stopPropagation();
             openDetailDrawer(true);
           }}
-          className="bg-white hover:bg-blue-50 border-l border-y border-slate-300 text-slate-700 hover:text-blue-600 px-1.5 py-4 rounded-l-xl shadow-md cursor-pointer transition-all flex flex-col items-center gap-1.5 group-hover:shadow-lg group-hover:border-blue-400 group-hover:text-blue-600"
-          title="클릭 시 창 고정 / 마우스 호버 시 자동 열림"
+          className="bg-white hover:bg-blue-50 border-l border-y border-slate-300 text-slate-700 hover:text-blue-600 px-1.5 py-4 rounded-l-xl shadow-md cursor-pointer transition-all flex flex-col items-center gap-1.5 hover:shadow-lg hover:border-blue-400 hover:text-blue-600 active:scale-95"
+          title="클릭 시 운행설정 창 열림"
         >
-          <SlidersHorizontal className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
-          <span className="text-[10px] font-bold [writing-mode:vertical-lr] tracking-widest text-slate-700 group-hover:text-blue-600">
+          <SlidersHorizontal className="w-3.5 h-3.5 text-blue-600 transition-transform" />
+          <span className="text-[10px] font-bold [writing-mode:vertical-lr] tracking-widest text-slate-700 hover:text-blue-600">
             운행설정
           </span>
-          <ChevronLeft className="w-3 h-3 text-slate-400 group-hover:-translate-x-0.5 transition-transform" />
-        </div>
+          <ChevronLeft className="w-3 h-3 text-slate-400 transition-transform" />
+        </button>
       </div>
     );
   }
@@ -386,7 +377,13 @@ export const ScheduleDetailDrawer: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              if (leaveTimerRef.current) {
+                clearTimeout(leaveTimerRef.current);
+                leaveTimerRef.current = null;
+              }
               closeDetailDrawer();
             }}
             className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200 transition cursor-pointer ml-0.5"
@@ -1207,7 +1204,15 @@ export const ScheduleDetailDrawer: React.FC = () => {
         ) : (
           <button
             type="button"
-            onClick={closeDetailDrawer}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              if (leaveTimerRef.current) {
+                clearTimeout(leaveTimerRef.current);
+                leaveTimerRef.current = null;
+              }
+              closeDetailDrawer();
+            }}
             className="px-5 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-bold transition cursor-pointer shadow-2xs"
           >
             닫기
