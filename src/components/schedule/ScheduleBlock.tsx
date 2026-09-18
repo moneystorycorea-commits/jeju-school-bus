@@ -194,7 +194,7 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
       style={{
         left: isMorning ? `${departurePercent}%` : `${leftPercent}%`,
         width: isMorning ? `${blockWidthPercent}%` : undefined,
-        minWidth: isMorning ? undefined : '104px',
+        minWidth: isMorning ? '36px' : '104px',
         transform: 'translate(0, -50%)',
         backgroundColor: pastelStyle.backgroundColor,
         borderColor: pastelStyle.borderColor,
@@ -244,15 +244,12 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
         </button>
       )}
 
-      {/* 내부 콘텐츠: 등교 시 학생 이름 및 희망시간 차이 배지 표시 */}
+      {/* 내부 콘텐츠: 등교 시 요청 대비 시간 차이 배지만 표시 (이름은 좌측 고정 열에 표시되므로 공간 절약을 위해 제외) */}
       {isMorning ? (
-        <div className="flex items-center justify-between w-full px-1 overflow-hidden">
-          <span className="text-xs sm:text-[13px] font-black text-white tracking-tight truncate select-none leading-none drop-shadow-xs">
-            {student.name}
-          </span>
-          {diff !== 0 && (
+        <div className="flex items-center justify-center w-full px-0.5 overflow-hidden">
+          {diff !== 0 ? (
             <span
-              className={`text-[9.5px] font-black px-1 py-0.5 rounded leading-none shrink-0 font-mono shadow-2xs ml-1 ${
+              className={`text-[9.5px] font-black px-1.5 py-0.5 rounded leading-none shrink-0 font-mono shadow-2xs whitespace-nowrap ${
                 diff < 0
                   ? 'bg-sky-400 text-sky-950'
                   : 'bg-amber-300 text-amber-950'
@@ -260,6 +257,10 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
               title={`희망 ${formatMinute(requestedMinute!)} 대비 ${Math.abs(diff)}분 ${diff < 0 ? '빠름' : '늦음'}`}
             >
               {diff < 0 ? `▼-${Math.abs(diff)}` : `▲+${diff}`}
+            </span>
+          ) : (
+            <span className="text-[10px] font-bold text-white/80 font-mono select-none" title="희망시간 일치">
+              ✓
             </span>
           )}
         </div>

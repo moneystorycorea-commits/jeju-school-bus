@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Eye, EyeOff, Phone, Home, GraduationCap, User, Calendar } from 'lucide-react';
 import { useScheduleStore } from '@/lib/store/useScheduleStore';
 import { formatMinute } from '@/lib/scheduling/time';
+import { formatGradeDisplay } from '@/lib/constants/schools';
 
 export const StudentDetailPanel: React.FC = () => {
   const {
@@ -87,7 +88,7 @@ export const StudentDetailPanel: React.FC = () => {
             학교 / 학년
           </span>
           <span className="font-semibold text-slate-900">
-            {school?.name || student.schoolId} · {student.grade}
+            {school?.name || student.schoolId} · {formatGradeDisplay(student.grade, student.schoolId)}
           </span>
 
           {student.gate && (

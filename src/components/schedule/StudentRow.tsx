@@ -7,6 +7,7 @@ import { getTimelinePositionPercent, formatMinute } from '@/lib/scheduling/time'
 import { ScheduleBlock } from './ScheduleBlock';
 import { useScheduleStore } from '@/lib/store/useScheduleStore';
 import { getSchoolTravelMinutes } from '@/lib/scheduling/routeCalculator';
+import { formatGradeDisplay } from '@/lib/constants/schools';
 
 interface StudentRowProps {
   student: Student;
@@ -114,16 +115,13 @@ export const StudentRow: React.FC<StudentRowProps> = ({
           )}
         </div>
 
-        {/* 3. 학년 원형 배지 (text-xs font-black font-mono) */}
+        {/* 3. 학년 원형 배지 (국제학교는 G 접두사 통일: G1~G12, 한국학교는 숫자) */}
         <div className="w-11 shrink-0 flex items-center justify-center">
           <div
-            className="w-6 h-6 rounded-full bg-slate-100 text-slate-800 font-black text-[10.5px] flex items-center justify-center border border-slate-300 font-mono shadow-2xs"
-            title={student.grade && student.grade !== '?' ? `재학 학년: ${student.grade}` : '학년 미등록 (?)'}
+            className="w-6 h-6 rounded-full bg-slate-100 text-slate-800 font-black text-[10px] flex items-center justify-center border border-slate-300 font-mono shadow-2xs"
+            title={student.grade && student.grade !== '?' ? `재학 학년: ${formatGradeDisplay(student.grade, student.schoolId)}` : '학년 미등록 (?)'}
           >
-            {(() => {
-              if (!student.grade || student.grade === '?') return '?';
-              return student.grade.replace('학년', '');
-            })()}
+            {formatGradeDisplay(student.grade, student.schoolId, true)}
           </div>
         </div>
       </div>

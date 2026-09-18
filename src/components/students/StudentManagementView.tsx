@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Users, UserPlus, Eye, EyeOff, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { useScheduleStore } from '@/lib/store/useScheduleStore';
 import { formatMinute } from '@/lib/scheduling/time';
+import { formatGradeDisplay } from '@/lib/constants/schools';
 
 type SortField = 'index' | 'name' | 'gender' | 'address' | 'school' | 'grade' | 'guardian' | 'time';
 type SortDirection = 'asc' | 'desc';
@@ -202,12 +203,7 @@ export const StudentManagementView: React.FC = () => {
                 const monM = st.weeklySchedule?.[1]?.morningMinute || 460;
                 const wedM = st.weeklySchedule?.[3]?.morningMinute || monM;
 
-                const gradeDisplay = (() => {
-                  if (!st.grade || st.grade === '?' || st.grade.includes('재학')) return '?';
-                  if (st.grade.startsWith('G')) return st.grade;
-                  const match = st.grade.match(/\d+/);
-                  return match ? `${match[0]}학년` : st.grade;
-                })();
+                const gradeDisplay = formatGradeDisplay(st.grade, st.schoolId);
 
                 return (
                   <tr
