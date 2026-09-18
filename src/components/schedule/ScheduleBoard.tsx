@@ -306,16 +306,11 @@ export const ScheduleBoard: React.FC = () => {
               <div className="flex items-stretch border-b border-indigo-200/90 bg-indigo-50/90 select-none">
                 {/* 좌측 1호차 배너 */}
                 <div className="w-[230px] px-3 py-1.5 border-r border-indigo-200 bg-indigo-50/95 sticky left-0 z-20 flex items-center justify-between shrink-0 shadow-2xs">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="px-2 py-0.5 rounded bg-indigo-600 text-white text-[11px] font-black tracking-wide shadow-2xs">
-                      1호차
-                    </span>
-                    <span className="text-xs font-black text-indigo-950 truncate">
-                      NLCS · 저청 전담
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-bold text-indigo-700 bg-indigo-100/90 px-1.5 py-0.5 rounded border border-indigo-200">
-                    {v1ActiveCount}명 운행
+                  <span className="px-2.5 py-0.5 rounded-md bg-indigo-600 text-white text-xs font-black tracking-wide shadow-2xs">
+                    1호차
+                  </span>
+                  <span className="text-xs font-bold text-indigo-700 bg-indigo-100/90 px-2 py-0.5 rounded border border-indigo-200">
+                    {v1ActiveCount}명
                   </span>
                 </div>
                 {/* 우측 1호차 타임라인 요약 */}
@@ -380,16 +375,11 @@ export const ScheduleBoard: React.FC = () => {
               <div className="flex items-stretch border-b border-purple-200/90 bg-purple-50/90 select-none">
                 {/* 좌측 2호차 배너 */}
                 <div className="w-[230px] px-3 py-1.5 border-r border-purple-200 bg-purple-50/95 sticky left-0 z-20 flex items-center justify-between shrink-0 shadow-2xs">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="px-2 py-0.5 rounded bg-purple-600 text-white text-[11px] font-black tracking-wide shadow-2xs">
-                      2호차
-                    </span>
-                    <span className="text-xs font-black text-purple-950 truncate">
-                      BHA · SJA · KIS 전담
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-bold text-purple-700 bg-purple-100/90 px-1.5 py-0.5 rounded border border-purple-200">
-                    {v2ActiveCount}명 운행
+                  <span className="px-2.5 py-0.5 rounded-md bg-purple-600 text-white text-xs font-black tracking-wide shadow-2xs">
+                    2호차
+                  </span>
+                  <span className="text-xs font-bold text-purple-700 bg-purple-100/90 px-2 py-0.5 rounded border border-purple-200">
+                    {v2ActiveCount}명
                   </span>
                 </div>
                 {/* 우측 2호차 타임라인 요약 */}
