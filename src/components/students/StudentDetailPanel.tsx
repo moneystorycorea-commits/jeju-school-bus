@@ -40,99 +40,99 @@ export const StudentDetailPanel: React.FC = () => {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-[540px] w-full p-6 flex flex-col gap-4 select-none animate-scaleIn"
+        className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-[740px] w-full p-7 md:p-8 flex flex-col gap-5 select-none animate-scaleIn max-h-[92vh] overflow-y-auto"
       >
         {/* 모달 헤더 */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-600 text-white text-sm font-bold flex items-center justify-center shadow-xs">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-blue-600 text-white text-base font-black flex items-center justify-center shadow-sm">
               {studentIndex}
             </div>
             <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-bold text-slate-900">{student.name}</span>
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl font-black text-slate-900">{student.name}</span>
                 {student.gender && (
-                  <span className="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold">
+                  <span className="text-xs px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold border border-slate-200">
                     {student.gender}
                   </span>
                 )}
                 {school && (
-                  <span className={`text-xs font-bold px-2.5 py-0.5 rounded-md border ${school.badgeBg}`}>
+                  <span className={`text-xs font-black px-3 py-0.5 rounded-lg border shadow-2xs ${school.badgeBg}`}>
                     {school.shortName}
                   </span>
                 )}
               </div>
-              <span className="text-xs text-slate-400 mt-0.5">학생 정보 및 통학 프로필</span>
+              <span className="text-xs font-semibold text-slate-400 mt-0.5">학생 정보 및 주간 통학 프로필</span>
             </div>
           </div>
 
           <button
             onClick={closeStudentPanel}
-            className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+            className="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 transition cursor-pointer"
             title="닫기"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* 상세 정보 그리드 (라벨 폭을 충분히 확보하여 한 줄 표시) */}
-        <div className="grid grid-cols-[110px_1fr] gap-y-3.5 text-sm py-1 items-center">
-          <span className="text-slate-500 font-medium flex items-center gap-1.5 whitespace-nowrap">
+        {/* 상세 정보 그리드 (폰트 크기 및 간격 여유 확보) */}
+        <div className="grid grid-cols-[130px_1fr] gap-y-3.5 text-sm md:text-base py-1 items-center">
+          <span className="text-slate-500 font-bold flex items-center gap-2 whitespace-nowrap text-sm">
             <Home className="w-4 h-4 text-slate-400 shrink-0" />
             동 · 호수
           </span>
-          <span className="font-semibold text-slate-900">{student.building} {student.unit}</span>
+          <span className="font-extrabold text-slate-900">{student.building} {student.unit}</span>
 
-          <span className="text-slate-500 font-medium flex items-center gap-1.5 whitespace-nowrap">
+          <span className="text-slate-500 font-bold flex items-center gap-2 whitespace-nowrap text-sm">
             <GraduationCap className="w-4 h-4 text-slate-400 shrink-0" />
             학교 / 학년
           </span>
-          <span className="font-semibold text-slate-900">
-            {school?.name || student.schoolId} · {formatGradeDisplay(student.grade, student.schoolId)}
+          <span className="font-extrabold text-slate-900">
+            {school?.name || student.schoolId} · <span className="text-blue-700 font-mono font-black">{formatGradeDisplay(student.grade, student.schoolId)}</span>
           </span>
 
           {student.gate && (
             <>
-              <span className="text-slate-500 font-medium flex items-center gap-1.5 whitespace-nowrap">
+              <span className="text-slate-500 font-bold flex items-center gap-2 whitespace-nowrap text-sm">
                 <Home className="w-4 h-4 text-slate-400 shrink-0" />
                 정차 게이트
               </span>
-              <span className="font-semibold text-slate-900">{student.gate}</span>
+              <span className="font-bold text-slate-900">{student.gate}</span>
             </>
           )}
 
-          <span className="text-slate-500 font-medium flex items-center gap-1.5 whitespace-nowrap">
+          <span className="text-slate-500 font-bold flex items-center gap-2 whitespace-nowrap text-sm">
             <User className="w-4 h-4 text-slate-400 shrink-0" />
             보호자 성함
           </span>
-          <span className="font-semibold text-slate-900">{privateInfo?.guardianName || '-'}</span>
+          <span className="font-bold text-slate-900">{privateInfo?.guardianName || '-'}</span>
 
-          <span className="text-slate-500 font-medium flex items-center gap-1.5 whitespace-nowrap">
+          <span className="text-slate-500 font-bold flex items-center gap-2 whitespace-nowrap text-sm">
             <Phone className="w-4 h-4 text-slate-400 shrink-0" />
             보호자 연락처
           </span>
-          <div className="flex items-center gap-2">
-            <span className="font-mono font-bold text-red-600 tracking-wider">
+          <div className="flex items-center gap-2.5">
+            <span className="font-mono font-black text-slate-900 tracking-wider">
               {displayPhone}
             </span>
             {currentRole === 'admin' && (
               <button
                 onClick={() => setShowFullPhone(!showFullPhone)}
-                className="text-slate-400 hover:text-slate-700 p-0.5 cursor-pointer"
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-md hover:bg-slate-100 transition cursor-pointer"
                 title={showFullPhone ? '번호 가리기' : '전체 번호 확인 (관리자)'}
               >
-                {showFullPhone ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                {showFullPhone ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             )}
           </div>
 
           {privateInfo?.studentPhone && (
             <>
-              <span className="text-slate-500 font-medium flex items-center gap-1.5 whitespace-nowrap">
+              <span className="text-slate-500 font-bold flex items-center gap-2 whitespace-nowrap text-sm">
                 <Phone className="w-4 h-4 text-slate-400 shrink-0" />
                 학생 연락처
               </span>
-              <span className="font-mono font-semibold text-slate-800 tracking-wider">
+              <span className="font-mono font-bold text-slate-800 tracking-wider">
                 {currentRole === 'admin' && showFullPhone
                   ? privateInfo.studentPhone
                   : '***-****-' + privateInfo.studentPhone.slice(-4)}
@@ -142,33 +142,29 @@ export const StudentDetailPanel: React.FC = () => {
 
           {student.notes && (
             <>
-              <span className="text-slate-500 font-medium whitespace-nowrap self-start pt-1">특이사항</span>
-              <span className="text-xs text-amber-900 bg-amber-50 p-2.5 rounded-lg border border-amber-200 leading-relaxed font-medium">
+              <span className="text-slate-500 font-bold whitespace-nowrap self-start pt-1.5 text-sm">특이사항</span>
+              <div className="text-sm text-slate-800 bg-slate-50 p-3 rounded-xl border border-slate-200/80 leading-relaxed font-semibold">
                 {student.notes}
-              </span>
+              </div>
             </>
           )}
         </div>
 
-        {/* 요일별 등/하교 현황 요약 (등교/하교 구분 배지 명확화) */}
+        {/* 요일별 등/하교 현황 요약 (정돈되고 큰 폰트의 단정한 디자인) */}
         {student.weeklySchedule && (
-          <div className="border border-slate-200 rounded-xl p-3.5 bg-slate-50 flex flex-col gap-2.5">
+          <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/60 flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                주간 요일별 등·하교 시간
+              <span className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-blue-600" />
+                주간 요일별 등·하교 시간표
               </span>
-              <div className="flex items-center gap-2.5 text-[11px] font-bold">
-                <span className="flex items-center gap-1 text-blue-700">
-                  <span className="w-2 h-2 rounded-full bg-blue-600" /> 등교
-                </span>
-                <span className="flex items-center gap-1 text-amber-700">
-                  <span className="w-2 h-2 rounded-full bg-amber-600" /> 하교
-                </span>
-              </div>
+              <span className="text-xs text-slate-500 font-medium">
+                요일별 탑승 여부 및 설정 시간
+              </span>
             </div>
 
-            <div className="grid grid-cols-5 gap-1.5 text-xs">
+            {/* 5개 요일 카드 그리드 */}
+            <div className="grid grid-cols-5 gap-2.5">
               {[
                 { day: 1, label: '월' },
                 { day: 2, label: '화' },
@@ -177,41 +173,55 @@ export const StudentDetailPanel: React.FC = () => {
                 { day: 5, label: '금' },
               ].map(({ day, label }) => {
                 const ws = student.weeklySchedule?.[day];
+                const isMorningActive = ws?.morningActive ?? true;
+                const isAfternoonActive = ws?.afternoonActive ?? true;
+
                 return (
                   <div
                     key={day}
-                    className="bg-white border border-slate-200 rounded-xl p-2 flex flex-col gap-1.5 shadow-2xs"
+                    className="bg-white border border-slate-200 rounded-xl p-3 flex flex-col gap-2.5 shadow-2xs hover:border-slate-300 transition"
                   >
-                    <span className="font-extrabold text-xs text-slate-800 text-center pb-1 border-b border-slate-100">
+                    {/* 요일 헤더 */}
+                    <div className="text-center pb-1.5 border-b border-slate-100 font-extrabold text-sm text-slate-900">
                       {label}요일
-                    </span>
-
-                    {/* 등교 시간 / 미이용 */}
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1 py-0.2 rounded border border-blue-200/60 shrink-0">
-                        등교
-                      </span>
-                      <span
-                        className={`font-mono text-xs font-bold ${
-                          ws?.morningActive ? 'text-blue-700' : 'text-slate-400 font-medium'
-                        }`}
-                      >
-                        {ws?.morningActive ? formatMinute(ws.morningMinute) : '미이용'}
-                      </span>
                     </div>
 
-                    {/* 하교 시간 / 미이용 */}
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1 py-0.2 rounded border border-amber-200/60 shrink-0">
-                        하교
-                      </span>
-                      <span
-                        className={`font-mono text-xs font-bold ${
-                          ws?.afternoonActive ? 'text-amber-700' : 'text-slate-400 font-medium'
-                        }`}
-                      >
-                        {ws?.afternoonActive ? formatMinute(ws.afternoonMinute) : '미이용'}
-                      </span>
+                    {/* 등교 */}
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[11px] font-bold text-slate-500">등교</span>
+                      <div className="flex items-center justify-between">
+                        {isMorningActive ? (
+                          <span className="font-mono text-sm font-black text-blue-700 tracking-tight">
+                            {formatMinute(ws?.morningMinute || 460)}
+                          </span>
+                        ) : (
+                          <span className="text-xs font-semibold text-slate-400">
+                            미이용
+                          </span>
+                        )}
+                        {isMorningActive && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 하교 */}
+                    <div className="flex flex-col gap-0.5 pt-1.5 border-t border-slate-100">
+                      <span className="text-[11px] font-bold text-slate-500">하교</span>
+                      <div className="flex items-center justify-between">
+                        {isAfternoonActive ? (
+                          <span className="font-mono text-sm font-black text-slate-800 tracking-tight">
+                            {formatMinute(ws?.afternoonMinute || 930)}
+                          </span>
+                        ) : (
+                          <span className="text-xs font-semibold text-slate-400">
+                            미이용
+                          </span>
+                        )}
+                        {isAfternoonActive && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-700"></span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -224,7 +234,7 @@ export const StudentDetailPanel: React.FC = () => {
         <button
           type="button"
           onClick={closeStudentPanel}
-          className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-sm transition cursor-pointer shadow-xs"
+          className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-sm md:text-base transition cursor-pointer shadow-xs mt-1"
         >
           확인 (닫기)
         </button>

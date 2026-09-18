@@ -61,6 +61,7 @@ interface ScheduleState {
   selectedStudentId: string | null;
   isDetailDrawerOpen: boolean;
   detailDrawerTab: 'info' | 'vacation' | 'route';
+  isDrawerPinned: boolean;
   isStudentPanelOpen: boolean;
   isStudentModalOpen: boolean;
   isConflictModalOpen: boolean;
@@ -95,14 +96,15 @@ interface ScheduleState {
   
   selectStudent: (studentId: string | null, openDrawer?: boolean, openPanel?: boolean) => void;
   closeDetailDrawer: () => void;
-  openDetailDrawer: () => void;
+  openDetailDrawer: (pinned?: boolean) => void;
   closeStudentPanel: () => void;
   openStudentModal: () => void;
   closeStudentModal: () => void;
   openConflictModal: () => void;
   closeConflictModal: () => void;
   toggleMobileNav: () => void;
-  setDetailDrawerTab: (tab: 'info' | 'vacation' | 'route') => void;
+  setDetailDrawerTab: (tab: 'info' | 'vacation' | 'route', pinned?: boolean) => void;
+  setIsDrawerPinned: (pinned: boolean) => void;
   clearGuardianNotification: () => void;
 
   updateAssignedTime: (studentId: string, newMinute: MinuteOfDay, forceApply?: boolean) => void;
@@ -180,6 +182,7 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
   selectedStudentId: null,
   isDetailDrawerOpen: false,
   detailDrawerTab: 'info',
+  isDrawerPinned: false,
   isStudentPanelOpen: false,
   isStudentModalOpen: false,
   isConflictModalOpen: false,
@@ -281,14 +284,15 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       isStudentPanelOpen: openPanel,
     });
   },
-  closeDetailDrawer: () => set({ isDetailDrawerOpen: false }),
-  openDetailDrawer: () => set({ isDetailDrawerOpen: true }),
+  closeDetailDrawer: () => set({ isDetailDrawerOpen: false, isDrawerPinned: false }),
+  openDetailDrawer: (pinned = true) => set({ isDetailDrawerOpen: true, isDrawerPinned: pinned }),
   closeStudentPanel: () => set({ isStudentPanelOpen: false }),
   openStudentModal: () => set({ isStudentModalOpen: true }),
   closeStudentModal: () => set({ isStudentModalOpen: false }),
   openConflictModal: () => set({ isConflictModalOpen: true }),
   closeConflictModal: () => set({ isConflictModalOpen: false }),
-  setDetailDrawerTab: (tab) => set({ detailDrawerTab: tab, isDetailDrawerOpen: true }),
+  setDetailDrawerTab: (tab, pinned = true) => set({ detailDrawerTab: tab, isDetailDrawerOpen: true, isDrawerPinned: pinned }),
+  setIsDrawerPinned: (pinned) => set({ isDrawerPinned: pinned }),
 
   updateAssignedTime: (studentId: string, newMinute: MinuteOfDay, forceApply?: boolean) => {
     const { students, schools, schedules, routeSegments, currentRole, serviceDate, scheduleType, tripTemplates } = get();

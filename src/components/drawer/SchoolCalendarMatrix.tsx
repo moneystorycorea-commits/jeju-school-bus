@@ -102,11 +102,19 @@ export const SchoolCalendarMatrix: React.FC = () => {
         <table className="w-full text-left border-collapse text-[11px]">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 font-bold">
-              <th className="py-2 px-2.5">학사 일정</th>
-              <th className="py-2 px-1.5 text-blue-700">NLCS</th>
-              <th className="py-2 px-1.5 text-orange-700">BHA</th>
-              <th className="py-2 px-1.5 text-indigo-700">KIS</th>
-              <th className="py-2 px-1.5 text-emerald-700">SJA</th>
+              <th className="py-2.5 px-3 min-w-[140px]">학사 일정</th>
+              <th className="py-2 px-2 text-center">
+                <span className="px-2 py-0.5 rounded bg-blue-100/70 text-blue-700 font-black text-[11px]">NLCS</span>
+              </th>
+              <th className="py-2 px-2 text-center">
+                <span className="px-2 py-0.5 rounded bg-orange-100/70 text-orange-700 font-black text-[11px]">BHA</span>
+              </th>
+              <th className="py-2 px-2 text-center">
+                <span className="px-2 py-0.5 rounded bg-indigo-100/70 text-indigo-700 font-black text-[11px]">KIS</span>
+              </th>
+              <th className="py-2 px-2.5 text-center">
+                <span className="px-2 py-0.5 rounded bg-emerald-100/70 text-emerald-700 font-black text-[11px]">SJA</span>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -117,20 +125,20 @@ export const SchoolCalendarMatrix: React.FC = () => {
                 className="hover:bg-blue-50/70 transition cursor-pointer group"
                 title={`클릭하면 ${row.jumpDate} 운행표 및 달력으로 이동합니다.`}
               >
-                <td className="py-2 px-2.5 font-bold text-slate-800 flex items-center justify-between gap-1">
-                  <span>{row.title}</span>
+                <td className="py-2 px-3 font-bold text-slate-800 flex items-center justify-between gap-1.5">
+                  <span className="truncate">{row.title}</span>
                   <ExternalLink className="w-3 h-3 text-slate-300 group-hover:text-blue-600 shrink-0" />
                 </td>
-                <td className="py-2 px-1.5 font-mono text-[10px] text-slate-700 whitespace-nowrap">
+                <td className="py-2 px-2 font-mono text-[10.5px] text-slate-700 text-center whitespace-nowrap">
                   {row.nlcs}
                 </td>
-                <td className="py-2 px-1.5 font-mono text-[10px] text-slate-700 whitespace-nowrap">
+                <td className="py-2 px-2 font-mono text-[10.5px] text-slate-700 text-center whitespace-nowrap">
                   {row.bha}
                 </td>
-                <td className="py-2 px-1.5 font-mono text-[10px] text-slate-700 whitespace-nowrap">
+                <td className="py-2 px-2 font-mono text-[10.5px] text-slate-700 text-center whitespace-nowrap">
                   {row.kis}
                 </td>
-                <td className="py-2 px-1.5 font-mono text-[10px] text-slate-700 whitespace-nowrap">
+                <td className="py-2 px-2.5 font-mono text-[10.5px] text-slate-700 text-center whitespace-nowrap">
                   {row.sja}
                 </td>
               </tr>

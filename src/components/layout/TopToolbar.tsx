@@ -34,11 +34,21 @@ export const TopToolbar: React.FC = () => {
     setServiceDate('2024-10-28'); // 기준 Mock Date
   };
 
+  const isRouteDrawerActive = isDetailDrawerOpen && detailDrawerTab === 'route';
+
   const handleCalendarToggle = () => {
     if (isDetailDrawerOpen && detailDrawerTab === 'vacation') {
       closeDetailDrawer();
     } else {
-      setDetailDrawerTab('vacation');
+      setDetailDrawerTab('vacation', true);
+    }
+  };
+
+  const handleRouteSettingsToggle = () => {
+    if (isRouteDrawerActive) {
+      closeDetailDrawer();
+    } else {
+      setDetailDrawerTab('route', true);
     }
   };
 
@@ -159,10 +169,15 @@ export const TopToolbar: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setDetailDrawerTab('route')}
-          className="flex items-center gap-1.5 px-3 py-1 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 text-sm font-bold shadow-2xs transition cursor-pointer"
+          onClick={handleRouteSettingsToggle}
+          className={`flex items-center gap-1.5 px-3 py-1 rounded-lg border text-sm font-bold shadow-2xs transition cursor-pointer ${
+            isRouteDrawerActive
+              ? 'bg-blue-50 border-blue-500 text-blue-700 ring-1 ring-blue-400/50'
+              : 'border-slate-300 bg-white hover:bg-slate-50 text-slate-800'
+          }`}
+          title="클릭하여 운행 설정(구간 소요시간 등) 창 열기/닫기"
         >
-          <SlidersHorizontal className="w-4 h-4 text-slate-600" />
+          <SlidersHorizontal className={`w-4 h-4 ${isRouteDrawerActive ? 'text-blue-600' : 'text-slate-600'}`} />
           <span>운행 설정</span>
         </button>
 

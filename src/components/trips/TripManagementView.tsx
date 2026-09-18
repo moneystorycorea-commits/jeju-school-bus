@@ -16,9 +16,25 @@ export const TripManagementView: React.FC = () => {
     serviceDate,
   } = useScheduleStore();
 
-  const activeTemplates = tripTemplates.filter((t) => t.type === scheduleType);
   const morningTemplates = tripTemplates.filter((t) => t.type === 'MORNING');
   const afternoonTemplates = tripTemplates.filter((t) => t.type === 'AFTERNOON');
+
+  // 출발시간별 오름차순 정렬 (동일 시간 시 1호차, 2호차 순)
+  const sortedMorningTemplates = [...morningTemplates].sort((a, b) => {
+    if (a.defaultDepartureMinute !== b.defaultDepartureMinute) {
+      return a.defaultDepartureMinute - b.defaultDepartureMinute;
+    }
+    return a.vehicleId.localeCompare(b.vehicleId);
+  });
+
+  const sortedAfternoonTemplates = [...afternoonTemplates].sort((a, b) => {
+    if (a.defaultDepartureMinute !== b.defaultDepartureMinute) {
+      return a.defaultDepartureMinute - b.defaultDepartureMinute;
+    }
+    return a.vehicleId.localeCompare(b.vehicleId);
+  });
+
+  const activeTemplates = scheduleType === 'MORNING' ? sortedMorningTemplates : sortedAfternoonTemplates;
 
   const formatWeekdays = (weekdays: number[]) => {
     if (weekdays.length === 5) return '월~금';
@@ -165,33 +181,59 @@ export const TripManagementView: React.FC = () => {
             <div className="flex items-center justify-between mb-2 px-0.5">
               <h2 className="text-xs font-black text-slate-900 flex items-center gap-1.5">
                 <span className="w-2 h-3.5 bg-blue-700 inline-block rounded-xs"></span>
-                <span>1. 등교(오전) 운행시간표</span>
+                <span>1. 등교(오전) 운행시간표 (출발시간순 정렬)</span>
               </h2>
+              <div className="text-[9.5px] text-slate-500 font-bold flex items-center gap-2.5">
+                <span className="flex items-center gap-1">
+                  <span className="w-3 h-2.5 rounded-xs bg-[#f0f6fd] border border-blue-300 inline-block" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}></span>
+                  <span className="text-blue-900 font-black">1호차</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-3 h-2.5 rounded-xs bg-white border border-slate-400 inline-block"></span>
+                  <span className="text-slate-800 font-black">2호차</span>
+                </span>
+              </div>
             </div>
 
-            <table className="w-full text-left border-collapse border border-slate-700 table-fixed text-[10.5px] bg-white">
+            <table className="w-full text-left border-collapse border border-slate-700 table-fixed text-[10.5px]">
               <thead>
-                <tr className="bg-slate-100 text-slate-900 font-black border-b border-slate-500">
-                  <th className="py-2 px-1.5 w-[7%] text-center border-r border-slate-400">호차</th>
-                  <th className="py-2 px-2.5 w-[75%] border-r border-slate-400">운행 코스 및 시간</th>
+                <tr className="bg-slate-100 text-slate-900 font-black border-b border-slate-500" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+                  <th className="py-2 px-1.5 w-[8%] text-center border-r border-slate-400">호차</th>
+                  <th className="py-2 px-2.5 w-[74%] border-r border-slate-400">운행 코스 및 시간</th>
                   <th className="py-2 px-1.5 w-[9%] text-center border-r border-slate-400">운행 요일</th>
                   <th className="py-2 px-1.5 w-[9%] text-center">단지 복귀</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-300 text-slate-900 bg-white">
-                {morningTemplates.map((tpl) => {
+              <tbody className="divide-y divide-slate-300 text-slate-900">
+                {sortedMorningTemplates.map((tpl) => {
                   const data = getTemplateData(tpl);
+                  const isV1 = tpl.vehicleId === 'v1';
                   return (
-                    <tr key={tpl.id} className="bg-white">
+                    <tr
+                      key={tpl.id}
+                      style={{
+                        backgroundColor: isV1 ? '#f0f6fd' : '#ffffff',
+                        WebkitPrintColorAdjust: 'exact',
+                        printColorAdjust: 'exact',
+                      }}
+                      className={isV1 ? 'bg-[#f0f6fd]' : 'bg-white'}
+                    >
                       <td className="py-2 px-1.5 text-center font-bold border-r border-slate-300">
-                        {data.vehicleName}
+                        <span
+                          className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-black ${
+                            isV1 ? 'bg-blue-700 text-white' : 'bg-slate-700 text-white'
+                          }`}
+                          style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
+                        >
+                          {data.vehicleName}
+                        </span>
                       </td>
                       <td className="py-2 px-2.5 border-r border-slate-300 leading-tight">
                         <div className="flex items-center text-[10.5px]">
                           {data.combinedSteps.map((step, idx) => (
                             <React.Fragment key={idx}>
                               {idx > 0 && (
-                                <span className="text-slate-300 font-bold w-3 text-center shrink-0 text-[9px]">
+                                <span className="text-slate-400 font-bold w-3 text-center shrink-0 text-[9px]">
                                   →
                                 </span>
                               )}
@@ -245,33 +287,59 @@ export const TripManagementView: React.FC = () => {
             <div className="flex items-center justify-between mb-2 px-0.5">
               <h2 className="text-xs font-black text-slate-900 flex items-center gap-1.5">
                 <span className="w-2 h-3.5 bg-amber-700 inline-block rounded-xs"></span>
-                <span>2. 하교(오후) 운행시간표</span>
+                <span>2. 하교(오후) 운행시간표 (출발시간순 정렬)</span>
               </h2>
+              <div className="text-[9.5px] text-slate-500 font-bold flex items-center gap-2.5">
+                <span className="flex items-center gap-1">
+                  <span className="w-3 h-2.5 rounded-xs bg-[#f0f6fd] border border-blue-300 inline-block" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}></span>
+                  <span className="text-blue-900 font-black">1호차</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-3 h-2.5 rounded-xs bg-white border border-slate-400 inline-block"></span>
+                  <span className="text-slate-800 font-black">2호차</span>
+                </span>
+              </div>
             </div>
 
-            <table className="w-full text-left border-collapse border border-slate-700 table-fixed text-[10.5px] bg-white">
+            <table className="w-full text-left border-collapse border border-slate-700 table-fixed text-[10.5px]">
               <thead>
-                <tr className="bg-slate-100 text-slate-900 font-black border-b border-slate-500">
-                  <th className="py-2 px-1.5 w-[7%] text-center border-r border-slate-400">호차</th>
-                  <th className="py-2 px-2.5 w-[75%] border-r border-slate-400">운행 코스 및 시간</th>
+                <tr className="bg-slate-100 text-slate-900 font-black border-b border-slate-500" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+                  <th className="py-2 px-1.5 w-[8%] text-center border-r border-slate-400">호차</th>
+                  <th className="py-2 px-2.5 w-[74%] border-r border-slate-400">운행 코스 및 시간</th>
                   <th className="py-2 px-1.5 w-[9%] text-center border-r border-slate-400">운행 요일</th>
                   <th className="py-2 px-1.5 w-[9%] text-center">단지 복귀</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-300 text-slate-900 bg-white">
-                {afternoonTemplates.map((tpl) => {
+              <tbody className="divide-y divide-slate-300 text-slate-900">
+                {sortedAfternoonTemplates.map((tpl) => {
                   const data = getTemplateData(tpl);
+                  const isV1 = tpl.vehicleId === 'v1';
                   return (
-                    <tr key={tpl.id} className="bg-white">
+                    <tr
+                      key={tpl.id}
+                      style={{
+                        backgroundColor: isV1 ? '#f0f6fd' : '#ffffff',
+                        WebkitPrintColorAdjust: 'exact',
+                        printColorAdjust: 'exact',
+                      }}
+                      className={isV1 ? 'bg-[#f0f6fd]' : 'bg-white'}
+                    >
                       <td className="py-2 px-1.5 text-center font-bold border-r border-slate-300">
-                        {data.vehicleName}
+                        <span
+                          className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-black ${
+                            isV1 ? 'bg-blue-700 text-white' : 'bg-slate-700 text-white'
+                          }`}
+                          style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
+                        >
+                          {data.vehicleName}
+                        </span>
                       </td>
                       <td className="py-2 px-2.5 border-r border-slate-300 leading-tight">
                         <div className="flex items-center text-[10.5px]">
                           {data.combinedSteps.map((step, idx) => (
                             <React.Fragment key={idx}>
                               {idx > 0 && (
-                                <span className="text-slate-300 font-bold w-3 text-center shrink-0 text-[9px]">
+                                <span className="text-slate-400 font-bold w-3 text-center shrink-0 text-[9px]">
                                   →
                                 </span>
                               )}
@@ -429,11 +497,23 @@ export const TripManagementView: React.FC = () => {
               <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                 {activeTemplates.map((template) => {
                   const data = getTemplateData(template);
+                  const isV1 = template.vehicleId === 'v1';
 
                   return (
-                    <tr key={template.id} className="hover:bg-slate-50 transition">
+                    <tr
+                      key={template.id}
+                      className={`transition ${
+                        isV1 ? 'bg-[#f0f6fd]/80 hover:bg-[#e4effc]' : 'bg-white hover:bg-slate-50'
+                      }`}
+                    >
                       <td className="py-2.5 px-3 font-bold text-slate-900 text-sm whitespace-nowrap">
-                        {data.vehicleName}
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded text-xs font-black ${
+                            isV1 ? 'bg-blue-700 text-white shadow-2xs' : 'bg-slate-700 text-white shadow-2xs'
+                          }`}
+                        >
+                          {data.vehicleName}
+                        </span>
                       </td>
                       <td className="py-2.5 px-3.5 text-sm">
                         <div className="flex flex-wrap items-center gap-1.5">

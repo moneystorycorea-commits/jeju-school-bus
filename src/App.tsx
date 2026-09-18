@@ -123,8 +123,8 @@ export const App: React.FC = () => {
             {activeNav === 'students' && <StudentManagementView />}
           </main>
 
-          {/* 우측 상세 설정 Drawer (스케줄 탭에서만 상시 슬라이드 연동) */}
-          {activeNav === 'schedule' && <ScheduleDetailDrawer />}
+          {/* 우측 상세 설정 Drawer (스케줄 및 운행시간표 탭에서 상시 슬라이드 연동) */}
+          {(activeNav === 'schedule' || activeNav === 'trips') && <ScheduleDetailDrawer />}
         </div>
       </div>
 

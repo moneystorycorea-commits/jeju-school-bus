@@ -27,6 +27,8 @@ export const ScheduleDetailDrawer: React.FC = () => {
     closeDetailDrawer,
     detailDrawerTab,
     setDetailDrawerTab,
+    isDrawerPinned,
+    setIsDrawerPinned,
     selectedStudentId,
     students,
     schools,
@@ -58,7 +60,6 @@ export const ScheduleDetailDrawer: React.FC = () => {
   });
 
   // 호버 및 고정(Pin) 상태 관리
-  const [isPinned, setIsPinned] = useState(false);
   const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleDrawerMouseEnter = () => {
@@ -69,7 +70,7 @@ export const ScheduleDetailDrawer: React.FC = () => {
   };
 
   const handleDrawerMouseLeave = () => {
-    if (isPinned) return; // 고정된 상태에서는 자동 닫기 방지
+    if (isDrawerPinned) return; // 고정된 상태에서는 자동 닫기 방지
     leaveTimerRef.current = setTimeout(() => {
       closeDetailDrawer();
     }, 600); // 600ms grace period
@@ -176,6 +177,20 @@ export const ScheduleDetailDrawer: React.FC = () => {
     });
   }, [routeSegments, routeFilter, activeSchoolsToday]);
 
+  // 학교별 / 카테고리별 필터링된 학사일정 목록 (조건문 이전 최상단 배치로 훅 규칙 준수)
+  const filteredHolidays = useMemo(() => {
+    return holidays.filter((h) => {
+      if (holidaySchoolFilter !== 'ALL' && h.schoolId !== holidaySchoolFilter) {
+        return false;
+      }
+      if (holidayCategoryFilter !== 'ALL') {
+        const cat = h.category || (h.type === 'vacation' ? 'break' : h.type === 'school_closed' ? 'inset' : 'other');
+        if (cat !== holidayCategoryFilter) return false;
+      }
+      return true;
+    });
+  }, [holidays, holidaySchoolFilter, holidayCategoryFilter]);
+
   const formatLocationName = (locId: string): string => {
     return locId
       .replace('COMPLEX_MAIN', '아주더하이클래스')
@@ -188,20 +203,35 @@ export const ScheduleDetailDrawer: React.FC = () => {
       .replace('KIS_MAIN', 'KIS 본관');
   };
 
-  // 드로어가 닫혀 있을 때: 오른쪽 구간 커서 감지 스트립 & 플로팅 탭 렌더링
+  // 드로어가 닫혀 있을 때: 오른쪽 가장자리 마우스 호버 감지 스트립 & 플로팅 탭 버튼 렌더링
   if (!isDetailDrawerOpen) {
     return (
-      /* 오른쪽 가장자리 플로팅 탭 버튼 (클릭 시 열림) */
+      /* 우측 전체 화면 가장자리 마우스 호버 감지 스트립 (커서를 화면 오른쪽에 대면 자동 열림) */
       <div
-        onClick={openDetailDrawer}
-        className="fixed right-0 top-1/2 -translate-y-1/2 z-30 bg-white hover:bg-blue-50 border-l border-y border-slate-300 text-slate-700 hover:text-blue-600 px-1.5 py-4 rounded-l-xl shadow-md cursor-pointer transition-all flex flex-col items-center gap-1.5 group select-none no-print"
-        title="클릭하여 학생 상세 일정 및 운행설정 창 열기"
+        onMouseEnter={() => openDetailDrawer(false)}
+        onClick={() => openDetailDrawer(true)}
+        className="fixed right-0 top-0 bottom-0 w-4 hover:w-6 bg-transparent hover:bg-blue-500/10 transition-all z-30 cursor-pointer group select-none no-print flex items-center justify-end"
+        title="커서를 대거나 클릭하면 운행설정 창이 열립니다"
       >
-        <SlidersHorizontal className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
-        <span className="text-[10px] font-bold [writing-mode:vertical-lr] tracking-widest text-slate-700 group-hover:text-blue-600">
-          운행설정
-        </span>
-        <ChevronLeft className="w-3 h-3 text-slate-400 group-hover:-translate-x-0.5 transition-transform" />
+        {/* 오른쪽 가장자리 플로팅 탭 버튼 */}
+        <div
+          onMouseEnter={(e) => {
+            e.stopPropagation();
+            openDetailDrawer(false);
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            openDetailDrawer(true);
+          }}
+          className="bg-white hover:bg-blue-50 border-l border-y border-slate-300 text-slate-700 hover:text-blue-600 px-1.5 py-4 rounded-l-xl shadow-md cursor-pointer transition-all flex flex-col items-center gap-1.5 group-hover:shadow-lg group-hover:border-blue-400 group-hover:text-blue-600"
+          title="클릭 시 창 고정 / 마우스 호버 시 자동 열림"
+        >
+          <SlidersHorizontal className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
+          <span className="text-[10px] font-bold [writing-mode:vertical-lr] tracking-widest text-slate-700 group-hover:text-blue-600">
+            운행설정
+          </span>
+          <ChevronLeft className="w-3 h-3 text-slate-400 group-hover:-translate-x-0.5 transition-transform" />
+        </div>
       </div>
     );
   }
@@ -278,21 +308,6 @@ export const ScheduleDetailDrawer: React.FC = () => {
     setIsAddingHoliday(false);
   };
 
-  // 학교별 / 카테고리별 필터링된 학사일정 목록
-  const filteredHolidays = useMemo(() => {
-    return holidays.filter((h) => {
-      if (holidaySchoolFilter !== 'ALL' && h.schoolId !== holidaySchoolFilter) {
-        return false;
-      }
-      if (holidayCategoryFilter !== 'ALL') {
-        const cat = h.category || (h.type === 'vacation' ? 'break' : h.type === 'school_closed' ? 'inset' : 'other');
-        if (cat !== holidayCategoryFilter) return false;
-      }
-      return true;
-    });
-  }, [holidays, holidaySchoolFilter, holidayCategoryFilter]);
-
-
   // 달력 날짜 계산 (첫째 날 요일 오프셋 및 해당 월 일수)
   const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay(); // 0(일) ~ 6(토)
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
@@ -301,7 +316,7 @@ export const ScheduleDetailDrawer: React.FC = () => {
     <div
       onMouseEnter={handleDrawerMouseEnter}
       onMouseLeave={handleDrawerMouseLeave}
-      className="fixed inset-y-0 right-0 w-full sm:w-[420px] bg-white border-l border-slate-200 flex flex-col shrink-0 h-full overflow-y-auto select-none shadow-2xl z-40 animate-slideLeft transition-all duration-300 no-print"
+      className="fixed inset-y-0 right-0 w-full sm:w-[580px] bg-white border-l border-slate-200 flex flex-col shrink-0 h-full overflow-y-auto select-none shadow-2xl z-40 animate-slideLeft transition-all duration-300 no-print"
     >
       {/* 1. 드로어 헤더 */}
       <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80 sticky top-0 z-10">
@@ -325,22 +340,21 @@ export const ScheduleDetailDrawer: React.FC = () => {
           {/* 창 고정 토글 버튼 */}
           <button
             type="button"
-            onClick={() => setIsPinned(!isPinned)}
+            onClick={() => setIsDrawerPinned(!isDrawerPinned)}
             className={`px-2 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 text-xs font-bold ${
-              isPinned
+              isDrawerPinned
                 ? 'bg-blue-100 text-blue-700 border border-blue-200'
                 : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200 border border-transparent'
             }`}
-            title={isPinned ? '창 고정 해제 (커서 벗어나면 자동 슬라이딩 닫힘)' : '창 고정 (커서 벗어나도 열려 있음)'}
+            title={isDrawerPinned ? '창 고정 해제 (커서 벗어나면 자동 슬라이딩 닫힘)' : '창 고정 (커서 벗어나도 열려 있음)'}
           >
-            {isPinned ? <PinOff className="w-3.5 h-3.5 text-blue-600" /> : <Pin className="w-3.5 h-3.5" />}
-            <span className="text-[11px]">{isPinned ? '고정됨' : '고정'}</span>
+            {isDrawerPinned ? <PinOff className="w-3.5 h-3.5 text-blue-600" /> : <Pin className="w-3.5 h-3.5" />}
+            <span className="text-[11px]">{isDrawerPinned ? '고정됨' : '고정'}</span>
           </button>
 
           <button
             type="button"
             onClick={() => {
-              setIsPinned(false);
               closeDetailDrawer();
             }}
             className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200 transition cursor-pointer ml-0.5"

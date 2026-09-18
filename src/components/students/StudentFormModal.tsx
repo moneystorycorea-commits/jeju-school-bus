@@ -205,29 +205,29 @@ export const StudentFormModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn select-none overflow-y-auto">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden my-6">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-[720px] w-full overflow-hidden my-6">
         {/* 모달 헤더 */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center">
-              <UserPlus className="w-4 h-4" />
+        <div className="px-7 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
+              <UserPlus className="w-4.5 h-4.5" />
             </div>
-            <h3 className="text-base font-bold text-slate-900">새 학생 등록</h3>
+            <h3 className="text-lg font-bold text-slate-900">새 학생 등록</h3>
           </div>
           <button
             onClick={closeStudentModal}
-            className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-200 transition cursor-pointer"
+            className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* 폼 입력 영역 */}
-        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4 text-xs">
+        <form onSubmit={handleSubmit} className="p-7 flex flex-col gap-4.5 text-xs">
           {/* 1. 학생 기본 정보 */}
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2 flex flex-col gap-1.5">
-              <label className="font-bold text-slate-700">학생 성명 *</label>
+              <label className="font-bold text-slate-700 text-sm">학생 성명 *</label>
               <input
                 type="text"
                 required
@@ -400,11 +400,11 @@ export const StudentFormModal: React.FC = () => {
             <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/50">
               <table className="w-full text-center border-collapse">
                 <thead>
-                  <tr className="bg-slate-100/80 border-b border-slate-200 text-[11px] font-bold text-slate-600">
-                    <th className="py-2 px-2 text-left w-16">구분</th>
+                  <tr className="bg-slate-100/80 border-b border-slate-200 text-xs font-bold text-slate-700">
+                    <th className="py-2.5 px-3 text-left w-20 font-bold">구분</th>
                     {weekdays.map(({ day, label }) => (
-                      <th key={day} className="py-2 px-1">
-                        <span className={`inline-block px-1.5 py-0.5 rounded ${day === 3 ? 'bg-amber-100 text-amber-800 font-extrabold' : ''}`}>
+                      <th key={day} className="py-2.5 px-2">
+                        <span className="font-extrabold text-sm text-slate-800">
                           {label}요일
                         </span>
                       </th>
@@ -414,12 +414,12 @@ export const StudentFormModal: React.FC = () => {
                 <tbody className="divide-y divide-slate-100">
                   {/* 등교 희망시간 행 */}
                   <tr>
-                    <td className="py-2.5 px-2 text-left font-bold text-blue-700 bg-blue-50/40 text-[11px]">
+                    <td className="py-3 px-3 text-left font-bold text-blue-700 bg-blue-50/30 text-xs">
                       등교
                     </td>
                     {weekdays.map(({ day }) => (
-                      <td key={day} className="py-2 px-1">
-                        <div className="flex flex-col items-center gap-1">
+                      <td key={day} className="py-2.5 px-1.5">
+                        <div className="flex flex-col items-center gap-1.5">
                           <input
                             type="text"
                             disabled={!morningActive[day]}
@@ -428,9 +428,9 @@ export const StudentFormModal: React.FC = () => {
                               setMorningTimes({ ...morningTimes, [day]: e.target.value })
                             }
                             placeholder="07:40"
-                            className={`w-full text-center py-1 px-0.5 font-mono text-xs font-bold border rounded-md focus:outline-hidden focus:border-blue-500 ${
+                            className={`w-full text-center py-1.5 px-1 font-mono text-sm font-black border rounded-lg focus:outline-hidden focus:ring-1 focus:ring-blue-500 ${
                               morningActive[day]
-                                ? 'border-slate-200 bg-white text-slate-900'
+                                ? 'border-slate-300 bg-white text-blue-700'
                                 : 'border-slate-200 bg-slate-100 text-slate-400 line-through'
                             }`}
                           />
@@ -439,10 +439,10 @@ export const StudentFormModal: React.FC = () => {
                             onClick={() =>
                               setMorningActive({ ...morningActive, [day]: !morningActive[day] })
                             }
-                            className={`text-[10px] px-1.5 py-0.5 rounded font-semibold transition cursor-pointer ${
+                            className={`text-xs px-2 py-0.5 rounded font-bold transition cursor-pointer ${
                               morningActive[day]
-                                ? 'bg-blue-100 text-blue-700'
-                                : 'bg-slate-200 text-slate-500'
+                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                : 'bg-slate-100 text-slate-400 border border-slate-200'
                             }`}
                           >
                             {morningActive[day] ? '탑승' : '미이용'}
@@ -454,12 +454,12 @@ export const StudentFormModal: React.FC = () => {
 
                   {/* 하교 희망시간 행 */}
                   <tr>
-                    <td className="py-2.5 px-2 text-left font-bold text-indigo-700 bg-indigo-50/40 text-[11px]">
+                    <td className="py-3 px-3 text-left font-bold text-slate-700 bg-slate-50 text-xs">
                       하교
                     </td>
                     {weekdays.map(({ day }) => (
-                      <td key={day} className="py-2 px-1">
-                        <div className="flex flex-col items-center gap-1">
+                      <td key={day} className="py-2.5 px-1.5">
+                        <div className="flex flex-col items-center gap-1.5">
                           <input
                             type="text"
                             disabled={!afternoonActive[day]}
@@ -468,9 +468,9 @@ export const StudentFormModal: React.FC = () => {
                               setAfternoonTimes({ ...afternoonTimes, [day]: e.target.value })
                             }
                             placeholder="15:30"
-                            className={`w-full text-center py-1 px-0.5 font-mono text-xs font-bold border rounded-md focus:outline-hidden focus:border-indigo-500 ${
+                            className={`w-full text-center py-1.5 px-1 font-mono text-sm font-black border rounded-lg focus:outline-hidden focus:ring-1 focus:ring-slate-500 ${
                               afternoonActive[day]
-                                ? 'border-slate-200 bg-white text-slate-900'
+                                ? 'border-slate-300 bg-white text-slate-900'
                                 : 'border-slate-200 bg-slate-100 text-slate-400 line-through'
                             }`}
                           />
@@ -479,10 +479,10 @@ export const StudentFormModal: React.FC = () => {
                             onClick={() =>
                               setAfternoonActive({ ...afternoonActive, [day]: !afternoonActive[day] })
                             }
-                            className={`text-[10px] px-1.5 py-0.5 rounded font-semibold transition cursor-pointer ${
+                            className={`text-xs px-2 py-0.5 rounded font-bold transition cursor-pointer ${
                               afternoonActive[day]
-                                ? 'bg-indigo-100 text-indigo-700'
-                                : 'bg-slate-200 text-slate-500'
+                                ? 'bg-slate-100 text-slate-800 border border-slate-300'
+                                : 'bg-slate-100 text-slate-400 border border-slate-200'
                             }`}
                           >
                             {afternoonActive[day] ? '탑승' : '미이용'}
@@ -494,7 +494,7 @@ export const StudentFormModal: React.FC = () => {
                 </tbody>
               </table>
             </div>
-            <span className="text-[10px] text-slate-400">
+            <span className="text-xs text-slate-500 font-medium">
               * 각 요일별 탑승 여부와 희망 시간을 설정할 수 있습니다 (미이용 시 차량 배치 제외).
             </span>
           </div>
