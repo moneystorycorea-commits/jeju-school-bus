@@ -156,13 +156,12 @@ export const StudentRow: React.FC<StudentRowProps> = ({
           const currentMinute = (isDragging && draggingMinute !== null) ? draggingMinute : schedule.assignedMinute;
           const departureMinute = (currentMinute - travelMinutes) as MinuteOfDay;
           const departurePercent = getTimelinePositionPercent(departureMinute, startMinute, endMinute);
-          const arrivalPercent = getTimelinePositionPercent(currentMinute, startMinute, endMinute);
 
           return (
             <>
-              {/* 단지 출발 위치 수직 점선 & 출발시간 플로팅 배지 */}
+              {/* 단지 출발 위치 수직 점선 & 출발시간 플로팅 배지 (단지 출발 시점에 정밀 센터링) */}
               <div
-                className="absolute top-0 bottom-0 pointer-events-none z-20 flex flex-col items-center"
+                className="absolute top-0 bottom-0 pointer-events-none z-20 flex flex-col items-center -translate-x-1/2"
                 style={{ left: `${departurePercent}%` }}
               >
                 {/* 상단 단지 출발 시간 칩 */}
@@ -173,18 +172,9 @@ export const StudentRow: React.FC<StudentRowProps> = ({
                   <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-blue-600" />
                 </div>
 
-                {/* 수직 점선 */}
+                {/* 수직 점선 (상단 타임라인 축부터 슬라이더 좌측 모서리까지 연결) */}
                 <div className="w-0.5 h-full border-l-2 border-dashed border-blue-500 shadow-xs" />
               </div>
-
-              {/* 단지 출발 ➔ 학교 도착 연결 수평 점선 트랙 (10분/5분 이동 구간) */}
-              <div
-                className="absolute top-1/2 -translate-y-1/2 h-0.5 border-t-2 border-dashed border-blue-400/80 pointer-events-none z-10"
-                style={{
-                  left: `${departurePercent}%`,
-                  width: `${Math.max(0, arrivalPercent - departurePercent)}%`,
-                }}
-              />
             </>
           );
         })()}
