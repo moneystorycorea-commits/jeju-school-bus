@@ -1461,36 +1461,5 @@ export const INITIAL_HOLIDAYS: SchoolHoliday[] = [
     category: 'term_date',
     notes: '반일 수업 후 여름방학 돌입',
   },
-
-  // ==========================================
-  // [2024년 레거시 샘플 유지]
-  // ==========================================
-  {
-    id: 'h-1',
-    schoolId: 'BHA',
-    startDate: '2024-10-21',
-    endDate: '2024-10-25',
-    name: 'BHA 가을방학 (Fall Break)',
-    type: 'vacation',
-    category: 'break',
-  },
-  {
-    id: 'h-2',
-    schoolId: 'NLCS',
-    startDate: '2024-12-20',
-    endDate: '2025-01-10',
-    name: 'NLCS 겨울방학',
-    type: 'vacation',
-    category: 'break',
-  },
-  {
-    id: 'h-3',
-    schoolId: 'SJA',
-    startDate: '2024-11-18',
-    endDate: '2024-11-22',
-    name: 'SJA 추수감사 방학',
-    type: 'vacation',
-    category: 'break',
-  },
 ];
 

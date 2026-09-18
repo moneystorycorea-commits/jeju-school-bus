@@ -44,20 +44,29 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
   onSelectDate,
   onGoToSchedule,
 }) => {
-  // 달력 연/월 상태 (기본값: activeHoliday의 startDate 또는 currentDate 기준)
+  // 달력 연/월 상태 (기본값: activeHoliday의 startDate 또는 2026-2027 학사연도 기준)
   const [viewYear, setViewYear] = useState<number>(() => {
     const baseDate = activeHoliday ? activeHoliday.startDate : currentDate;
-    return parseInt(baseDate.split('-')[0], 10) || 2026;
+    const y = parseInt(baseDate.split('-')[0], 10);
+    return y >= 2026 && y <= 2027 ? y : 2026;
   });
 
   const [viewMonth, setViewMonth] = useState<number>(() => {
     const baseDate = activeHoliday ? activeHoliday.startDate : currentDate;
-    return (parseInt(baseDate.split('-')[1], 10) || 8) - 1; // 0-indexed
+    const y = parseInt(baseDate.split('-')[0], 10);
+    const m = parseInt(baseDate.split('-')[1], 10);
+    if (y >= 2026 && y <= 2027 && !isNaN(m)) {
+      return m - 1;
+    }
+    return 7; // 기본 8월 (2026-08 학사 시작월)
   });
 
   const [schoolFilter, setSchoolFilter] = useState<string>('ALL');
   const [selectedDayDate, setSelectedDayDate] = useState<string>(() => {
-    return activeHoliday ? activeHoliday.startDate : currentDate;
+    if (activeHoliday) return activeHoliday.startDate;
+    const y = parseInt(currentDate.split('-')[0], 10);
+    if (y >= 2026 && y <= 2027) return currentDate;
+    return '2026-08-17';
   });
 
   // activeHoliday 변경 시 달력 연/월 및 선택 날짜 자동 동기화
