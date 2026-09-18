@@ -3,7 +3,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
 import { Student, StudentSchedule, School, MinuteOfDay } from '@/types';
-import { getTimelinePositionPercent } from '@/lib/scheduling/time';
+import { getTimelinePositionPercent, formatMinute } from '@/lib/scheduling/time';
 import { ScheduleBlock } from './ScheduleBlock';
 import { useScheduleStore } from '@/lib/store/useScheduleStore';
 
@@ -34,6 +34,7 @@ export const StudentRow: React.FC<StudentRowProps> = ({
 }) => {
   const { selectStudent, selectedStudentId, serviceDate, scheduleType, holidays, draggingMinute } = useScheduleStore();
   const isSelected = selectedStudentId === student.id;
+  const isMorning = scheduleType === 'MORNING';
 
   const currentWeekday = new Date(serviceDate).getDay() === 0 ? 7 : new Date(serviceDate).getDay();
   const ws = student.weeklySchedule?.[currentWeekday];
@@ -128,7 +129,7 @@ export const StudentRow: React.FC<StudentRowProps> = ({
       </div>
 
       {/* 2. 우측 타임라인 트랙 영역 */}
-      <div className="relative flex-1 h-full flex items-center overflow-hidden">
+      <div className="relative flex-1 h-full flex items-center">
         {/* 10분 단위 배경 세로 그리드 라인 (시간 사이 6칸 얇게 구분) */}
         {gridTicks.map(({ minute, isHour, isHalfHour }) => {
           const percent = ((minute - startMinute) / duration) * 100;
@@ -146,6 +147,47 @@ export const StudentRow: React.FC<StudentRowProps> = ({
             />
           );
         })}
+
+        {/* [출발시간 점선 활성화] 등교 시 선택되거나 드래그 중일 때: 단지 출발시간(10분 전/저청초 5분 전) 수직 점선 및 배지 표시 */}
+        {(() => {
+          if (!isMorning || !schedule || isInactive || (!isSelected && !isDragging)) return null;
+          const isCheong = school?.shortName === '저청초' || student.schoolId === 'CHEONG';
+          const travelMinutes = isCheong ? 5 : 10;
+          const currentMinute = (isDragging && draggingMinute !== null) ? draggingMinute : schedule.assignedMinute;
+          const departureMinute = (currentMinute - travelMinutes) as MinuteOfDay;
+          const departurePercent = getTimelinePositionPercent(departureMinute, startMinute, endMinute);
+          const arrivalPercent = getTimelinePositionPercent(currentMinute, startMinute, endMinute);
+
+          return (
+            <>
+              {/* 단지 출발 위치 수직 점선 & 출발시간 플로팅 배지 */}
+              <div
+                className="absolute top-0 bottom-0 pointer-events-none z-20 flex flex-col items-center"
+                style={{ left: `${departurePercent}%` }}
+              >
+                {/* 상단 단지 출발 시간 칩 */}
+                <div className="absolute -top-6 px-2 py-0.5 rounded bg-blue-600 text-white text-[10.5px] font-black font-mono whitespace-nowrap shadow-md flex items-center gap-1.5 z-30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                  <span>단지 {formatMinute(departureMinute)} 출발</span>
+                  <span className="text-[9.5px] text-blue-200 font-normal">({travelMinutes}분 소요)</span>
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-blue-600" />
+                </div>
+
+                {/* 수직 점선 */}
+                <div className="w-0.5 h-full border-l-2 border-dashed border-blue-500 shadow-xs" />
+              </div>
+
+              {/* 단지 출발 ➔ 학교 도착 연결 수평 점선 트랙 (10분/5분 이동 구간) */}
+              <div
+                className="absolute top-1/2 -translate-y-1/2 h-0.5 border-t-2 border-dashed border-blue-400/80 pointer-events-none z-10"
+                style={{
+                  left: `${departurePercent}%`,
+                  width: `${Math.max(0, arrivalPercent - departurePercent)}%`,
+                }}
+              />
+            </>
+          );
+        })()}
 
         {/* 드래그 중인 출발 시간 기준 좌측 가이드 선 (얇고 연한 소프트 블루) */}
         {dragPercent !== null && (

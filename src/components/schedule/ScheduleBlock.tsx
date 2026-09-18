@@ -113,6 +113,10 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
   }, [isDragging, student.id, startMinute, endMinute, timelineContainerRef, updateAssignedTime, setDraggingMinute, schedule.type]);
 
   const isMorning = schedule.type === 'MORNING';
+  const isCheong = school.shortName === '저청초' || school.id === 'CHEONG';
+  const travelMinutes = isCheong ? 5 : 10;
+  const travelWidthPercent = (travelMinutes / (endMinute - startMinute)) * 100;
+
   const displayMinute = isDragging ? dragMinute : schedule.assignedMinute;
   const leftPercent = getTimelinePositionPercent(displayMinute, startMinute, endMinute);
 
@@ -164,17 +168,22 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
       }}
       onMouseDown={handleDragStart}
       onTouchStart={handleDragStart}
-      className={`absolute top-1/2 h-7.5 px-2.5 rounded-md border text-white flex items-center gap-1.5 cursor-grab active:cursor-grabbing shadow-xs hover:shadow-md transition-shadow select-none group z-10 ${
-        isSelected ? 'ring-2 ring-blue-500 ring-offset-1 shadow-md' : ''
-      } ${hasConflict ? 'ring-2 ring-red-400 border-red-300' : ''}`}
+      className={`absolute top-1/2 h-7.5 px-2 rounded-md border text-white flex items-center gap-1 cursor-grab active:cursor-grabbing shadow-xs hover:shadow-md transition-all select-none group z-10 ${
+        isMorning
+          ? 'border-r-[4px] border-r-white rounded-r-xs shadow-[2px_0_8px_rgba(255,255,255,0.7)]'
+          : ''
+      } ${isSelected ? 'ring-2 ring-blue-500 ring-offset-1 shadow-md z-20' : ''} ${
+        hasConflict ? 'ring-2 ring-red-400 border-red-300' : ''
+      }`}
       style={{
         left: `${leftPercent}%`,
         transform: isMorning ? 'translate(-100%, -50%)' : 'translate(0, -50%)',
-        minWidth: '104px',
+        minWidth: isMorning ? (isCheong ? '58px' : '78px') : '104px',
+        width: isMorning ? `${travelWidthPercent}%` : undefined,
         backgroundColor: pastelStyle.backgroundColor,
         borderColor: pastelStyle.borderColor,
       }}
-      title={`${student.name} (${school.shortName}): ${isMorning ? '도착' : '출발'} ${formatMinute(displayMinute)} / 5분 단위 드래그 조정 가능${conflictMessage ? ` - [충돌: ${conflictMessage}]` : ''}`}
+      title={`${student.name} (${school.shortName}): ${isMorning ? '도착' : '출발'} ${formatMinute(displayMinute)} (단지 소요: ${travelMinutes}분) / 5분 단위 드래그 조정 가능${conflictMessage ? ` - [충돌: ${conflictMessage}]` : ''}`}
     >
       {/* 플로팅 실시간 시간 툴팁 (드래그 중) */}
       {isDragging && (
@@ -188,25 +197,36 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
         </div>
       )}
 
-      {/* 내부 콘텐츠 (등교: 학교명 | 도착시간, 하교: 출발시간 | 학교명 - text-sm font-black) */}
+      {/* 내부 콘텐츠 (등교: 학교명 | 도착시간 + 미니 타겟링, 하교: 출발시간 | 학교명) */}
       {isMorning ? (
         <>
-          {/* 학교 라벨 */}
-          <span className="text-xs font-black text-white leading-none shrink-0 tracking-wide">
-            {school.shortName}
+          {/* 학교 라벨 (저청초는 '저청'으로 콤팩트 표기) */}
+          <span className="text-[11.5px] font-black text-white leading-none shrink-0 tracking-tight">
+            {isCheong ? '저청' : school.shortName}
           </span>
 
           {/* 미니 구분선 */}
-          <span className="w-px h-3.5 bg-white/35 shrink-0" />
+          <span className="w-px h-3 bg-white/35 shrink-0" />
 
-          {/* 학교 도착 시간 (오른쪽 가이드라인에 맞닿는 배치, text-sm font-black) */}
-          <span className="text-sm font-black text-white font-mono tracking-tight shrink-0">
+          {/* 학교 도착 시간 (오른쪽 가이드라인에 맞닿는 배치) */}
+          <span className="text-xs sm:text-[13px] font-black text-white font-mono tracking-tight shrink-0 drop-shadow-xs">
             {formatMinute(displayMinute)}
           </span>
+
+          {/* [아이디어 4] 미니 타겟 링 (정밀 학교 도착 목표점 인디케이터) */}
+          <div
+            className="relative flex items-center justify-center w-3 h-3 shrink-0 ml-0.5"
+            title={`학교 도착 목표 시각: ${formatMinute(displayMinute)}`}
+          >
+            <span className="absolute inset-0 rounded-full border border-white/70 animate-ping opacity-40" />
+            <span className="w-3 h-3 rounded-full border-[1.5px] border-white flex items-center justify-center bg-white/20 shadow-xs">
+              <span className="w-1 h-1 rounded-full bg-white shadow-xs" />
+            </span>
+          </div>
         </>
       ) : (
         <>
-          {/* 출발 시간 (text-sm font-black) */}
+          {/* 하교: 출발 시간 */}
           <span className="text-sm font-black text-white font-mono tracking-tight shrink-0">
             {formatMinute(displayMinute)}
           </span>
@@ -239,13 +259,15 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
       {/* 충돌 표시 닷 */}
       {hasConflict && (
         <span
-          className="w-2 h-2 rounded-full bg-red-400 ring-1.5 ring-white animate-pulse ml-auto shrink-0 shadow-xs"
+          className="w-2 h-2 rounded-full bg-red-400 ring-1.5 ring-white animate-pulse ml-0.5 shrink-0 shadow-xs"
           title={conflictMessage}
         />
       )}
 
-      {/* 우측 그립 아이콘 (화이트) */}
-      <GripVertical className="w-3.5 h-3.5 text-white/70 group-hover:text-white transition ml-auto shrink-0" />
+      {/* 우측 그립 아이콘 (하교 시 또는 여유 있을 때) */}
+      {!isMorning && (
+        <GripVertical className="w-3.5 h-3.5 text-white/70 group-hover:text-white transition ml-auto shrink-0" />
+      )}
     </div>
   );
 };
