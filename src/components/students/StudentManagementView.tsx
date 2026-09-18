@@ -122,46 +122,41 @@ export const StudentManagementView: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-5 select-none animate-fadeIn max-w-5xl w-full">
-      {/* 1. 상단 타이틀 배너 */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20 shrink-0">
-            <Users className="w-6 h-6" />
+    <div className="flex flex-col gap-3 select-none animate-fadeIn max-w-5xl w-full">
+      {/* 1. 상단 타이틀 배너 (높이 축소 및 회색 보조설명 삭제로 테이블 접근성 극대화) */}
+      <div className="bg-white rounded-xl border border-slate-200 py-2.5 px-4 shadow-xs flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs shrink-0">
+            <Users className="w-5 h-5" />
           </div>
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-slate-900 tracking-tight">학생 관리</h2>
-              <span className="text-xs sm:text-sm px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold border border-blue-200">
-                총 {students.length}명 등록
-              </span>
-            </div>
-            <p className="text-sm text-slate-500 mt-0.5">
-              학생별 학교, 동호수, 비상연락망 및 요일별 등·하교 희망 일정을 관리합니다.
-            </p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-slate-900 tracking-tight">학생 관리</h2>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold border border-blue-200">
+              총 {students.length}명 등록
+            </span>
           </div>
         </div>
 
         <button
           onClick={openStudentModal}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 shadow-sm transition cursor-pointer"
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-blue-600 text-white text-xs sm:text-sm font-bold hover:bg-blue-700 shadow-2xs transition cursor-pointer"
         >
           <UserPlus className="w-4 h-4" />
           <span>새 학생 추가</span>
         </button>
       </div>
 
-      {/* 학교별 학생 분포 칩 (가독성을 위해 폰트 2pt 확대) */}
-      <div className="flex items-center gap-2.5 flex-wrap">
+      {/* 학교별 학생 분포 칩 */}
+      <div className="flex items-center gap-2 flex-wrap">
         {schools.map((sc) => {
           const count = students.filter((s) => s.schoolId === sc.id).length;
           return (
             <div
               key={sc.id}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-sm font-black ${sc.badgeBg} shadow-2xs`}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs sm:text-sm font-black ${sc.badgeBg} shadow-2xs`}
             >
               <span>{sc.shortName}</span>
-              <span className="font-extrabold text-sm opacity-90">
+              <span className="font-extrabold opacity-90">
                 {count}명
               </span>
             </div>
@@ -169,18 +164,15 @@ export const StudentManagementView: React.FC = () => {
         })}
       </div>
 
-      {/* 2. 등록 학생 명단 테이블 (행 클릭 시 상세 편집 연동 - [편집] 버튼 불필요하여 제거 & 폰트 2pt 확대) */}
+      {/* 2. 등록 학생 명단 테이블 */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden w-full">
-        <div className="px-5 py-3 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
+        <div className="px-5 py-2.5 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <h3 className="text-base font-bold text-slate-900">등록 학생 명단</h3>
             <span className="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold border border-blue-200">
               열 제목 클릭 시 즉시 정렬
             </span>
           </div>
-          <span className="text-sm text-slate-600 font-medium">
-            * 학생 행 클릭 시 상세 일정 편집
-          </span>
         </div>
 
         <div className="overflow-x-auto">
