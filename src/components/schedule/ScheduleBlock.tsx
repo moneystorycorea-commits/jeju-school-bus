@@ -156,7 +156,10 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
         };
       case '저청초':
       case '저청초교':
+      case '저청중':
+      case '저청중학교':
       case 'CHEONG':
+      case 'CHEONG_MID':
         return {
           backgroundColor: '#0f766e', // Rich Ocean Teal
           borderColor: '#115e59',

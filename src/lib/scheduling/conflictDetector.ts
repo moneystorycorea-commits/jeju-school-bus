@@ -62,13 +62,11 @@ export function detectAllConflicts(params: {
   });
 
   // 2. ROUTE_INFEASIBLE 검사 (동일 차량 노선 내 학교 간 물리적 이동시간 부족 검사)
-  // 서로 다른 차량(1호차 vs 2호차)은 물리적으로 분리되어 있으므로 상호 간섭하지 않음
-  // 1호차: NLCS -> BHA -> KIS -> SJA
-  // 2호차: 저청초 (CHEONG)
-  const v1Schools = new Set(['NLCS', 'BHA', 'KIS', 'SJA']);
-  const v2Schools = new Set(['CHEONG']);
+  // 1호차 전담: NLCS, 저청초, 저청중 (1회차 NLCS, 2회차 저청 별도 운행)
+  // 2호차 전담: BHA -> SJA -> KIS (동일 운행 순환 경유)
+  const v2Schools = new Set(['BHA', 'SJA', 'KIS']);
 
-  const checkGroupInfeasible = (groupSchedules: StudentSchedule[]) => {
+  const checkV2GroupInfeasible = (groupSchedules: StudentSchedule[]) => {
     // 학교별 대표 최소/최대 배정시간 산출
     const schoolTimes: Record<string, { minTime: number; maxTime: number; studentIds: string[] }> = {};
     groupSchedules.forEach((s) => {
@@ -80,17 +78,17 @@ export function detectAllConflicts(params: {
       schoolTimes[s.schoolId].studentIds.push(s.studentId);
     });
 
-    const schoolOrder = ['NLCS', 'BHA', 'KIS', 'SJA'];
+    const schoolOrder = ['BHA', 'SJA', 'KIS'];
     for (let i = 0; i < schoolOrder.length - 1; i++) {
       const schA = schoolOrder[i];
       const schB = schoolOrder[i + 1];
       if (schoolTimes[schA] && schoolTimes[schB]) {
-        const s1LocId = schA === 'NLCS' ? 'NLCS_MAIN' : schA === 'BHA' ? 'BHA_GATE1' : 'KIS_MAIN';
-        const s2LocId = schB === 'BHA' ? 'BHA_GATE1' : schB === 'KIS' ? 'KIS_MAIN' : 'SJA_GATE3';
+        const s1LocId = schA === 'BHA' ? 'BHA_GATE1' : 'SJA_GATE3';
+        const s2LocId = schB === 'SJA' ? 'SJA_GATE3' : 'KIS_MAIN';
 
         const segment = segments.find((s) => s.originLocationId === s1LocId && s.destinationLocationId === s2LocId);
         const minTravel = segment ? segment.travelMinutes + (segment.bufferMinutes || 0) : 4;
-        const minRequiredTotal = minTravel + 1; // 이동 + 정차 1분 (예: NLCS->BHA = 4+1 = 5분)
+        const minRequiredTotal = minTravel + 1; // 이동 + 정차 1분 (예: BHA->SJA = 4+1 = 5분)
 
         // 다음 학교의 배정시간이 이전 학교 배정시간 + 최소소요시간보다 이르면 충돌
         const actualDiff = schoolTimes[schB].minTime - schoolTimes[schA].maxTime;
@@ -112,10 +110,9 @@ export function detectAllConflicts(params: {
     }
   };
 
-  // 1호차 그룹 및 2호차 그룹 분리 검사
+  // 2호차 그룹 순환 경유 검사
   const morningSchedules = schedules.filter((s) => s.type === 'MORNING');
-  checkGroupInfeasible(morningSchedules.filter((s) => v1Schools.has(s.schoolId)));
-  checkGroupInfeasible(morningSchedules.filter((s) => v2Schools.has(s.schoolId)));
+  checkV2GroupInfeasible(morningSchedules.filter((s) => v2Schools.has(s.schoolId)));
 
   // 3. NEXT_TRIP_CONFLICT 및 VEHICLE_OVERLAP 검사
   // 동일 차량의 연속된 Trip 간 시간 충돌 검사

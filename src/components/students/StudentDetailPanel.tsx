@@ -108,7 +108,7 @@ export const StudentDetailPanel: React.FC = () => {
 
           <span className="text-slate-500 font-medium flex items-center gap-1.5 whitespace-nowrap">
             <Phone className="w-4 h-4 text-slate-400 shrink-0" />
-            비상연락망
+            보호자 연락처
           </span>
           <div className="flex items-center gap-2">
             <span className="font-mono font-bold text-red-600 tracking-wider">
@@ -124,6 +124,20 @@ export const StudentDetailPanel: React.FC = () => {
               </button>
             )}
           </div>
+
+          {privateInfo?.studentPhone && (
+            <>
+              <span className="text-slate-500 font-medium flex items-center gap-1.5 whitespace-nowrap">
+                <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+                학생 연락처
+              </span>
+              <span className="font-mono font-semibold text-slate-800 tracking-wider">
+                {currentRole === 'admin' && showFullPhone
+                  ? privateInfo.studentPhone
+                  : '***-****-' + privateInfo.studentPhone.slice(-4)}
+              </span>
+            </>
+          )}
 
           {student.notes && (
             <>

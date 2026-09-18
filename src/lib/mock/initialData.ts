@@ -12,6 +12,26 @@ import {
 
 export const INITIAL_SCHOOLS: School[] = [
   {
+    id: 'CHEONG',
+    name: '저청초등학교',
+    shortName: '저청초',
+    color: '#0e7490',
+    badgeBg: 'bg-teal-50 text-teal-950 border-teal-300 font-extrabold',
+    badgeText: 'text-teal-900',
+    defaultLocationId: 'CHEONG_MAIN',
+    defaultDwellMinutes: 1,
+  },
+  {
+    id: 'CHEONG_MID',
+    name: '저청중학교',
+    shortName: '저청중',
+    color: '#0369a1',
+    badgeBg: 'bg-cyan-50 text-cyan-950 border-cyan-300 font-extrabold',
+    badgeText: 'text-cyan-900',
+    defaultLocationId: 'CHEONG_MAIN',
+    defaultDwellMinutes: 1,
+  },
+  {
     id: 'NLCS',
     name: 'North London Collegiate School Jeju',
     shortName: 'NLCS',
@@ -49,16 +69,6 @@ export const INITIAL_SCHOOLS: School[] = [
     badgeBg: 'bg-emerald-50 text-emerald-950 border-emerald-400 font-extrabold',
     badgeText: 'text-emerald-900',
     defaultLocationId: 'SJA_GATE3',
-    defaultDwellMinutes: 1,
-  },
-  {
-    id: 'CHEONG',
-    name: '저청초등학교',
-    shortName: '저청초',
-    color: '#0e7490',
-    badgeBg: 'bg-teal-50 text-teal-950 border-teal-300 font-extrabold',
-    badgeText: 'text-teal-900',
-    defaultLocationId: 'CHEONG_MAIN',
     defaultDwellMinutes: 1,
   },
 ];
@@ -115,27 +125,24 @@ export const INITIAL_LOCATIONS: Location[] = [
 ];
 
 export const INITIAL_ROUTE_SEGMENTS: RouteSegment[] = [
-  // 등교 및 기본 경로
+  // 1호차: 단지 <-> NLCS (10분), 단지 <-> 저청 (5분)
   { id: 'rs-comp-nlcs', originLocationId: 'COMPLEX_MAIN', destinationLocationId: 'NLCS_MAIN', travelMinutes: 10, bufferMinutes: 0, profile: 'normal' },
-  { id: 'rs-nlcs-bha', originLocationId: 'NLCS_MAIN', destinationLocationId: 'BHA_GATE1', travelMinutes: 4, bufferMinutes: 0, profile: 'normal' },
-  { id: 'rs-bha-kis', originLocationId: 'BHA_GATE1', destinationLocationId: 'KIS_MAIN', travelMinutes: 4, bufferMinutes: 0, profile: 'normal' },
-  { id: 'rs-kis-sja', originLocationId: 'KIS_MAIN', destinationLocationId: 'SJA_GATE3', travelMinutes: 3, bufferMinutes: 0, profile: 'normal' },
-  { id: 'rs-sja-comp', originLocationId: 'SJA_GATE3', destinationLocationId: 'COMPLEX_MAIN', travelMinutes: 15, bufferMinutes: 0, profile: 'normal' },
-  { id: 'rs-kis-comp', originLocationId: 'KIS_MAIN', destinationLocationId: 'COMPLEX_MAIN', travelMinutes: 14, bufferMinutes: 0, profile: 'normal' },
-  
-  // 저청
+  { id: 'rs-nlcs-comp', originLocationId: 'NLCS_MAIN', destinationLocationId: 'COMPLEX_MAIN', travelMinutes: 10, bufferMinutes: 0, profile: 'normal' },
   { id: 'rs-comp-cheong', originLocationId: 'COMPLEX_MAIN', destinationLocationId: 'CHEONG_MAIN', travelMinutes: 5, bufferMinutes: 0, profile: 'normal' },
   { id: 'rs-cheong-comp', originLocationId: 'CHEONG_MAIN', destinationLocationId: 'COMPLEX_MAIN', travelMinutes: 5, bufferMinutes: 0, profile: 'normal' },
-  
-  // 건너뛰기 대체 경로
-  { id: 'rs-bha-sja', originLocationId: 'BHA_GATE1', destinationLocationId: 'SJA_GATE3', travelMinutes: 6, bufferMinutes: 0, profile: 'normal' },
-  { id: 'rs-nlcs-kis', originLocationId: 'NLCS_MAIN', destinationLocationId: 'KIS_MAIN', travelMinutes: 7, bufferMinutes: 0, profile: 'normal' },
-  { id: 'rs-nlcs-sja', originLocationId: 'NLCS_MAIN', destinationLocationId: 'SJA_GATE3', travelMinutes: 9, bufferMinutes: 0, profile: 'normal' },
 
-  // 하교 경로 (역방향)
+  // 2호차: 단지 -> BHA (10분) -> SJA (4분) -> KIS (4분) -> 단지 (15분)
   { id: 'rs-comp-bha', originLocationId: 'COMPLEX_MAIN', destinationLocationId: 'BHA_GATE1', travelMinutes: 10, bufferMinutes: 0, profile: 'normal' },
-  { id: 'rs-bha-nlcs', originLocationId: 'BHA_GATE1', destinationLocationId: 'NLCS_MAIN', travelMinutes: 4, bufferMinutes: 0, profile: 'normal' },
-  { id: 'rs-nlcs-comp', originLocationId: 'NLCS_MAIN', destinationLocationId: 'COMPLEX_MAIN', travelMinutes: 10, bufferMinutes: 0, profile: 'normal' },
+  { id: 'rs-bha-sja', originLocationId: 'BHA_GATE1', destinationLocationId: 'SJA_GATE3', travelMinutes: 4, bufferMinutes: 0, profile: 'normal' },
+  { id: 'rs-sja-kis', originLocationId: 'SJA_GATE3', destinationLocationId: 'KIS_MAIN', travelMinutes: 4, bufferMinutes: 0, profile: 'normal' },
+  { id: 'rs-kis-comp', originLocationId: 'KIS_MAIN', destinationLocationId: 'COMPLEX_MAIN', travelMinutes: 15, bufferMinutes: 0, profile: 'normal' },
+  
+  // 대체 및 복귀/연결 경로
+  { id: 'rs-bha-comp', originLocationId: 'BHA_GATE1', destinationLocationId: 'COMPLEX_MAIN', travelMinutes: 10, bufferMinutes: 0, profile: 'normal' },
+  { id: 'rs-sja-comp', originLocationId: 'SJA_GATE3', destinationLocationId: 'COMPLEX_MAIN', travelMinutes: 15, bufferMinutes: 0, profile: 'normal' },
+  { id: 'rs-bha-kis', originLocationId: 'BHA_GATE1', destinationLocationId: 'KIS_MAIN', travelMinutes: 6, bufferMinutes: 0, profile: 'normal' },
+  { id: 'rs-comp-sja', originLocationId: 'COMPLEX_MAIN', destinationLocationId: 'SJA_GATE3', travelMinutes: 10, bufferMinutes: 0, profile: 'normal' },
+  { id: 'rs-comp-kis', originLocationId: 'COMPLEX_MAIN', destinationLocationId: 'KIS_MAIN', travelMinutes: 10, bufferMinutes: 0, profile: 'normal' },
 ];
 
 export const INITIAL_VEHICLES: Vehicle[] = [
@@ -151,7 +158,7 @@ export const INITIAL_STUDENTS: Student[] = [
     building: '115동',
     unit: '202호',
     schoolId: 'BHA',
-    grade: '10학년',
+    grade: 'G10',
     gender: '여',
     sortOrder: 1,
     active: true,
@@ -170,7 +177,7 @@ export const INITIAL_STUDENTS: Student[] = [
     building: '108동',
     unit: '101호',
     schoolId: 'BHA',
-    grade: '9학년',
+    grade: 'G9',
     gender: '여',
     sortOrder: 2,
     active: true,
@@ -188,7 +195,7 @@ export const INITIAL_STUDENTS: Student[] = [
     building: '108동',
     unit: '101호',
     schoolId: 'BHA',
-    grade: '9학년',
+    grade: 'G9',
     gender: '여',
     sortOrder: 3,
     active: true,
@@ -206,7 +213,7 @@ export const INITIAL_STUDENTS: Student[] = [
     building: '101동',
     unit: '402호',
     schoolId: 'BHA',
-    grade: '7학년',
+    grade: 'G7',
     gender: '여',
     sortOrder: 4,
     active: true,
@@ -225,7 +232,7 @@ export const INITIAL_STUDENTS: Student[] = [
     building: '117동',
     unit: '404호',
     schoolId: 'BHA',
-    grade: '7학년',
+    grade: 'G7',
     gender: '여',
     sortOrder: 5,
     active: true,
@@ -464,21 +471,20 @@ export const INITIAL_STUDENT_PRIVATE_INFO: Record<string, StudentPrivateInfo> = 
   s16: { studentId: 's16', studentPhone: '010-6777-1001', emergencyContact: '010-8644-1001', guardianName: '박현정', guardianContact: '010-8644-1001' },
 };
 
-// 1호차 / 2호차 공식 운행 템플릿
+// 1호차 / 2호차 공식 운행 템플릿 (잠정 시간표 반영)
+// 1호차 전담: NLCS, 저청초, 저청중
+// 2호차 전담: BHA, SJA, KIS
 export const INITIAL_TRIP_TEMPLATES: TripTemplate[] = [
-  // [등교]
+  // [등교 - 1호차: NLCS & 저청]
   {
     id: 't-m-1',
     vehicleId: 'v1',
     type: 'MORNING',
-    weekdays: [1, 2, 4], // 월, 화, 목
-    defaultDepartureMinute: 450, // 07:30
-    referenceReturnMinute: 490,  // 08:10
+    weekdays: [1, 2, 3, 4, 5], // 월~금
+    defaultDepartureMinute: 460, // 07:40
+    referenceReturnMinute: 480,  // 08:00
     stops: [
-      { locationId: 'NLCS_MAIN', stopOrder: 1, dwellMinutesOverride: 1 },
-      { locationId: 'BHA_GATE1', stopOrder: 2, dwellMinutesOverride: 1 },
-      { locationId: 'KIS_MAIN', stopOrder: 3, dwellMinutesOverride: 1 },
-      { locationId: 'SJA_GATE3', stopOrder: 4, dwellMinutesOverride: 1 },
+      { locationId: 'NLCS_MAIN', stopOrder: 1, dwellMinutesOverride: 1 }, // 07:50 도착
     ],
     effectiveFrom: '2024-03-01',
   },
@@ -486,27 +492,27 @@ export const INITIAL_TRIP_TEMPLATES: TripTemplate[] = [
     id: 't-m-2',
     vehicleId: 'v1',
     type: 'MORNING',
-    weekdays: [3], // 수
-    defaultDepartureMinute: 450, // 07:30
-    referenceReturnMinute: 485,  // 08:05
+    weekdays: [1, 2, 3, 4, 5], // 월~금
+    defaultDepartureMinute: 500, // 08:20
+    referenceReturnMinute: 510,  // 08:30
     stops: [
-      { locationId: 'NLCS_MAIN', stopOrder: 1, dwellMinutesOverride: 1 },
-      { locationId: 'BHA_GATE1', stopOrder: 2, dwellMinutesOverride: 1 },
-      { locationId: 'KIS_MAIN', stopOrder: 3, dwellMinutesOverride: 1 },
+      { locationId: 'CHEONG_MAIN', stopOrder: 1, dwellMinutesOverride: 1 }, // 08:25 도착
     ],
     effectiveFrom: '2024-03-01',
   },
+
+  // [등교 - 2호차: BHA, SJA, KIS]
   {
     id: 't-m-3',
-    vehicleId: 'v1',
+    vehicleId: 'v2',
     type: 'MORNING',
-    weekdays: [5], // 금
-    defaultDepartureMinute: 450, // 07:30
-    referenceReturnMinute: 485,  // 08:05
+    weekdays: [1, 2, 3, 4, 5], // 월~금
+    defaultDepartureMinute: 460, // 07:40
+    referenceReturnMinute: 495,  // 08:15 (KIS 08:00 + 15분 복귀)
     stops: [
-      { locationId: 'NLCS_MAIN', stopOrder: 1, dwellMinutesOverride: 1 },
-      { locationId: 'BHA_GATE1', stopOrder: 2, dwellMinutesOverride: 1 },
-      { locationId: 'SJA_GATE3', stopOrder: 3, dwellMinutesOverride: 1 },
+      { locationId: 'BHA_GATE1', stopOrder: 1, dwellMinutesOverride: 1 }, // 07:50 도착
+      { locationId: 'SJA_GATE3', stopOrder: 2, dwellMinutesOverride: 1 }, // 07:55 도착
+      { locationId: 'KIS_MAIN', stopOrder: 3, dwellMinutesOverride: 1 },  // 08:00 도착
     ],
     effectiveFrom: '2024-03-01',
   },
@@ -514,11 +520,11 @@ export const INITIAL_TRIP_TEMPLATES: TripTemplate[] = [
     id: 't-m-4',
     vehicleId: 'v2',
     type: 'MORNING',
-    weekdays: [1, 2, 3, 4, 5], // 월~금
-    defaultDepartureMinute: 500, // 08:20
-    referenceReturnMinute: 510,  // 08:30
+    weekdays: [3], // 수요일
+    defaultDepartureMinute: 520, // 08:40
+    referenceReturnMinute: 540,  // 09:00
     stops: [
-      { locationId: 'CHEONG_MAIN', stopOrder: 1, dwellMinutesOverride: 1 },
+      { locationId: 'BHA_GATE1', stopOrder: 1, dwellMinutesOverride: 1 }, // 08:50 도착
     ],
     effectiveFrom: '2024-03-01',
   },
@@ -526,11 +532,11 @@ export const INITIAL_TRIP_TEMPLATES: TripTemplate[] = [
     id: 't-m-5',
     vehicleId: 'v2',
     type: 'MORNING',
-    weekdays: [3], // 수
+    weekdays: [5], // 금요일
     defaultDepartureMinute: 520, // 08:40
     referenceReturnMinute: 540,  // 09:00
     stops: [
-      { locationId: 'BHA_GATE1', stopOrder: 1, dwellMinutesOverride: 1 },
+      { locationId: 'KIS_MAIN', stopOrder: 1, dwellMinutesOverride: 1 }, // 08:50 도착
     ],
     effectiveFrom: '2024-03-01',
   },
@@ -538,37 +544,25 @@ export const INITIAL_TRIP_TEMPLATES: TripTemplate[] = [
     id: 't-m-6',
     vehicleId: 'v2',
     type: 'MORNING',
-    weekdays: [5], // 금
-    defaultDepartureMinute: 520, // 08:40
-    referenceReturnMinute: 540,  // 09:00
+    weekdays: [3], // 수요일
+    defaultDepartureMinute: 590, // 09:50
+    referenceReturnMinute: 610,  // 10:10
     stops: [
-      { locationId: 'KIS_MAIN', stopOrder: 1, dwellMinutesOverride: 1 },
-    ],
-    effectiveFrom: '2024-03-01',
-  },
-  {
-    id: 't-m-7',
-    vehicleId: 'v2',
-    type: 'MORNING',
-    weekdays: [3], // 수
-    defaultDepartureMinute: 580, // 09:40
-    referenceReturnMinute: 600,  // 10:00
-    stops: [
-      { locationId: 'SJA_GATE3', stopOrder: 1, dwellMinutesOverride: 1 },
+      { locationId: 'SJA_GATE3', stopOrder: 1, dwellMinutesOverride: 1 }, // 10:00 도착
     ],
     effectiveFrom: '2024-03-01',
   },
 
-  // [하교 - 월/화/목]
+  // [하교 - 1호차: 저청 & NLCS]
   {
     id: 't-a-1',
     vehicleId: 'v1',
     type: 'AFTERNOON',
-    weekdays: [1, 2, 4],
+    weekdays: [1, 2, 3, 4, 5], // 월~금
     defaultDepartureMinute: 825, // 13:45
-    referenceReturnMinute: 840,  // 14:00
+    referenceReturnMinute: 835,  // 13:55
     stops: [
-      { locationId: 'CHEONG_MAIN', stopOrder: 1, dwellMinutesOverride: 1 },
+      { locationId: 'CHEONG_MAIN', stopOrder: 1, dwellMinutesOverride: 1 }, // 13:50 픽업
     ],
     effectiveFrom: '2024-03-01',
   },
@@ -576,76 +570,73 @@ export const INITIAL_TRIP_TEMPLATES: TripTemplate[] = [
     id: 't-a-2',
     vehicleId: 'v1',
     type: 'AFTERNOON',
-    weekdays: [1, 2, 4],
+    weekdays: [1, 2, 3, 4, 5], // 월~금
     defaultDepartureMinute: 920, // 15:20
     referenceReturnMinute: 940,  // 15:40
     stops: [
-      { locationId: 'NLCS_MAIN', stopOrder: 1, dwellMinutesOverride: 1 },
+      { locationId: 'NLCS_MAIN', stopOrder: 1, dwellMinutesOverride: 1 }, // 15:30 픽업
     ],
     effectiveFrom: '2024-03-01',
   },
   {
     id: 't-a-3',
-    vehicleId: 'v2',
+    vehicleId: 'v1',
     type: 'AFTERNOON',
-    weekdays: [1, 2, 4],
-    defaultDepartureMinute: 975, // 16:15
-    referenceReturnMinute: 985,  // 16:25 (의도적 시간 역전 보존)
+    weekdays: [1, 2, 3, 4, 5], // 월~금
+    defaultDepartureMinute: 980, // 16:20
+    referenceReturnMinute: 1000, // 16:40
     stops: [
-      { locationId: 'BHA_GATE1', stopOrder: 1, dwellMinutesOverride: 1 },
-      { locationId: 'NLCS_MAIN', stopOrder: 2, dwellMinutesOverride: 1 },
+      { locationId: 'NLCS_MAIN', stopOrder: 1, dwellMinutesOverride: 1 }, // 16:30 픽업
     ],
     effectiveFrom: '2024-03-01',
   },
   {
     id: 't-a-4',
-    vehicleId: 'v2',
+    vehicleId: 'v1',
     type: 'AFTERNOON',
-    weekdays: [1, 2, 4],
-    defaultDepartureMinute: 1035, // 17:15
+    weekdays: [1, 2, 3, 4, 5], // 월~금
+    defaultDepartureMinute: 1040, // 17:20
     referenceReturnMinute: 1060,  // 17:40
     stops: [
-      { locationId: 'NLCS_MAIN', stopOrder: 1, dwellMinutesOverride: 1 },
-      { locationId: 'BHA_GATE1', stopOrder: 2, dwellMinutesOverride: 1 },
+      { locationId: 'NLCS_MAIN', stopOrder: 1, dwellMinutesOverride: 1 }, // 17:30 픽업
     ],
     effectiveFrom: '2024-03-01',
   },
 
-  // [하교 - 수/금]
+  // [하교 - 2호차: BHA & 저청(금)]
   {
     id: 't-a-5',
-    vehicleId: 'v1',
+    vehicleId: 'v2',
     type: 'AFTERNOON',
-    weekdays: [3], // 수
-    defaultDepartureMinute: 825, // 13:45
-    referenceReturnMinute: 840,  // 14:00
+    weekdays: [5], // 금
+    defaultDepartureMinute: 910, // 15:10
+    referenceReturnMinute: 920,  // 15:20
     stops: [
-      { locationId: 'CHEONG_MAIN', stopOrder: 1, dwellMinutesOverride: 1 },
+      { locationId: 'CHEONG_MAIN', stopOrder: 1, dwellMinutesOverride: 1 }, // 15:15 픽업
     ],
     effectiveFrom: '2024-03-01',
   },
   {
     id: 't-a-6',
-    vehicleId: 'v1',
+    vehicleId: 'v2',
     type: 'AFTERNOON',
-    weekdays: [5], // 금
-    defaultDepartureMinute: 915, // 15:15
-    referenceReturnMinute: 925,  // 15:25
+    weekdays: [3, 5], // 수, 금
+    defaultDepartureMinute: 920, // 15:20
+    referenceReturnMinute: 940,  // 15:40
     stops: [
-      { locationId: 'CHEONG_MAIN', stopOrder: 1, dwellMinutesOverride: 1 },
+      { locationId: 'BHA_GATE1', stopOrder: 1, dwellMinutesOverride: 1 }, // 15:30 픽업
     ],
     effectiveFrom: '2024-03-01',
   },
   {
     id: 't-a-7',
-    vehicleId: 'v1',
+    vehicleId: 'v2',
     type: 'AFTERNOON',
-    weekdays: [3, 5], // 수, 금
-    defaultDepartureMinute: 915, // 15:15
-    referenceReturnMinute: 945,  // 15:45
+    weekdays: [1, 4], // 월, 목
+    defaultDepartureMinute: 950, // 15:50
+    referenceReturnMinute: 970,  // 16:10
     stops: [
-      { locationId: 'BHA_GATE1', stopOrder: 1, dwellMinutesOverride: 1 },
-      { locationId: 'NLCS_MAIN', stopOrder: 2, dwellMinutesOverride: 1 },
+      { locationId: 'BHA_GATE1', stopOrder: 1, dwellMinutesOverride: 1 }, // 16:00 픽업
     ],
     effectiveFrom: '2024-03-01',
   },
@@ -653,11 +644,11 @@ export const INITIAL_TRIP_TEMPLATES: TripTemplate[] = [
     id: 't-a-8',
     vehicleId: 'v2',
     type: 'AFTERNOON',
-    weekdays: [3, 5], // 수, 금
+    weekdays: [2], // 화
     defaultDepartureMinute: 980, // 16:20
     referenceReturnMinute: 1000, // 16:40
     stops: [
-      { locationId: 'NLCS_MAIN', stopOrder: 1, dwellMinutesOverride: 1 },
+      { locationId: 'BHA_GATE1', stopOrder: 1, dwellMinutesOverride: 1 }, // 16:30 픽업
     ],
     effectiveFrom: '2024-03-01',
   },
@@ -665,12 +656,23 @@ export const INITIAL_TRIP_TEMPLATES: TripTemplate[] = [
     id: 't-a-9',
     vehicleId: 'v2',
     type: 'AFTERNOON',
-    weekdays: [3, 5], // 수, 금
-    defaultDepartureMinute: 1035, // 17:15
+    weekdays: [2, 3, 5], // 화, 수, 금
+    defaultDepartureMinute: 1010, // 16:50
+    referenceReturnMinute: 1030,  // 17:10
+    stops: [
+      { locationId: 'BHA_GATE1', stopOrder: 1, dwellMinutesOverride: 1 }, // 17:00 픽업
+    ],
+    effectiveFrom: '2024-03-01',
+  },
+  {
+    id: 't-a-10',
+    vehicleId: 'v2',
+    type: 'AFTERNOON',
+    weekdays: [1, 2, 3, 4, 5], // 월~금
+    defaultDepartureMinute: 1040, // 17:20
     referenceReturnMinute: 1060,  // 17:40
     stops: [
-      { locationId: 'NLCS_MAIN', stopOrder: 1, dwellMinutesOverride: 1 },
-      { locationId: 'BHA_GATE1', stopOrder: 2, dwellMinutesOverride: 1 },
+      { locationId: 'BHA_GATE1', stopOrder: 1, dwellMinutesOverride: 1 }, // 17:30 픽업
     ],
     effectiveFrom: '2024-03-01',
   },
@@ -693,13 +695,14 @@ export function generateStudentSchedulesForDate(
 
     if (ws.morningActive) {
       let assignedMinute = ws.morningMinute;
-      // 1호차 기본 등교(07:30 단지 출발) 및 2호차(08:20 단지 출발) 차량 도착시간 자동 연동
-      if (ws.morningMinute <= 490) { // 08:10 이하 정규 등교
-        if (st.schoolId === 'NLCS') assignedMinute = 460; // 07:40
-        else if (st.schoolId === 'BHA') assignedMinute = 465; // 07:45
-        else if (st.schoolId === 'KIS') assignedMinute = 470; // 07:50
-        else if (st.schoolId === 'SJA') assignedMinute = 474; // 07:54
-        else if (st.schoolId === 'CHEONG') assignedMinute = 505; // 08:25 (2호차)
+      // 1호차: NLCS (07:40 단지출발 -> 07:50 도착), 저청 (08:20 단지출발 -> 08:25 도착)
+      // 2호차: 단지 07:40 출발 -> BHA 07:50, SJA 07:55, KIS 08:00 도착
+      if (ws.morningMinute <= 510) { // 정규 등교
+        if (st.schoolId === 'NLCS') assignedMinute = 470; // 07:50 (1호차)
+        else if (st.schoolId === 'BHA') assignedMinute = 470; // 07:50 (2호차)
+        else if (st.schoolId === 'SJA') assignedMinute = 475; // 07:55 (2호차)
+        else if (st.schoolId === 'KIS') assignedMinute = 480; // 08:00 (2호차)
+        else if (st.schoolId === 'CHEONG' || st.schoolId === 'CHEONG_MID') assignedMinute = 505; // 08:25 (1호차)
       }
 
       result.push({
@@ -708,8 +711,8 @@ export function generateStudentSchedulesForDate(
         schoolId: st.schoolId,
         date: dateStr,
         type: 'MORNING',
-        requestedMinute: ws.morningMinute, // 학부모 희망 도착시간 (예: 07:50)
-        assignedMinute: assignedMinute,    // 실제 차량 배정 도착시간 (예: BHA 07:45, NLCS 07:40)
+        requestedMinute: ws.morningMinute, // 학부모 희망 도착시간 (예: 08:00)
+        assignedMinute: assignedMinute,    // 실제 차량 배정 도착시간 (예: BHA 07:50, NLCS 07:50)
         calculatedMinute: assignedMinute,
         dwellMinutes: 1,
         alternateMinutes: undefined,

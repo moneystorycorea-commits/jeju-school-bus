@@ -8,17 +8,36 @@ export const StudentFormModal: React.FC = () => {
   const { isStudentModalOpen, closeStudentModal, addStudent, schools } = useScheduleStore();
 
   const [name, setName] = useState('');
-  const [building, setBuilding] = useState('108동');
-  const [unit, setUnit] = useState('1202호');
-  const [schoolId, setSchoolId] = useState('NLCS');
-  const [grade, setGrade] = useState('중학교 1학년');
-  const [emergencyContact, setEmergencyContact] = useState('010-9988-7766');
+  const [building, setBuilding] = useState('');
+  const [unit, setUnit] = useState('');
+  const [schoolId, setSchoolId] = useState('CHEONG'); // 저청초 기본
+  const [grade, setGrade] = useState('1학년');
+  const [emergencyContact, setEmergencyContact] = useState('');
 
   const [gender, setGender] = useState<'여' | '남' | ''>('여');
   const [gate, setGate] = useState('');
   const [guardianName, setGuardianName] = useState('');
   const [studentPhone, setStudentPhone] = useState('');
   const [notes, setNotes] = useState('');
+
+  // 학교별 학년 선택 옵션: 저청중은 1~3학년, 저청초는 1~6학년, 다른 국제학교는 G1~12
+  const getGradeOptions = (sId: string) => {
+    if (sId === 'CHEONG_MID') {
+      return ['1학년', '2학년', '3학년'];
+    }
+    if (sId === 'CHEONG') {
+      return ['1학년', '2학년', '3학년', '4학년', '5학년', '6학년'];
+    }
+    return Array.from({ length: 12 }, (_, i) => `G${i + 1}`);
+  };
+
+  const handleSchoolChange = (newSchoolId: string) => {
+    setSchoolId(newSchoolId);
+    const validGrades = getGradeOptions(newSchoolId);
+    if (!validGrades.includes(grade)) {
+      setGrade(validGrades[0]);
+    }
+  };
 
   // 요일별 등/하교 희망시간 상태 (1:월, 2:화, 3:수, 4:목, 5:금)
   const weekdays = [
@@ -88,7 +107,50 @@ export const StudentFormModal: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      alert('학생 이름을 입력해 주세요.');
+      alert('학생 성명을 입력해 주세요.');
+      return;
+    }
+
+    // 동 입력값 검증 (101동 ~ 117동)
+    const trimmedBuilding = building.trim();
+    if (!trimmedBuilding) {
+      alert('동을 입력해 주세요. (101동~117동 사이)');
+      return;
+    }
+    const bMatch = trimmedBuilding.match(/^(\d{3})(동)?$/);
+    if (!bMatch) {
+      alert('동 형식이 올바르지 않습니다. (예: 108동)');
+      return;
+    }
+    const bNum = parseInt(bMatch[1], 10);
+    if (bNum < 101 || bNum > 117) {
+      alert(`입력하신 ${bNum}동은 단지 내 존재하지 않습니다. 동은 101동부터 117동까지만 입력 가능합니다.`);
+      return;
+    }
+    const finalBuilding = `${bNum}동`;
+
+    // 호수 입력값 검증 (4층까지, 최대 4개 호수 -> 101호~404호)
+    const trimmedUnit = unit.trim();
+    if (!trimmedUnit) {
+      alert('호수를 입력해 주세요. (101호~404호 사이)');
+      return;
+    }
+    const uMatch = trimmedUnit.match(/^(\d{3,4})(호)?$/);
+    if (!uMatch) {
+      alert('호수 형식이 올바르지 않습니다. (예: 301호)');
+      return;
+    }
+    const uNum = parseInt(uMatch[1], 10);
+    const floor = Math.floor(uNum / 100);
+    const room = uNum % 100;
+    if (floor < 1 || floor > 4 || room < 1 || room > 4) {
+      alert(`입력하신 ${uNum}호는 유효하지 않습니다. 단지는 4층 건물이며 층별 최대 4개 호수(101호~404호)까지만 존재하므로 404호가 최대값입니다.`);
+      return;
+    }
+    const finalUnit = `${uNum}호`;
+
+    if (!emergencyContact.trim()) {
+      alert('보호자 연락처를 입력해 주세요.');
       return;
     }
 
@@ -107,8 +169,8 @@ export const StudentFormModal: React.FC = () => {
 
     addStudent({
       name: name.trim(),
-      building: building.trim(),
-      unit: unit.trim(),
+      building: finalBuilding,
+      unit: finalUnit,
       schoolId,
       grade: grade.trim(),
       gender,
@@ -154,7 +216,7 @@ export const StudentFormModal: React.FC = () => {
                 placeholder="예: 김이담"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium"
+                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium placeholder:text-slate-400 placeholder:font-normal"
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -162,7 +224,7 @@ export const StudentFormModal: React.FC = () => {
               <select
                 value={gender}
                 onChange={(e) => setGender(e.target.value as '여' | '남' | '')}
-                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium bg-white"
+                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium bg-white cursor-pointer"
               >
                 <option value="여">여</option>
                 <option value="남">남</option>
@@ -176,20 +238,26 @@ export const StudentFormModal: React.FC = () => {
               <label className="font-bold text-slate-700">동 *</label>
               <input
                 type="text"
-                placeholder="108동"
+                list="building-list"
+                placeholder="예: 108동 (101~117동)"
                 value={building}
                 onChange={(e) => setBuilding(e.target.value)}
-                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium"
+                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium placeholder:text-slate-400 placeholder:font-normal"
               />
+              <datalist id="building-list">
+                {Array.from({ length: 17 }, (_, i) => (
+                  <option key={i} value={`${101 + i}동`} />
+                ))}
+              </datalist>
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="font-bold text-slate-700">호수 *</label>
               <input
                 type="text"
-                placeholder="1202호"
+                placeholder="예: 301호 (최대 404호)"
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
-                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium"
+                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium placeholder:text-slate-400 placeholder:font-normal"
               />
             </div>
           </div>
@@ -199,25 +267,29 @@ export const StudentFormModal: React.FC = () => {
               <label className="font-bold text-slate-700">학교 *</label>
               <select
                 value={schoolId}
-                onChange={(e) => setSchoolId(e.target.value)}
-                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium bg-white"
+                onChange={(e) => handleSchoolChange(e.target.value)}
+                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium bg-white cursor-pointer"
               >
                 {schools.map((sc) => (
                   <option key={sc.id} value={sc.id}>
-                    {sc.shortName} ({sc.name.split(' ')[0]})
+                    {sc.shortName}
                   </option>
                 ))}
               </select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="font-bold text-slate-700">학년</label>
-              <input
-                type="text"
-                placeholder="예: 10학년"
+              <label className="font-bold text-slate-700">학년 *</label>
+              <select
                 value={grade}
                 onChange={(e) => setGrade(e.target.value)}
-                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium"
-              />
+                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium bg-white cursor-pointer"
+              >
+                {getGradeOptions(schoolId).map((g) => (
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="font-bold text-slate-700">정차 게이트</label>
@@ -226,7 +298,7 @@ export const StudentFormModal: React.FC = () => {
                 placeholder="예: 주니어게이트"
                 value={gate}
                 onChange={(e) => setGate(e.target.value)}
-                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium"
+                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium placeholder:text-slate-400 placeholder:font-normal"
               />
             </div>
           </div>
@@ -239,27 +311,27 @@ export const StudentFormModal: React.FC = () => {
                 placeholder="예: 김문정"
                 value={guardianName}
                 onChange={(e) => setGuardianName(e.target.value)}
-                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium"
+                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium placeholder:text-slate-400 placeholder:font-normal"
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="font-bold text-slate-700">비상연락망 (보호자) *</label>
+              <label className="font-bold text-slate-700">보호자 연락처 *</label>
               <input
                 type="tel"
-                placeholder="010-1234-5678"
+                placeholder="예: 010-9988-7766"
                 value={emergencyContact}
                 onChange={(e) => setEmergencyContact(e.target.value)}
-                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium font-mono"
+                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium font-mono placeholder:text-slate-400 placeholder:font-normal"
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="font-bold text-slate-700">학생 본인 연락처</label>
+              <label className="font-bold text-slate-700">학생 연락처</label>
               <input
                 type="tel"
-                placeholder="010-4815-8415"
+                placeholder="예: 010-4815-8415"
                 value={studentPhone}
                 onChange={(e) => setStudentPhone(e.target.value)}
-                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium font-mono"
+                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium font-mono placeholder:text-slate-400 placeholder:font-normal"
               />
             </div>
           </div>

@@ -186,7 +186,7 @@ export const StudentManagementView: React.FC = () => {
                 {renderSortHeader('재학 학교', 'school', true, 'w-20')}
                 {renderSortHeader('학년', 'grade', true, 'w-16')}
                 {renderSortHeader('보호자', 'guardian', false, 'w-20')}
-                <th className="py-2.5 px-3 text-sm font-bold text-slate-700 whitespace-nowrap w-36">비상연락망</th>
+                <th className="py-2.5 px-3 text-sm font-bold text-slate-700 whitespace-nowrap w-36">보호자 연락처</th>
                 {renderSortHeader('기본 등교 (월/수)', 'time', false, 'w-40')}
               </tr>
             </thead>
@@ -204,8 +204,9 @@ export const StudentManagementView: React.FC = () => {
 
                 const gradeDisplay = (() => {
                   if (!st.grade || st.grade === '?' || st.grade.includes('재학')) return '?';
+                  if (st.grade.startsWith('G')) return st.grade;
                   const match = st.grade.match(/\d+/);
-                  return match ? `${match[0]}학년` : '?';
+                  return match ? `${match[0]}학년` : st.grade;
                 })();
 
                 return (

@@ -117,13 +117,12 @@ export const StudentRow: React.FC<StudentRowProps> = ({
         {/* 3. 학년 원형 배지 (text-xs font-black font-mono) */}
         <div className="w-11 shrink-0 flex items-center justify-center">
           <div
-            className="w-6 h-6 rounded-full bg-slate-100 text-slate-800 font-black text-xs flex items-center justify-center border border-slate-300 font-mono shadow-2xs"
+            className="w-6 h-6 rounded-full bg-slate-100 text-slate-800 font-black text-[10.5px] flex items-center justify-center border border-slate-300 font-mono shadow-2xs"
             title={student.grade && student.grade !== '?' ? `재학 학년: ${student.grade}` : '학년 미등록 (?)'}
           >
             {(() => {
-              if (!student.grade) return '?';
-              const match = student.grade.match(/\d+/);
-              return match ? match[0] : '?';
+              if (!student.grade || student.grade === '?') return '?';
+              return student.grade.replace('학년', '');
             })()}
           </div>
         </div>

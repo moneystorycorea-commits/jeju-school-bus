@@ -129,40 +129,42 @@ export function getSchoolTravelMinutes(
   schoolId: string,
   segments: RouteSegment[]
 ): number {
-  if (schoolId === 'CHEONG') {
+  // 1호차: 저청초/저청중 (단지 -> 저청 5분)
+  if (schoolId === 'CHEONG' || schoolId === 'CHEONG_MID') {
     const seg = segments.find(
       (s) => s.originLocationId === 'COMPLEX_MAIN' && s.destinationLocationId === 'CHEONG_MAIN'
     );
     return seg ? seg.travelMinutes + (seg.bufferMinutes || 0) : 5;
   }
 
-  // 1. 단지 -> NLCS
-  const segNlcs = segments.find(
-    (s) => s.originLocationId === 'COMPLEX_MAIN' && s.destinationLocationId === 'NLCS_MAIN'
-  );
-  const timeNlcs = segNlcs ? segNlcs.travelMinutes + (segNlcs.bufferMinutes || 0) : 10;
-  if (schoolId === 'NLCS') return timeNlcs;
+  // 1호차: NLCS (단지 -> NLCS 10분)
+  if (schoolId === 'NLCS') {
+    const seg = segments.find(
+      (s) => s.originLocationId === 'COMPLEX_MAIN' && s.destinationLocationId === 'NLCS_MAIN'
+    );
+    return seg ? seg.travelMinutes + (seg.bufferMinutes || 0) : 10;
+  }
 
-  // 2. NLCS -> BHA (+ 하차 1분)
+  // 2호차: BHA (단지 -> BHA 10분: 07:40 -> 07:50)
   const segBha = segments.find(
-    (s) => s.originLocationId === 'NLCS_MAIN' && s.destinationLocationId === 'BHA_GATE1'
+    (s) => s.originLocationId === 'COMPLEX_MAIN' && s.destinationLocationId === 'BHA_GATE1'
   );
-  const timeBha = timeNlcs + 1 + (segBha ? segBha.travelMinutes + (segBha.bufferMinutes || 0) : 4);
+  const timeBha = segBha ? segBha.travelMinutes + (segBha.bufferMinutes || 0) : 10;
   if (schoolId === 'BHA') return timeBha;
 
-  // 3. BHA -> KIS (+ 하차 1분)
-  const segKis = segments.find(
-    (s) => s.originLocationId === 'BHA_GATE1' && s.destinationLocationId === 'KIS_MAIN'
-  );
-  const timeKis = timeBha + 1 + (segKis ? segKis.travelMinutes + (segKis.bufferMinutes || 0) : 4);
-  if (schoolId === 'KIS') return timeKis;
-
-  // 4. KIS -> SJA (+ 하차 1분)
+  // 2호차: SJA (단지 -> BHA 10분 + 하차 1분 + BHA -> SJA 4분 = 15분: 07:40 -> 07:55)
   const segSja = segments.find(
-    (s) => s.originLocationId === 'KIS_MAIN' && s.destinationLocationId === 'SJA_GATE3'
+    (s) => s.originLocationId === 'BHA_GATE1' && s.destinationLocationId === 'SJA_GATE3'
   );
-  const timeSja = timeKis + 1 + (segSja ? segSja.travelMinutes + (segSja.bufferMinutes || 0) : 3);
+  const timeSja = timeBha + 1 + (segSja ? segSja.travelMinutes + (segSja.bufferMinutes || 0) : 4);
   if (schoolId === 'SJA') return timeSja;
+
+  // 2호차: KIS (SJA 도착 15분 + 하차 1분 + SJA -> KIS 4분 = 20분: 07:40 -> 08:00)
+  const segKis = segments.find(
+    (s) => s.originLocationId === 'SJA_GATE3' && s.destinationLocationId === 'KIS_MAIN'
+  );
+  const timeKis = timeSja + 1 + (segKis ? segKis.travelMinutes + (segKis.bufferMinutes || 0) : 4);
+  if (schoolId === 'KIS') return timeKis;
 
   return 10;
 }

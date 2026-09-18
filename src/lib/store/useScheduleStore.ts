@@ -304,8 +304,8 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
     let updatedSchedules = schedules;
 
     if (targetStudent && targetSchedule && scheduleType === 'MORNING') {
-      const isCheong = targetStudent.schoolId === 'CHEONG';
-      const vehicleId = isCheong ? 'v2' : 'v1';
+      const isVehicle1 = targetStudent.schoolId === 'NLCS' || targetStudent.schoolId === 'CHEONG' || targetStudent.schoolId === 'CHEONG_MID';
+      const vehicleId = isVehicle1 ? 'v1' : 'v2';
       const travelMinutes = getSchoolTravelMinutes(targetStudent.schoolId, routeSegments);
       const newDeparture = (newMinute - travelMinutes) as MinuteOfDay;
       const oldDeparture = (targetSchedule.assignedMinute - travelMinutes) as MinuteOfDay;
@@ -313,30 +313,40 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
 
       if (delta !== 0) {
         // 1. 해당 호차의 TripTemplate 출발시간 동기화 (운행시간표와 실시간 연동)
+        // 1호차는 1회차 NLCS, 2회차 저청으로 분리 운행되므로 해당 학교가 포함된 Trip만 연동
         const weekday = getWeekdayNumber(serviceDate);
         updatedTripTemplates = tripTemplates.map((tpl) => {
           if (tpl.type === 'MORNING' && tpl.vehicleId === vehicleId && tpl.weekdays.includes(weekday)) {
-            return {
-              ...tpl,
-              defaultDepartureMinute: newDeparture,
-              referenceReturnMinute:
-                tpl.referenceReturnMinute !== undefined
-                  ? ((tpl.referenceReturnMinute + delta) as MinuteOfDay)
-                  : undefined,
-            };
+            const hasSchool = tpl.stops.some((st) => {
+              if (targetStudent.schoolId === 'NLCS') return st.locationId.includes('NLCS');
+              if (targetStudent.schoolId === 'CHEONG' || targetStudent.schoolId === 'CHEONG_MID') return st.locationId.includes('CHEONG');
+              return true; // 2호차: BHA, SJA, KIS 함께 탑승
+            });
+            if (hasSchool) {
+              return {
+                ...tpl,
+                defaultDepartureMinute: newDeparture,
+                referenceReturnMinute:
+                  tpl.referenceReturnMinute !== undefined
+                    ? ((tpl.referenceReturnMinute + delta) as MinuteOfDay)
+                    : undefined,
+              };
+            }
           }
           return tpl;
         });
 
-        // 2. 동일 차량에 탑승하는 학생들의 assignedMinute 동기화
-        const sameVehicleSchoolIds = isCheong
-          ? new Set(['CHEONG'])
-          : new Set(['NLCS', 'BHA', 'KIS', 'SJA']);
+        // 2. 동일 차량/동행 노선 학생들의 assignedMinute 동기화
+        // 1호차: NLCS 학생들끼리, 저청 학생들끼리 분리
+        // 2호차: BHA, SJA, KIS 학생 전체 동행 순환 동기화
+        const sameTripSchoolIds = isVehicle1
+          ? (targetStudent.schoolId === 'NLCS' ? new Set(['NLCS']) : new Set(['CHEONG', 'CHEONG_MID']))
+          : new Set(['BHA', 'SJA', 'KIS']);
 
         updatedSchedules = schedules.map((s) => {
           if (s.date === serviceDate && s.type === 'MORNING') {
             const stu = students.find((st) => st.id === s.studentId);
-            if (stu && sameVehicleSchoolIds.has(stu.schoolId)) {
+            if (stu && sameTripSchoolIds.has(stu.schoolId)) {
               const updatedMin = (s.assignedMinute + delta) as MinuteOfDay;
               return {
                 ...s,

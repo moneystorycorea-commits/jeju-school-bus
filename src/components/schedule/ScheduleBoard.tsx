@@ -16,6 +16,7 @@ import {
 import { TimeAxis } from './TimeAxis';
 import { StudentRow } from './StudentRow';
 import { useScheduleStore } from '@/lib/store/useScheduleStore';
+import { Student } from '@/types';
 import { AlertTriangle, CheckCircle2, ArrowUpDown } from 'lucide-react';
 
 export const ScheduleBoard: React.FC = () => {
@@ -56,38 +57,44 @@ export const ScheduleBoard: React.FC = () => {
     (h) => serviceDate >= h.startDate && serviceDate <= h.endDate
   );
 
-  // 학교 정렬 우선순위: NLCS -> BHA -> KIS -> SJA -> CHEONG (저청초)
-  const SCHOOL_PRIORITY: Record<string, number> = {
+  // 1호차 및 2호차 전담 학교 분류
+  // 1호차: NLCS, 저청초, 저청중
+  // 2호차: BHA, SJA, KIS
+  const V1_SCHOOLS = useMemo(() => new Set(['NLCS', 'CHEONG', 'CHEONG_MID']), []);
+
+  const V1_SCHOOL_PRIORITY: Record<string, number> = {
     NLCS: 1,
-    BHA: 2,
-    KIS: 3,
-    SJA: 4,
-    CHEONG: 5,
+    CHEONG: 2,
+    CHEONG_MID: 3,
   };
 
-  // 학년, 학교, 이름 정렬 로직 (기본 보기에서도 NLCS-BHA-KIS-SJA 자동 정렬)
-  const sortedStudents = useMemo(() => {
-    const list = [...students];
+  const V2_SCHOOL_PRIORITY: Record<string, number> = {
+    BHA: 1,
+    SJA: 2,
+    KIS: 3,
+  };
+
+  const sortStudentList = (list: Student[], priorityMap: Record<string, number>) => {
+    const copy = [...list];
     if (sortBy === 'name') {
-      return list.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+      return copy.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
     }
     if (sortBy === 'grade') {
-      return list.sort((a, b) => {
+      return copy.sort((a, b) => {
         const parseGrade = (g?: string) => {
           if (!g) return -1;
           const match = g.match(/\d+/);
           return match ? parseInt(match[0], 10) : -1;
         };
-        const diff = parseGrade(b.grade) - parseGrade(a.grade); // 고학년 -> 저학년 -> ?
+        const diff = parseGrade(b.grade) - parseGrade(a.grade);
         return diff !== 0 ? diff : a.name.localeCompare(b.name, 'ko');
       });
     }
 
     // 기본 보기('manual') 및 'school' 정렬:
-    // 학생 추가 시에도 학교별로 NLCS-BHA-KIS-SJA 순으로 자동 정렬하고, 같은 학교 내에서는 학년 높은 순 -> 이름순
-    return list.sort((a, b) => {
-      const pA = SCHOOL_PRIORITY[a.schoolId] ?? 99;
-      const pB = SCHOOL_PRIORITY[b.schoolId] ?? 99;
+    return copy.sort((a, b) => {
+      const pA = priorityMap[a.schoolId] ?? 99;
+      const pB = priorityMap[b.schoolId] ?? 99;
       if (pA !== pB) return pA - pB;
 
       const parseGrade = (g?: string) => {
@@ -100,7 +107,32 @@ export const ScheduleBoard: React.FC = () => {
 
       return a.name.localeCompare(b.name, 'ko');
     });
-  }, [students, sortBy]);
+  };
+
+  // 1호차 및 2호차 학생 그룹 분리
+  const v1Students = useMemo(() => {
+    const list = students.filter((s) => V1_SCHOOLS.has(s.schoolId));
+    return sortStudentList(list, V1_SCHOOL_PRIORITY);
+  }, [students, sortBy, V1_SCHOOLS]);
+
+  const v2Students = useMemo(() => {
+    const list = students.filter((s) => !V1_SCHOOLS.has(s.schoolId));
+    return sortStudentList(list, V2_SCHOOL_PRIORITY);
+  }, [students, sortBy, V1_SCHOOLS]);
+
+  const allSortedStudents = useMemo(() => [...v1Students, ...v2Students], [v1Students, v2Students]);
+
+  const v1ActiveCount = v1Students.filter((s) => {
+    const ws = s.weeklySchedule?.[currentWeekday];
+    if (!ws || !ws.active) return false;
+    return scheduleType === 'MORNING' ? ws.morningActive : ws.afternoonActive;
+  }).length;
+
+  const v2ActiveCount = v2Students.filter((s) => {
+    const ws = s.weeklySchedule?.[currentWeekday];
+    if (!ws || !ws.active) return false;
+    return scheduleType === 'MORNING' ? ws.morningActive : ws.afternoonActive;
+  }).length;
 
   // dnd-kit 센서 설정 (Row 정렬용)
   const sensors = useSensors(
@@ -169,32 +201,38 @@ export const ScheduleBoard: React.FC = () => {
           )}
         </div>
 
-        {/* 학교 컬러 공식 범례 (Linear 미니멀 닷, text-xs font-bold) */}
-        <div className="flex items-center gap-2.5 text-xs font-bold text-slate-700">
-          <div className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#132742]" />
-            <span>NLCS</span>
+        {/* 호차별 전담 학교 공식 범례 */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* 1호차 전담 */}
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-indigo-50 border border-indigo-200 text-xs font-bold shadow-2xs">
+            <span className="px-1.5 py-0.2 rounded bg-indigo-600 text-white text-[10px] font-black">1호차</span>
+            <div className="flex items-center gap-1 text-indigo-950">
+              <span className="w-2 h-2 rounded-full bg-[#132742]" />
+              <span>NLCS</span>
+              <span className="text-indigo-300">·</span>
+              <span className="w-2 h-2 rounded-full bg-[#0e7490]" />
+              <span>저청(초/중)</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#581c87]" />
-            <span>BHA</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#08327C]" />
-            <span>KIS</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#14532d]" />
-            <span>SJA</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#0e7490]" />
-            <span>저청초</span>
+
+          {/* 2호차 전담 */}
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-purple-50 border border-purple-200 text-xs font-bold shadow-2xs">
+            <span className="px-1.5 py-0.2 rounded bg-purple-600 text-white text-[10px] font-black">2호차</span>
+            <div className="flex items-center gap-1 text-purple-950">
+              <span className="w-2 h-2 rounded-full bg-[#581c87]" />
+              <span>BHA</span>
+              <span className="text-purple-300">·</span>
+              <span className="w-2 h-2 rounded-full bg-[#14532d]" />
+              <span>SJA</span>
+              <span className="text-purple-300">·</span>
+              <span className="w-2 h-2 rounded-full bg-[#08327C]" />
+              <span>KIS</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* 2. 16명 학생 타임라인 보드 */}
+      {/* 2. 16명 학생 타임라인 보드 (1호차 / 2호차 2개 그룹 분리 렌더링) */}
       <div className="relative overflow-x-auto">
         <div className="min-w-[850px] flex flex-col">
           {/* 시간축 헤더 행 (sticky top-0 z-30) */}
@@ -254,17 +292,60 @@ export const ScheduleBoard: React.FC = () => {
             </div>
           </div>
 
-          {/* 16명 학생 행 리스트 (정렬 지원, 각 행 34px 높이) */}
+          {/* 1호차 & 2호차 2개 그룹 학생 행 리스트 */}
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={sortedStudents.map((s) => s.id)}
+              items={allSortedStudents.map((s) => s.id)}
               strategy={verticalListSortingStrategy}
             >
-              {sortedStudents.map((student, idx) => {
+              {/* ===== [그룹 1: 1호차 전담 운행 - NLCS & 저청] ===== */}
+              <div className="flex items-stretch border-b border-indigo-200/90 bg-indigo-50/90 select-none">
+                {/* 좌측 1호차 배너 */}
+                <div className="w-[230px] px-3 py-1.5 border-r border-indigo-200 bg-indigo-50/95 sticky left-0 z-20 flex items-center justify-between shrink-0 shadow-2xs">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="px-2 py-0.5 rounded bg-indigo-600 text-white text-[11px] font-black tracking-wide shadow-2xs">
+                      1호차
+                    </span>
+                    <span className="text-xs font-black text-indigo-950 truncate">
+                      NLCS · 저청 전담
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-bold text-indigo-700 bg-indigo-100/90 px-1.5 py-0.5 rounded border border-indigo-200">
+                    {v1ActiveCount}명 운행
+                  </span>
+                </div>
+                {/* 우측 1호차 타임라인 요약 */}
+                <div className="flex-1 px-3 py-1.5 flex items-center justify-between text-xs text-indigo-900 font-semibold bg-indigo-50/60 overflow-hidden border-y border-indigo-100">
+                  <div className="flex items-center gap-2 truncate">
+                    <span className="text-[11px] text-indigo-600 font-bold shrink-0">운행 노선:</span>
+                    <span className="text-[11px] text-slate-700 font-medium truncate">
+                      {scheduleType === 'MORNING' ? (
+                        <>
+                          <span className="font-bold text-indigo-950">07:40</span> 단지출발 ➔ <span className="font-bold text-[#132742]">07:50 NLCS</span>
+                          <span className="mx-2 text-indigo-300">|</span>
+                          <span className="font-bold text-indigo-950">08:20</span> 단지출발 ➔ <span className="font-bold text-[#0e7490]">08:25 저청</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="font-bold text-[#0e7490]">13:50 저청</span>
+                          <span className="mx-2 text-indigo-300">|</span>
+                          <span className="font-bold text-[#132742]">15:30 / 16:30 / 17:30 NLCS</span>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                  <span className="text-[10.5px] text-indigo-500 font-medium shrink-0 ml-2">
+                    {scheduleType === 'MORNING' ? '2회 분리 운행 (복귀 후 저청 출발)' : '저청 1회 + NLCS 3회 전담'}
+                  </span>
+                </div>
+              </div>
+
+              {/* 1호차 학생 목록 */}
+              {v1Students.map((student, idx) => {
                 const schedule = schedules.find(
                   (s) =>
                     s.studentId === student.id &&
@@ -276,7 +357,7 @@ export const ScheduleBoard: React.FC = () => {
                 const isNewSchoolGroup =
                   (sortBy === 'manual' || sortBy === 'school') &&
                   idx > 0 &&
-                  sortedStudents[idx - 1].schoolId !== student.schoolId;
+                  v1Students[idx - 1].schoolId !== student.schoolId;
 
                 return (
                   <StudentRow
@@ -285,6 +366,78 @@ export const ScheduleBoard: React.FC = () => {
                     schedule={schedule}
                     school={school}
                     index={idx}
+                    startMinute={startMinute}
+                    endMinute={endMinute}
+                    timelineContainerRef={timelineContainerRef}
+                    hasConflict={!!conflict}
+                    conflictMessage={conflict?.message}
+                    isNewSchoolGroup={isNewSchoolGroup}
+                  />
+                );
+              })}
+
+              {/* ===== [그룹 2: 2호차 전담 운행 - BHA · SJA · KIS] ===== */}
+              <div className="flex items-stretch border-b border-purple-200/90 bg-purple-50/90 select-none">
+                {/* 좌측 2호차 배너 */}
+                <div className="w-[230px] px-3 py-1.5 border-r border-purple-200 bg-purple-50/95 sticky left-0 z-20 flex items-center justify-between shrink-0 shadow-2xs">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="px-2 py-0.5 rounded bg-purple-600 text-white text-[11px] font-black tracking-wide shadow-2xs">
+                      2호차
+                    </span>
+                    <span className="text-xs font-black text-purple-950 truncate">
+                      BHA · SJA · KIS 전담
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-bold text-purple-700 bg-purple-100/90 px-1.5 py-0.5 rounded border border-purple-200">
+                    {v2ActiveCount}명 운행
+                  </span>
+                </div>
+                {/* 우측 2호차 타임라인 요약 */}
+                <div className="flex-1 px-3 py-1.5 flex items-center justify-between text-xs text-purple-900 font-semibold bg-purple-50/60 overflow-hidden border-y border-purple-100">
+                  <div className="flex items-center gap-2 truncate">
+                    <span className="text-[11px] text-purple-600 font-bold shrink-0">운행 노선:</span>
+                    <span className="text-[11px] text-slate-700 font-medium truncate">
+                      {scheduleType === 'MORNING' ? (
+                        <>
+                          <span className="font-bold text-purple-950">07:40</span> 단지출발 ➔ <span className="font-bold text-[#581c87]">07:50 BHA</span> ➔ <span className="font-bold text-[#14532d]">07:55 SJA</span> ➔ <span className="font-bold text-[#08327C]">08:00 KIS</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="font-bold text-[#581c87]">15:30 / 16:00 / 16:30 / 17:00 / 17:30 BHA</span>
+                          <span className="mx-2 text-purple-300">|</span>
+                          <span className="text-slate-500 font-normal">15:15 저청(금)</span>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                  <span className="text-[10.5px] text-purple-500 font-medium shrink-0 ml-2">
+                    {scheduleType === 'MORNING' ? '순환 경유 운행 (단지 복귀 08:15)' : 'BHA 하교 집중 배차'}
+                  </span>
+                </div>
+              </div>
+
+              {/* 2호차 학생 목록 */}
+              {v2Students.map((student, idx) => {
+                const schedule = schedules.find(
+                  (s) =>
+                    s.studentId === student.id &&
+                    s.date === serviceDate &&
+                    s.type === scheduleType
+                );
+                const school = schools.find((sc) => sc.id === student.schoolId);
+                const conflict = conflicts.find((c) => c.studentId === student.id);
+                const isNewSchoolGroup =
+                  (sortBy === 'manual' || sortBy === 'school') &&
+                  idx > 0 &&
+                  v2Students[idx - 1].schoolId !== student.schoolId;
+
+                return (
+                  <StudentRow
+                    key={student.id}
+                    student={student}
+                    schedule={schedule}
+                    school={school}
+                    index={v1Students.length + idx}
                     startMinute={startMinute}
                     endMinute={endMinute}
                     timelineContainerRef={timelineContainerRef}
