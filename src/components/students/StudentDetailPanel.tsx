@@ -39,7 +39,7 @@ export const StudentDetailPanel: React.FC = () => {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-6 flex flex-col gap-4 select-none animate-scaleIn"
+        className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-[540px] w-full p-6 flex flex-col gap-4 select-none animate-scaleIn"
       >
         {/* 모달 헤더 */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -74,16 +74,16 @@ export const StudentDetailPanel: React.FC = () => {
           </button>
         </div>
 
-        {/* 상세 정보 그리드 */}
-        <div className="grid grid-cols-[90px_1fr] gap-y-3 text-sm py-1">
-          <span className="text-slate-500 font-medium flex items-center gap-1.5">
-            <Home className="w-4 h-4 text-slate-400" />
+        {/* 상세 정보 그리드 (라벨 폭을 충분히 확보하여 한 줄 표시) */}
+        <div className="grid grid-cols-[110px_1fr] gap-y-3.5 text-sm py-1 items-center">
+          <span className="text-slate-500 font-medium flex items-center gap-1.5 whitespace-nowrap">
+            <Home className="w-4 h-4 text-slate-400 shrink-0" />
             동 · 호수
           </span>
           <span className="font-semibold text-slate-900">{student.building} {student.unit}</span>
 
-          <span className="text-slate-500 font-medium flex items-center gap-1.5">
-            <GraduationCap className="w-4 h-4 text-slate-400" />
+          <span className="text-slate-500 font-medium flex items-center gap-1.5 whitespace-nowrap">
+            <GraduationCap className="w-4 h-4 text-slate-400 shrink-0" />
             학교 / 학년
           </span>
           <span className="font-semibold text-slate-900">
@@ -92,22 +92,22 @@ export const StudentDetailPanel: React.FC = () => {
 
           {student.gate && (
             <>
-              <span className="text-slate-500 font-medium flex items-center gap-1.5">
-                <Home className="w-4 h-4 text-slate-400" />
+              <span className="text-slate-500 font-medium flex items-center gap-1.5 whitespace-nowrap">
+                <Home className="w-4 h-4 text-slate-400 shrink-0" />
                 정차 게이트
               </span>
               <span className="font-semibold text-slate-900">{student.gate}</span>
             </>
           )}
 
-          <span className="text-slate-500 font-medium flex items-center gap-1.5">
-            <User className="w-4 h-4 text-slate-400" />
+          <span className="text-slate-500 font-medium flex items-center gap-1.5 whitespace-nowrap">
+            <User className="w-4 h-4 text-slate-400 shrink-0" />
             보호자 성함
           </span>
           <span className="font-semibold text-slate-900">{privateInfo?.guardianName || '-'}</span>
 
-          <span className="text-slate-500 font-medium flex items-center gap-1.5">
-            <Phone className="w-4 h-4 text-slate-400" />
+          <span className="text-slate-500 font-medium flex items-center gap-1.5 whitespace-nowrap">
+            <Phone className="w-4 h-4 text-slate-400 shrink-0" />
             비상연락망
           </span>
           <div className="flex items-center gap-2">
@@ -127,22 +127,33 @@ export const StudentDetailPanel: React.FC = () => {
 
           {student.notes && (
             <>
-              <span className="text-slate-500 font-medium">특이사항</span>
-              <span className="text-xs text-amber-900 bg-amber-50 p-2 rounded-lg border border-amber-200">
+              <span className="text-slate-500 font-medium whitespace-nowrap self-start pt-1">특이사항</span>
+              <span className="text-xs text-amber-900 bg-amber-50 p-2.5 rounded-lg border border-amber-200 leading-relaxed font-medium">
                 {student.notes}
               </span>
             </>
           )}
         </div>
 
-        {/* 요일별 등/하교 현황 요약 */}
+        {/* 요일별 등/하교 현황 요약 (등교/하교 구분 배지 명확화) */}
         {student.weeklySchedule && (
-          <div className="border border-slate-200 rounded-xl p-3 bg-slate-50 flex flex-col gap-2">
-            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-slate-500" />
-              주간 요일별 등·하교 시간
-            </span>
-            <div className="grid grid-cols-5 gap-1.5 text-center text-xs">
+          <div className="border border-slate-200 rounded-xl p-3.5 bg-slate-50 flex flex-col gap-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                주간 요일별 등·하교 시간
+              </span>
+              <div className="flex items-center gap-2.5 text-[11px] font-bold">
+                <span className="flex items-center gap-1 text-blue-700">
+                  <span className="w-2 h-2 rounded-full bg-blue-600" /> 등교
+                </span>
+                <span className="flex items-center gap-1 text-amber-700">
+                  <span className="w-2 h-2 rounded-full bg-amber-600" /> 하교
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-5 gap-1.5 text-xs">
               {[
                 { day: 1, label: '월' },
                 { day: 2, label: '화' },
@@ -152,14 +163,41 @@ export const StudentDetailPanel: React.FC = () => {
               ].map(({ day, label }) => {
                 const ws = student.weeklySchedule?.[day];
                 return (
-                  <div key={day} className="bg-white border border-slate-200 rounded-lg p-1.5 flex flex-col items-center">
-                    <span className="font-bold text-slate-600">{label}</span>
-                    <span className="font-mono text-[11px] text-blue-600 font-semibold mt-0.5">
-                      {ws?.morningActive ? formatMinute(ws.morningMinute) : '미이용'}
+                  <div
+                    key={day}
+                    className="bg-white border border-slate-200 rounded-xl p-2 flex flex-col gap-1.5 shadow-2xs"
+                  >
+                    <span className="font-extrabold text-xs text-slate-800 text-center pb-1 border-b border-slate-100">
+                      {label}요일
                     </span>
-                    <span className="font-mono text-[11px] text-slate-500 font-semibold">
-                      {ws?.afternoonActive ? formatMinute(ws.afternoonMinute) : '미이용'}
-                    </span>
+
+                    {/* 등교 시간 / 미이용 */}
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1 py-0.2 rounded border border-blue-200/60 shrink-0">
+                        등교
+                      </span>
+                      <span
+                        className={`font-mono text-xs font-bold ${
+                          ws?.morningActive ? 'text-blue-700' : 'text-slate-400 font-medium'
+                        }`}
+                      >
+                        {ws?.morningActive ? formatMinute(ws.morningMinute) : '미이용'}
+                      </span>
+                    </div>
+
+                    {/* 하교 시간 / 미이용 */}
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1 py-0.2 rounded border border-amber-200/60 shrink-0">
+                        하교
+                      </span>
+                      <span
+                        className={`font-mono text-xs font-bold ${
+                          ws?.afternoonActive ? 'text-amber-700' : 'text-slate-400 font-medium'
+                        }`}
+                      >
+                        {ws?.afternoonActive ? formatMinute(ws.afternoonMinute) : '미이용'}
+                      </span>
+                    </div>
                   </div>
                 );
               })}
