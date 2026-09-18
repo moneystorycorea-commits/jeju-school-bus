@@ -12,10 +12,13 @@ import {
   Pin,
   PinOff,
   SlidersHorizontal,
+  CheckCircle2,
 } from 'lucide-react';
 import { useScheduleStore } from '@/lib/store/useScheduleStore';
 import { formatMinute, getWeekdayNumber } from '@/lib/scheduling/time';
-import { RouteSegment } from '@/types';
+import { RouteSegment, HolidayCategory } from '@/types';
+import { SchoolCalendarMatrix } from './SchoolCalendarMatrix';
+
 
 export const ScheduleDetailDrawer: React.FC = () => {
   const {
@@ -94,13 +97,20 @@ export const ScheduleDetailDrawer: React.FC = () => {
     };
   }, []);
 
+  // 방학 및 학사일정 관리/달력 필터 상태
+  const [holidaySchoolFilter, setHolidaySchoolFilter] = useState<string>('ALL');
+  const [holidayCategoryFilter, setHolidayCategoryFilter] = useState<string>('ALL');
+  const [calendarSchoolFilter, setCalendarSchoolFilter] = useState<string>('ALL');
+
   // 방학 등록 폼 상태
   const [isAddingHoliday, setIsAddingHoliday] = useState(false);
   const [newHolidaySchoolId, setNewHolidaySchoolId] = useState('BHA');
   const [newHolidayName, setNewHolidayName] = useState('');
   const [newHolidayStartDate, setNewHolidayStartDate] = useState(serviceDate);
   const [newHolidayEndDate, setNewHolidayEndDate] = useState(serviceDate);
-  const [newHolidayType, setNewHolidayType] = useState<'vacation' | 'school_closed' | 'school_event' | 'other'>('vacation');
+  const [newHolidayCategory, setNewHolidayCategory] = useState<HolidayCategory>('break');
+  const [newHolidayNotes, setNewHolidayNotes] = useState('');
+
 
   // 기존 등록 학생 수가 많은 순서대로 학교 정렬 (동률일 경우 학교명 순)
   const sortedSchools = useMemo(() => {
@@ -259,11 +269,29 @@ export const ScheduleDetailDrawer: React.FC = () => {
       startDate: newHolidayStartDate,
       endDate: newHolidayEndDate,
       name: newHolidayName.trim(),
-      type: newHolidayType,
+      type: newHolidayCategory === 'break' ? 'vacation' : newHolidayCategory === 'inset' ? 'school_closed' : newHolidayCategory === 'term_date' ? 'school_event' : 'other',
+      category: newHolidayCategory,
+      notes: newHolidayNotes.trim() || undefined,
     });
     setNewHolidayName('');
+    setNewHolidayNotes('');
     setIsAddingHoliday(false);
   };
+
+  // 학교별 / 카테고리별 필터링된 학사일정 목록
+  const filteredHolidays = useMemo(() => {
+    return holidays.filter((h) => {
+      if (holidaySchoolFilter !== 'ALL' && h.schoolId !== holidaySchoolFilter) {
+        return false;
+      }
+      if (holidayCategoryFilter !== 'ALL') {
+        const cat = h.category || (h.type === 'vacation' ? 'break' : h.type === 'school_closed' ? 'inset' : 'other');
+        if (cat !== holidayCategoryFilter) return false;
+      }
+      return true;
+    });
+  }, [holidays, holidaySchoolFilter, holidayCategoryFilter]);
+
 
   // 달력 날짜 계산 (첫째 날 요일 오프셋 및 해당 월 일수)
   const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay(); // 0(일) ~ 6(토)
@@ -370,8 +398,8 @@ export const ScheduleDetailDrawer: React.FC = () => {
         {detailDrawerTab === 'info' && (
           <>
             {/* 3-A. 운행 일자 달력 (클릭 시 왼쪽 창 요일별 운행표 연동 + 학교별 방학 표시) */}
-            <div className="flex flex-col gap-2 border border-slate-200 rounded-2xl p-3.5 bg-slate-50/50">
-              <div className="flex items-center justify-between mb-1">
+            <div className="flex flex-col gap-2.5 border border-slate-200 rounded-2xl p-3.5 bg-slate-50/50">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <CalendarIcon className="w-4 h-4 text-blue-600" />
                   <span className="text-sm font-bold text-slate-900">운행 일자 달력</span>
@@ -397,6 +425,100 @@ export const ScheduleDetailDrawer: React.FC = () => {
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
+              </div>
+
+              {/* 2026-2027 학사년도 빠른 이동 바로가기 */}
+              <div className="flex items-center gap-1 overflow-x-auto pb-1 text-[10px] font-bold text-slate-600 no-scrollbar">
+                <span className="text-slate-400 shrink-0 font-normal">바로가기:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewYear(2026);
+                    setViewMonth(8); // 9월
+                    setServiceDate('2026-09-21');
+                  }}
+                  className="px-2 py-0.5 rounded-full bg-blue-100/70 text-blue-800 hover:bg-blue-200 shrink-0 cursor-pointer"
+                >
+                  🌕 9월 추석방학
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewYear(2026);
+                    setViewMonth(9); // 10월
+                    setServiceDate('2026-10-31');
+                  }}
+                  className="px-2 py-0.5 rounded-full bg-orange-100/70 text-orange-800 hover:bg-orange-200 shrink-0 cursor-pointer"
+                >
+                  🍁 10-11월 가을방학
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewYear(2026);
+                    setViewMonth(11); // 12월
+                    setServiceDate('2026-12-21');
+                  }}
+                  className="px-2 py-0.5 rounded-full bg-indigo-100/70 text-indigo-800 hover:bg-indigo-200 shrink-0 cursor-pointer"
+                >
+                  ❄️ 12월 겨울방학
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewYear(2027);
+                    setViewMonth(1); // 2월
+                    setServiceDate('2027-02-08');
+                  }}
+                  className="px-2 py-0.5 rounded-full bg-red-100/70 text-red-800 hover:bg-red-200 shrink-0 cursor-pointer"
+                >
+                  🧧 2월 설날방학
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewYear(2027);
+                    setViewMonth(3); // 4월
+                    setServiceDate('2027-04-05');
+                  }}
+                  className="px-2 py-0.5 rounded-full bg-emerald-100/70 text-emerald-800 hover:bg-emerald-200 shrink-0 cursor-pointer"
+                >
+                  🌸 4월 봄방학
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewYear(2027);
+                    setViewMonth(5); // 6월
+                    setServiceDate('2027-06-11');
+                  }}
+                  className="px-2 py-0.5 rounded-full bg-purple-100/70 text-purple-800 hover:bg-purple-200 shrink-0 cursor-pointer"
+                >
+                  🎓 6월 종업식
+                </button>
+              </div>
+
+              {/* 달력 학교 필터 칩 */}
+              <div className="flex items-center gap-1 text-[11px] font-bold">
+                <span className="text-slate-400 text-[10px] shrink-0">학교 필터:</span>
+                {['ALL', 'NLCS', 'BHA', 'KIS', 'SJA'].map((schId) => {
+                  const sc = schools.find((s) => s.id === schId);
+                  const isSelected = calendarSchoolFilter === schId;
+                  return (
+                    <button
+                      key={schId}
+                      type="button"
+                      onClick={() => setCalendarSchoolFilter(schId)}
+                      className={`px-2 py-0.5 rounded-md text-[10px] transition cursor-pointer font-bold ${
+                        isSelected
+                          ? 'bg-slate-800 text-white shadow-2xs font-extrabold'
+                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {schId === 'ALL' ? '전체 학교' : sc?.shortName || schId}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* 요일 헤더 */}
@@ -426,8 +548,13 @@ export const ScheduleDetailDrawer: React.FC = () => {
                   const isSun = dayOfWeek === 0;
                   const isSat = dayOfWeek === 6;
 
-                  // 해당 날짜에 걸쳐 있는 방학/휴일 목록
-                  const dayHolidays = holidays.filter((h) => dateStr >= h.startDate && dateStr <= h.endDate);
+                  // 해당 날짜에 걸쳐 있는 방학/휴일 목록 (달력 학교 필터 적용)
+                  const dayHolidays = holidays.filter((h) => {
+                    if (calendarSchoolFilter !== 'ALL' && h.schoolId !== calendarSchoolFilter) {
+                      return false;
+                    }
+                    return dateStr >= h.startDate && dateStr <= h.endDate;
+                  });
 
                   return (
                     <button
@@ -436,7 +563,7 @@ export const ScheduleDetailDrawer: React.FC = () => {
                       onClick={() => handleDateClick(day)}
                       className={`h-8 md:h-9 rounded-lg font-bold transition flex flex-col items-center justify-center cursor-pointer relative text-xs ${
                         isSelected
-                          ? 'bg-blue-600 text-white font-extrabold shadow-sm'
+                          ? 'bg-blue-600 text-white font-extrabold shadow-sm ring-2 ring-blue-300'
                           : dayHolidays.length > 0
                           ? 'bg-amber-50/90 text-amber-950 hover:bg-amber-100 border border-amber-200/80 font-bold'
                           : isSun
@@ -484,11 +611,65 @@ export const ScheduleDetailDrawer: React.FC = () => {
                   onClick={() => setDetailDrawerTab('vacation')}
                   className="text-blue-600 hover:underline font-bold flex items-center gap-1 cursor-pointer"
                 >
-                  <span>방학 기간 추가</span>
+                  <span>방학 관리 / 일정 비교</span>
                   <Plus className="w-3 h-3" />
                 </button>
               </div>
+
+              {/* 선택 일자(serviceDate) 4대 학교 운행 상태 요약 카드 */}
+              <div className="mt-1 p-2.5 rounded-xl bg-white border border-slate-200 flex flex-col gap-1.5 shadow-2xs">
+                <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-800 border-b border-slate-100 pb-1">
+                  <span>🏫 {serviceDate} 4대 학교 운행 현황</span>
+                  <span className="text-[10px] text-slate-400 font-normal">실시간 스케줄 연동</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                  {['NLCS', 'BHA', 'KIS', 'SJA'].map((schId) => {
+                    const sc = schools.find((s) => s.id === schId);
+                    const activeHoliday = holidays.find(
+                      (h) => (h.schoolId === schId || h.schoolId === 'ALL') && serviceDate >= h.startDate && serviceDate <= h.endDate
+                    );
+
+                    return (
+                      <div
+                        key={schId}
+                        className={`p-1.5 rounded-lg border flex items-center justify-between gap-1 ${
+                          activeHoliday
+                            ? 'bg-amber-50/80 border-amber-200 text-amber-950'
+                            : 'bg-slate-50/80 border-slate-200 text-slate-800'
+                        }`}
+                      >
+                        <span
+                          className="px-1.5 py-0.2 rounded text-[10px] font-black shrink-0"
+                          style={{
+                            backgroundColor: sc?.badgeBg || '#e2e8f0',
+                            color: sc?.color || '#334155',
+                          }}
+                        >
+                          {sc?.shortName || schId}
+                        </span>
+                        <div className="truncate text-right flex flex-col min-w-0">
+                          {activeHoliday ? (
+                            <>
+                              <span className="font-bold text-[10px] truncate text-amber-900" title={activeHoliday.name}>
+                                {activeHoliday.name.length > 10 ? activeHoliday.name.slice(0, 10) + '…' : activeHoliday.name}
+                              </span>
+                              <span className="text-[9px] text-amber-700 font-semibold">
+                                {activeHoliday.notes ? activeHoliday.notes.slice(0, 10) : '🚫 미운행(휴교)'}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="font-bold text-[10px] text-emerald-700 flex items-center gap-0.5 justify-end">
+                              <CheckCircle2 className="w-3 h-3" /> 정상 운행
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
+
 
             {/* 3-B. 요일별 등교 / 하교 시간 (5분 스냅 +/- 조절기) */}
             <div className="flex flex-col gap-2.5 border border-slate-200 rounded-2xl p-3.5 bg-slate-50/50">
@@ -590,10 +771,14 @@ export const ScheduleDetailDrawer: React.FC = () => {
         {/* 3-C. 학교별 방학 및 학사일정 관리 탭 */}
         {detailDrawerTab === 'vacation' && (
           <div className="flex flex-col gap-3.5">
-            <div className="flex items-center justify-between">
+            {/* 1. 2026-2027 4대 국제학교 학사일정 비교 매트릭스 */}
+            <SchoolCalendarMatrix />
+
+            {/* 2. 관리 및 등록 헤더 */}
+            <div className="flex items-center justify-between pt-1">
               <div>
-                <h3 className="text-sm font-bold text-slate-900">학교별 방학 및 학사일정 관리</h3>
-                <p className="text-[11px] text-slate-500">지정된 기간 동안 해당 학교 학생은 타임라인에서 방학 안내가 표시됩니다.</p>
+                <h3 className="text-sm font-bold text-slate-900">학교별 방학 및 학사일정 목록</h3>
+                <p className="text-[11px] text-slate-500">방학 및 교사연수 휴교일에는 학생 행에 휴교 칩(🌴)이 자동 연동됩니다.</p>
               </div>
               <button
                 type="button"
@@ -601,16 +786,16 @@ export const ScheduleDetailDrawer: React.FC = () => {
                 className="px-2.5 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition cursor-pointer flex items-center gap-1 shadow-2xs"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>방학 등록</span>
+                <span>일정 등록</span>
               </button>
             </div>
 
-            {/* 방학 추가 폼 */}
+            {/* 방학/학사일정 추가 폼 */}
             {isAddingHoliday && (
-              <form onSubmit={handleAddHolidaySubmit} className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col gap-2.5 animate-fadeIn">
+              <form onSubmit={handleAddHolidaySubmit} className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col gap-2.5 animate-fadeIn shadow-xs">
                 <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                   <CalendarCheck2 className="w-4 h-4 text-blue-600" />
-                  <span>새 방학 / 학사일정 지정</span>
+                  <span>새 방학 / 학사일정 등록</span>
                 </span>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -621,6 +806,7 @@ export const ScheduleDetailDrawer: React.FC = () => {
                       onChange={(e) => setNewHolidaySchoolId(e.target.value)}
                       className="w-full mt-1 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-800"
                     >
+                      <option value="ALL">전체 학교 공통</option>
                       {sortedSchools.map((sc) => (
                         <option key={sc.id} value={sc.id}>
                           {sc.shortName} ({sc.name})
@@ -629,16 +815,17 @@ export const ScheduleDetailDrawer: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="text-[11px] font-bold text-slate-600">구분</label>
+                    <label className="text-[11px] font-bold text-slate-600">일정 카테고리</label>
                     <select
-                      value={newHolidayType}
-                      onChange={(e) => setNewHolidayType(e.target.value as any)}
+                      value={newHolidayCategory}
+                      onChange={(e) => setNewHolidayCategory(e.target.value as any)}
                       className="w-full mt-1 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-800"
                     >
-                      <option value="vacation">정기 방학 (여름/가을/겨울/봄)</option>
-                      <option value="school_closed">재량휴업일 / 개교기념일</option>
-                      <option value="school_event">학교 공식 행사</option>
-                      <option value="other">기타 휴일</option>
+                      <option value="break">🏖️ 정규 방학 (Break)</option>
+                      <option value="inset">📚 교사연수/휴교 (INSET/PD)</option>
+                      <option value="holiday">🇰🇷 법정 공휴일 (Holiday)</option>
+                      <option value="term_date">🔔 학기 개학/종업 (Term Date)</option>
+                      <option value="other">기타</option>
                     </select>
                   </div>
                 </div>
@@ -678,17 +865,28 @@ export const ScheduleDetailDrawer: React.FC = () => {
                   </div>
                 </div>
 
+                <div>
+                  <label className="text-[11px] font-bold text-slate-600">메모 / 특이사항 (선택)</label>
+                  <input
+                    type="text"
+                    value={newHolidayNotes}
+                    onChange={(e) => setNewHolidayNotes(e.target.value)}
+                    placeholder="예: 학생 10시 늦은 등교, 기숙사 입소일 등"
+                    className="w-full mt-1 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-800"
+                  />
+                </div>
+
                 <div className="flex items-center justify-end gap-2 pt-1">
                   <button
                     type="button"
                     onClick={() => setIsAddingHoliday(false)}
-                    className="px-3 py-1.5 rounded-lg bg-slate-200 text-slate-700 text-xs font-bold"
+                    className="px-3 py-1.5 rounded-lg bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer hover:bg-slate-300"
                   >
                     취소
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 shadow-2xs"
+                    className="px-4 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 shadow-2xs cursor-pointer"
                   >
                     달력에 등록
                   </button>
@@ -696,27 +894,107 @@ export const ScheduleDetailDrawer: React.FC = () => {
               </form>
             )}
 
-            {/* 등록된 방학 목록 */}
-            <div className="flex flex-col gap-2">
-              <span className="text-xs font-bold text-slate-700">
-                등록된 방학 및 학사일정 ({holidays.length}건)
-              </span>
+            {/* 학교별 필터 탭 */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-0.5 text-xs font-bold text-slate-600 no-scrollbar">
+              <span className="text-slate-400 text-[10px] shrink-0">학교:</span>
+              {['ALL', 'NLCS', 'BHA', 'KIS', 'SJA'].map((schId) => {
+                const sc = schools.find((s) => s.id === schId);
+                const count = schId === 'ALL'
+                  ? holidays.length
+                  : holidays.filter((h) => h.schoolId === schId).length;
+                const isSelected = holidaySchoolFilter === schId;
 
-              {holidays.length === 0 ? (
+                return (
+                  <button
+                    key={schId}
+                    type="button"
+                    onClick={() => setHolidaySchoolFilter(schId)}
+                    className={`px-2 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center gap-1 shrink-0 ${
+                      isSelected
+                        ? 'bg-blue-600 text-white shadow-2xs font-extrabold'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    <span>{schId === 'ALL' ? '전체' : sc?.shortName || schId}</span>
+                    <span className={`text-[10px] px-1 py-0.2 rounded-full ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 일정 유형 카테고리 필터 칩 */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-0.5 text-xs font-bold text-slate-600 no-scrollbar">
+              <span className="text-slate-400 text-[10px] shrink-0">유형:</span>
+              {[
+                { id: 'ALL', label: '전체' },
+                { id: 'break', label: '🏖️ 방학' },
+                { id: 'inset', label: '📚 교사연수/휴교' },
+                { id: 'holiday', label: '🇰🇷 공휴일' },
+                { id: 'term_date', label: '🔔 개학/종업' },
+              ].map((cat) => {
+                const isSelected = holidayCategoryFilter === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setHolidayCategoryFilter(cat.id)}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition cursor-pointer shrink-0 ${
+                      isSelected
+                        ? 'bg-slate-900 text-white shadow-2xs font-extrabold'
+                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 등록된 방학/학사일정 목록 */}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                <span>학사일정 목록 ({filteredHolidays.length}건)</span>
+                {(holidaySchoolFilter !== 'ALL' || holidayCategoryFilter !== 'ALL') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHolidaySchoolFilter('ALL');
+                      setHolidayCategoryFilter('ALL');
+                    }}
+                    className="text-[10px] text-blue-600 hover:underline cursor-pointer"
+                  >
+                    필터 초기화
+                  </button>
+                )}
+              </div>
+
+              {filteredHolidays.length === 0 ? (
                 <div className="p-4 rounded-xl border border-dashed border-slate-300 text-center text-xs text-slate-400">
-                  등록된 방학 일정이 없습니다.
+                  선택한 조건의 학사일정이 없습니다.
                 </div>
               ) : (
-                holidays.map((h) => {
+                filteredHolidays.map((h) => {
                   const sc = schools.find((s) => s.id === h.schoolId);
                   const isCurrentInThisHoliday = serviceDate >= h.startDate && serviceDate <= h.endDate;
+                  const category = h.category || (h.type === 'vacation' ? 'break' : h.type === 'school_closed' ? 'inset' : 'other');
+
+                  const categoryBadges: Record<string, { label: string; bg: string }> = {
+                    break: { label: '정규방학', bg: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+                    inset: { label: '교사연수/휴교', bg: 'bg-purple-50 text-purple-700 border-purple-200' },
+                    holiday: { label: '공휴일', bg: 'bg-rose-50 text-rose-700 border-rose-200' },
+                    term_date: { label: '개학/종업', bg: 'bg-blue-50 text-blue-700 border-blue-200' },
+                    other: { label: '기타', bg: 'bg-slate-50 text-slate-600 border-slate-200' },
+                  };
+                  const cBadge = categoryBadges[category] || categoryBadges.other;
 
                   return (
                     <div
                       key={h.id}
                       className={`p-3 rounded-xl border transition flex items-center justify-between gap-2 shadow-2xs ${
                         isCurrentInThisHoliday
-                          ? 'border-amber-400 bg-amber-50/60'
+                          ? 'border-amber-400 bg-amber-50/60 ring-1 ring-amber-200'
                           : 'border-slate-200 bg-white hover:border-slate-300'
                       }`}
                     >
@@ -735,10 +1013,18 @@ export const ScheduleDetailDrawer: React.FC = () => {
                                 {sc.shortName}
                               </span>
                             )}
+                            <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${cBadge.bg}`}>
+                              {cBadge.label}
+                            </span>
                           </div>
-                          <span className="text-[11px] text-slate-500 font-mono">
-                            {h.startDate} ~ {h.endDate}
-                          </span>
+                          <div className="flex items-center gap-2 flex-wrap text-[11px] text-slate-500 font-mono mt-0.5">
+                            <span>{h.startDate} ~ {h.endDate}</span>
+                            {h.notes && (
+                              <span className="text-[10px] text-slate-400 font-sans italic">
+                                ({h.notes})
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -758,7 +1044,7 @@ export const ScheduleDetailDrawer: React.FC = () => {
                           type="button"
                           onClick={() => removeHoliday(h.id)}
                           className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition cursor-pointer"
-                          title="방학 삭제"
+                          title="일정 삭제"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -770,6 +1056,7 @@ export const ScheduleDetailDrawer: React.FC = () => {
             </div>
           </div>
         )}
+
 
         {/* 3-D. 구간별 이동 시간 설정 (운행 설정 탭 또는 기본 탭) */}
         {detailDrawerTab === 'route' && (

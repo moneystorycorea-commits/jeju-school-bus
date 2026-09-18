@@ -185,12 +185,38 @@ export interface StudentSchedule {
   notes?: string;
 }
 
-// 학교 휴일
+// 학교 휴일 및 학사일정
+export type HolidayCategory = 'break' | 'inset' | 'holiday' | 'term_date' | 'other';
+
 export interface SchoolHoliday {
   id: string;
-  schoolId: string;
-  startDate: string;          // YYYY-MM-DD
-  endDate: string;            // YYYY-MM-DD
+  schoolId: string;          // 'NLCS' | 'BHA' | 'KIS' | 'SJA' | 'CHEONG' | 'CHEONG_MID' | 'ALL'
+  startDate: string;         // YYYY-MM-DD
+  endDate: string;           // YYYY-MM-DD
   name: string;
   type: 'vacation' | 'school_closed' | 'school_event' | 'other';
+  category?: HolidayCategory; // 'break': 정규방학, 'inset': 교사연수/휴교, 'holiday': 공휴일, 'term_date': 학기시작/종료
+  notes?: string;
 }
+
+// 옵션 B: 슬라이더 드래그 시 분리 감지 제안
+export interface SplitTripProposal {
+  studentId: string;
+  studentName: string;
+  schoolId: string;
+  vehicleId: string;
+  newMinute: MinuteOfDay;
+  oldMinute: MinuteOfDay;
+  delta: number;
+  travelMinutes: number;
+  newDepartureMinute: MinuteOfDay;
+  oldDepartureMinute: MinuteOfDay;
+  otherStudents: {
+    id: string;
+    name: string;
+    schoolId: string;
+    schoolName: string;
+    assignedMinute: MinuteOfDay;
+  }[];
+}
+

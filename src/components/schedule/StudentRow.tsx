@@ -42,8 +42,9 @@ export const StudentRow: React.FC<StudentRowProps> = ({
   const ws = student.weeklySchedule?.[currentWeekday];
   const isInactive = !schedule || (ws && (scheduleType === 'MORNING' ? !ws.morningActive : !ws.afternoonActive));
   const schoolHoliday = holidays.find(
-    (h) => h.schoolId === student.schoolId && serviceDate >= h.startDate && serviceDate <= h.endDate
+    (h) => (h.schoolId === student.schoolId || h.schoolId === 'ALL') && serviceDate >= h.startDate && serviceDate <= h.endDate
   );
+
 
   const {
     attributes,
@@ -201,7 +202,10 @@ export const StudentRow: React.FC<StudentRowProps> = ({
         {/* 스케줄 블록 또는 미이용 안내 / 방학 안내 */}
         {schoolHoliday ? (
           <div className="h-7.5 flex items-center gap-1.5 px-3 rounded-md bg-amber-50/80 border border-amber-200/80 text-amber-900 text-xs font-semibold ml-4 shadow-2xs">
-            <span>🌴 {schoolHoliday.name} (방학 기간)</span>
+            <span>🌴 {schoolHoliday.name}</span>
+            {schoolHoliday.notes && (
+              <span className="text-[11px] text-amber-700/80 font-normal">({schoolHoliday.notes})</span>
+            )}
           </div>
         ) : isInactive ? (
           <div className="h-7.5 flex items-center gap-2 px-3 rounded-md bg-slate-100/90 border border-dashed border-slate-300 text-slate-500 text-xs ml-4 shadow-2xs">

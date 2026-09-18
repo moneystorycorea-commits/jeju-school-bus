@@ -16,6 +16,7 @@ import {
   Conflict,
   MinuteOfDay,
   StudentWeeklySchedule,
+  SplitTripProposal,
 } from '@/types';
 import {
   INITIAL_STUDENTS,
@@ -69,6 +70,8 @@ interface ScheduleState {
   isHelpOpen: boolean;
   activeNav: string;
   draggingMinute: MinuteOfDay | null;
+  splitTripProposal: SplitTripProposal | null;
+  forceDesktopView: boolean;
 
   // 히스토리 (Undo)
   history: HistorySnapshot[];
@@ -80,6 +83,9 @@ interface ScheduleState {
 
   // 액션
   setDraggingMinute: (minute: MinuteOfDay | null) => void;
+  setSplitTripProposal: (proposal: SplitTripProposal | null) => void;
+  executeSplitTrip: (proposal: SplitTripProposal) => void;
+  setForceDesktopView: (force: boolean) => void;
   setServiceDate: (date: string) => void;
   nextDate: () => void;
   prevDate: () => void;
@@ -99,7 +105,7 @@ interface ScheduleState {
   setDetailDrawerTab: (tab: 'info' | 'vacation' | 'route') => void;
   clearGuardianNotification: () => void;
 
-  updateAssignedTime: (studentId: string, newMinute: MinuteOfDay) => void;
+  updateAssignedTime: (studentId: string, newMinute: MinuteOfDay, forceApply?: boolean) => void;
   requestTimeChange: (studentId: string, newMinute: MinuteOfDay) => void;
   approveTimeRequest: (requestId: string) => void;
   rejectTimeRequest: (requestId: string) => void;
@@ -183,10 +189,15 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
   isHelpOpen: false,
   activeNav: 'schedule',
   draggingMinute: null,
+  splitTripProposal: null,
+  forceDesktopView: false,
 
   history: [],
 
   setDraggingMinute: (minute: MinuteOfDay | null) => set({ draggingMinute: minute }),
+  setSplitTripProposal: (proposal: SplitTripProposal | null) => set({ splitTripProposal: proposal }),
+  setForceDesktopView: (force: boolean) => set({ forceDesktopView: force }),
+
 
   getTripInstances: () => {
     const { serviceDate, scheduleType, tripTemplates, routeSegments, locations, schedules } = get();
@@ -279,8 +290,8 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
   closeConflictModal: () => set({ isConflictModalOpen: false }),
   setDetailDrawerTab: (tab) => set({ detailDrawerTab: tab, isDetailDrawerOpen: true }),
 
-  updateAssignedTime: (studentId: string, newMinute: MinuteOfDay) => {
-    const { students, schedules, routeSegments, currentRole, serviceDate, scheduleType, tripTemplates } = get();
+  updateAssignedTime: (studentId: string, newMinute: MinuteOfDay, forceApply?: boolean) => {
+    const { students, schools, schedules, routeSegments, currentRole, serviceDate, scheduleType, tripTemplates } = get();
     
     // Guardian / Student 역할인 경우 실제 배정시간을 변경하지 않고 TimeRequest 생성
     if (currentRole !== 'admin') {
@@ -312,8 +323,60 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       const delta = newDeparture - oldDeparture;
 
       if (delta !== 0) {
+        // [옵션 B: 분리 감지 모드]
+        // 같은 차량/운행에 다른 학교 학생이 함께 묶여있고, 15분 이상 차이나게 드래그했을 때 분리 제안 다이얼로그 띄움
+        if (!forceApply && Math.abs(delta) >= 15) {
+          const weekday = getWeekdayNumber(serviceDate);
+          const activeTemplatesForVehicle = tripTemplates.filter(
+            (tpl) => tpl.type === 'MORNING' && tpl.vehicleId === vehicleId && tpl.weekdays.includes(weekday)
+          );
+          const currentTemplate = activeTemplatesForVehicle.find((tpl) =>
+            tpl.stops.some((st) => st.locationId.includes(targetStudent.schoolId))
+          );
+
+          if (currentTemplate && currentTemplate.stops.length > 1) {
+            const otherStudentsOnTrip = students.filter((s) => {
+              if (s.id === studentId || s.schoolId === targetStudent.schoolId) return false;
+              if (vehicleId === 'v2') {
+                return ['BHA', 'SJA', 'KIS'].includes(s.schoolId);
+              }
+              return ['CHEONG', 'CHEONG_MID'].includes(s.schoolId);
+            });
+
+            if (otherStudentsOnTrip.length > 0) {
+              set({
+                splitTripProposal: {
+                  studentId,
+                  studentName: targetStudent.name,
+                  schoolId: targetStudent.schoolId,
+                  vehicleId,
+                  newMinute,
+                  oldMinute: targetSchedule.assignedMinute,
+                  delta,
+                  travelMinutes,
+                  newDepartureMinute: newDeparture,
+                  oldDepartureMinute: oldDeparture,
+                  otherStudents: otherStudentsOnTrip.map((s) => {
+                    const sc = schools.find((sch) => sch.id === s.schoolId);
+                    const sch = schedules.find(
+                      (sched) => sched.studentId === s.id && sched.date === serviceDate && sched.type === 'MORNING'
+                    );
+                    return {
+                      id: s.id,
+                      name: s.name,
+                      schoolId: s.schoolId,
+                      schoolName: sc?.shortName || s.schoolId,
+                      assignedMinute: (sch?.assignedMinute || 0) as MinuteOfDay,
+                    };
+                  }),
+                },
+              });
+              return; // 슬라이더 일괄 이동을 보류하고 분리 다이얼로그 표시
+            }
+          }
+        }
+
         // 1. 해당 호차의 TripTemplate 출발시간 동기화 (운행시간표와 실시간 연동)
-        // 1호차는 1회차 NLCS, 2회차 저청으로 분리 운행되므로 해당 학교가 포함된 Trip만 연동
         const weekday = getWeekdayNumber(serviceDate);
         updatedTripTemplates = tripTemplates.map((tpl) => {
           if (tpl.type === 'MORNING' && tpl.vehicleId === vehicleId && tpl.weekdays.includes(weekday)) {
@@ -337,8 +400,6 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
         });
 
         // 2. 동일 차량/동행 노선 학생들의 assignedMinute 동기화
-        // 1호차: NLCS 학생들끼리, 저청 학생들끼리 분리
-        // 2호차: BHA, SJA, KIS 학생 전체 동행 순환 동기화
         const sameTripSchoolIds = isVehicle1
           ? (targetStudent.schoolId === 'NLCS' ? new Set(['NLCS']) : new Set(['CHEONG', 'CHEONG_MID']))
           : new Set(['BHA', 'SJA', 'KIS']);
@@ -393,6 +454,89 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       set({ saveStatus: 'saved' });
     }, 500);
   },
+
+  executeSplitTrip: (proposal: SplitTripProposal) => {
+    const { tripTemplates, schedules, serviceDate, students, routeSegments } = get();
+    const snapshot: HistorySnapshot = {
+      students: [...students],
+      schedules: [...schedules],
+      routeSegments: [...routeSegments],
+      tripTemplates: [...tripTemplates],
+    };
+
+    const weekday = getWeekdayNumber(serviceDate);
+
+    // 1. 기존 템플릿에서 분리 대상 학교의 정류장 제거
+    let updatedTripTemplates = tripTemplates.map((tpl) => {
+      if (tpl.vehicleId === proposal.vehicleId && tpl.type === 'MORNING' && tpl.weekdays.includes(weekday)) {
+        const hasTargetSchool = tpl.stops.some((st) => st.locationId.includes(proposal.schoolId));
+        if (hasTargetSchool && tpl.stops.length > 1) {
+          const remainingStops = tpl.stops.filter((st) => !st.locationId.includes(proposal.schoolId));
+          return {
+            ...tpl,
+            stops: remainingStops.map((st, idx) => ({ ...st, stopOrder: idx + 1 })),
+            referenceReturnMinute: (tpl.defaultDepartureMinute + 35) as MinuteOfDay,
+          };
+        }
+      }
+      return tpl;
+    });
+
+    // 2. 분리 대상 학교를 위한 신규 2회차 템플릿 추가
+    const locationMapping: Record<string, string> = {
+      KIS: 'KIS_MAIN',
+      SJA: 'SJA_GATE3',
+      BHA: 'BHA_GATE1',
+      NLCS: 'NLCS_MAIN',
+      CHEONG: 'CHEONG_MAIN',
+      CHEONG_MID: 'CHEONG_MID_MAIN',
+    };
+    const targetLocationId = locationMapping[proposal.schoolId] || `${proposal.schoolId}_MAIN`;
+
+    const newTemplateId = `trip-${proposal.vehicleId}-m-${proposal.schoolId.toLowerCase()}-${Date.now()}`;
+    const newTemplate: TripTemplate = {
+      id: newTemplateId,
+      vehicleId: proposal.vehicleId,
+      type: 'MORNING',
+      weekdays: [1, 2, 3, 4, 5],
+      defaultDepartureMinute: proposal.newDepartureMinute,
+      referenceReturnMinute: (proposal.newDepartureMinute + 35) as MinuteOfDay,
+      stops: [
+        {
+          locationId: targetLocationId,
+          stopOrder: 1,
+          dwellMinutesOverride: 1,
+        },
+      ],
+      effectiveFrom: '2024-03-01',
+    };
+    updatedTripTemplates.push(newTemplate);
+
+    // 3. 분리 대상 학교 학생들만 신규 배정시간으로 독립 업데이트 (기존 학생 시간표 보존)
+    const updatedSchedules = schedules.map((s) => {
+      if (s.date === serviceDate && s.type === 'MORNING') {
+        const stu = students.find((st) => st.id === s.studentId);
+        if (stu && stu.schoolId === proposal.schoolId) {
+          return {
+            ...s,
+            assignedMinute: proposal.newMinute,
+            calculatedMinute: proposal.newMinute,
+          };
+        }
+      }
+      return s;
+    });
+
+    set((state) => ({
+      schedules: updatedSchedules,
+      tripTemplates: updatedTripTemplates,
+      splitTripProposal: null,
+      guardianNotification: `🎉 ${proposal.vehicleId === 'v1' ? '1호차' : '2호차'}가 [1회차 노선]과 [2회차: ${proposal.schoolId} (${formatMinute(proposal.newDepartureMinute)} 출발)]로 자동 분리되었습니다!`,
+      history: [...state.history.slice(-9), snapshot],
+      saveStatus: 'saved',
+    }));
+  },
+
 
   requestTimeChange: (studentId: string, newMinute: MinuteOfDay) => {
     const { serviceDate, scheduleType, timeRequests, students } = get();

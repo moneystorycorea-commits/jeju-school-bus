@@ -7,13 +7,17 @@ import { StudentDetailPanel } from '@/components/students/StudentDetailPanel';
 import { ScheduleDetailDrawer } from '@/components/drawer/ScheduleDetailDrawer';
 import { StudentFormModal } from '@/components/students/StudentFormModal';
 import { ScheduleConflictModal } from '@/components/schedule/ScheduleConflictModal';
+import { SplitTripModal } from '@/components/schedule/SplitTripModal';
 import { TripManagementView } from '@/components/trips/TripManagementView';
 import { StudentManagementView } from '@/components/students/StudentManagementView';
+import { MobileScheduleView } from '@/components/mobile/MobileScheduleView';
+import { useIsMobile } from '@/hooks/useMediaQuery';
 import { useScheduleStore } from '@/lib/store/useScheduleStore';
-import { CheckCircle, Clock, Check, X } from 'lucide-react';
+import { CheckCircle, Clock, Check, X, Smartphone } from 'lucide-react';
 import { formatMinute } from '@/lib/scheduling/time';
 
 export const App: React.FC = () => {
+  const isMobile = useIsMobile();
   const {
     activeNav,
     guardianNotification,
@@ -23,12 +27,28 @@ export const App: React.FC = () => {
     rejectTimeRequest,
     currentRole,
     students,
+    forceDesktopView,
+    setForceDesktopView,
   } = useScheduleStore();
 
   const pendingRequests = timeRequests.filter((r) => r.status === 'pending');
 
+  // 자동 디바이스 감지: 스마트폰 환경에서는 모바일 전용 뷰 렌더링
+  if (isMobile && !forceDesktopView) {
+    return (
+      <div className="w-screen min-h-screen bg-slate-100 font-sans text-slate-900 antialiased overflow-x-hidden">
+        <MobileScheduleView />
+        <StudentFormModal />
+        <ScheduleConflictModal />
+        <SplitTripModal />
+        <StudentDetailPanel />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-100 font-sans text-slate-900 antialiased">
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-100 font-sans text-slate-900 antialiased relative">
+
       {/* 1. 좌측 Navigation Bar (스케줄 / 운행시간표 / 학생 관리 / 설정) */}
       <SidebarNav />
 
@@ -114,8 +134,23 @@ export const App: React.FC = () => {
       {/* 운행 시간 충돌 분석 및 조치 모달 (가로 폭 확장 & 큰 글씨) */}
       <ScheduleConflictModal />
 
+      {/* 옵션 B: 15분 이상 차이 시 2회차 운행 분리 다이얼로그 */}
+      <SplitTripModal />
+
       {/* 학생 정보 상세 카드 (학생명을 클릭할 경우에만 별도 모달 창으로 팝업) */}
       <StudentDetailPanel />
+
+      {/* 모바일 기기에서 PC 버전 이용 중일 때 모바일 화면 복귀 플로팅 버튼 */}
+      {isMobile && forceDesktopView && (
+        <button
+          type="button"
+          onClick={() => setForceDesktopView(false)}
+          className="fixed bottom-4 right-4 z-50 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs px-3.5 py-2 rounded-full shadow-xl flex items-center gap-1.5 transition cursor-pointer border-2 border-white"
+        >
+          <Smartphone className="w-4 h-4" />
+          <span>모바일 간편 모드로 복귀</span>
+        </button>
+      )}
     </div>
   );
 };
