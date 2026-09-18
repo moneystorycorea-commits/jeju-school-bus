@@ -1,9 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { useScheduleStore } from '@/lib/store/useScheduleStore';
-import { formatMinute, getWeekdayNumber, getTodayDateString } from '@/lib/scheduling/time';
+import {
+  formatMinute,
+  getWeekdayNumber,
+  getTodayDateString,
+  getDaysDifference,
+} from '@/lib/scheduling/time';
 import { formatGradeDisplay } from '@/lib/constants/schools';
 import { getSchoolTravelMinutes } from '@/lib/scheduling/routeCalculator';
 import { SchoolCalendarMatrix } from '@/components/drawer/SchoolCalendarMatrix';
+import { MobileAcademicCalendar } from './MobileAcademicCalendar';
 import {
   Bus,
   Calendar,
@@ -13,8 +19,10 @@ import {
   Clock,
   X,
   Plus,
+  ListFilter,
+  Layers,
 } from 'lucide-react';
-import { UserRole } from '@/types';
+import { UserRole, SchoolHoliday } from '@/types';
 
 export const MobileScheduleView: React.FC = () => {
   const {
@@ -39,6 +47,20 @@ export const MobileScheduleView: React.FC = () => {
 
   const [selectedVehicle, setSelectedVehicle] = useState<'v1' | 'v2'>('v1');
   const [isCalendarSheetOpen, setIsCalendarSheetOpen] = useState(false);
+  const [calendarTab, setCalendarTab] = useState<'calendar' | 'list' | 'matrix'>('calendar');
+  const [activeHoliday, setActiveHoliday] = useState<SchoolHoliday | null>(null);
+
+  const handleOpenCalendarSheet = () => {
+    // 현재 serviceDate에 해당하는 휴교/방학이 있다면 자동 활성화
+    const currentHoliday = holidays.find(
+      (h) => serviceDate >= h.startDate && serviceDate <= h.endDate
+    );
+    if (currentHoliday) {
+      setActiveHoliday(currentHoliday);
+    }
+    setCalendarTab('calendar');
+    setIsCalendarSheetOpen(true);
+  };
 
   const todayStr = getTodayDateString();
   const isToday = serviceDate === todayStr;
@@ -121,7 +143,7 @@ export const MobileScheduleView: React.FC = () => {
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={() => setIsCalendarSheetOpen(true)}
+              onClick={handleOpenCalendarSheet}
               className="flex items-center gap-1 px-2 py-1 rounded-md bg-blue-50 border border-blue-200 text-blue-900 font-extrabold text-xs cursor-pointer"
             >
               <Calendar className="w-3.5 h-3.5 text-blue-600" />
@@ -383,80 +405,185 @@ export const MobileScheduleView: React.FC = () => {
       {/* 5. 하단 고정 액션 바 (슬림 컴팩트) */}
       <div className="fixed bottom-0 left-0 right-0 z-20 bg-white/95 backdrop-blur-md border-t border-slate-200 px-3 py-2 flex items-center justify-between">
         <button
-          onClick={() => setIsCalendarSheetOpen(true)}
+          onClick={handleOpenCalendarSheet}
           className="flex-1 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-xs active:scale-98 transition cursor-pointer"
         >
           <Calendar className="w-4 h-4" />
-          <span>2026-2027 4대 학교 학사일정 보기</span>
+          <span>2026-2027 4대 학교 학사일정 및 캘린더 보기</span>
         </button>
       </div>
 
       {/* 6. 모바일 학사일정 바텀시트 (Bottom Sheet) */}
       {isCalendarSheetOpen && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto flex flex-col shadow-2xl animate-slideUp">
+          <div className="bg-white rounded-t-3xl max-h-[88vh] flex flex-col shadow-2xl animate-slideUp overflow-hidden">
             {/* 시트 상단 바 */}
-            <div className="sticky top-0 bg-white p-4 border-b border-slate-200 flex items-center justify-between z-10">
+            <div className="sticky top-0 bg-white p-3.5 px-4 border-b border-slate-200 flex items-center justify-between z-20 shrink-0">
               <div className="flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-blue-600 shrink-0" />
                 <h3 className="font-extrabold text-sm text-slate-900 truncate">
-                  2026-2027 4대 학교 학사일정 및 방학 매트릭스
+                  2026-2027 4대 학교 학사일정 및 캘린더
                 </h3>
               </div>
               <button
                 onClick={() => setIsCalendarSheetOpen(false)}
                 className="p-1.5 rounded-full hover:bg-slate-100 text-slate-500 cursor-pointer shrink-0"
+                title="닫기"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-4 flex flex-col gap-4 overflow-y-auto flex-1 overscroll-contain">
-              {/* 4대 학교 학사일정 비교 매트릭스 */}
-              <SchoolCalendarMatrix onJump={() => setIsCalendarSheetOpen(false)} />
+            {/* 시트 탭 바 (월간 캘린더 기간 보기 / 전체 일정 목록 / 4개교 비교 표) */}
+            <div className="flex items-center gap-1 p-2 bg-slate-100/90 border-b border-slate-200 shrink-0">
+              <button
+                type="button"
+                onClick={() => setCalendarTab('calendar')}
+                className={`flex-1 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                  calendarTab === 'calendar'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>월간 캘린더 (기간 보기)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCalendarTab('list')}
+                className={`flex-1 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                  calendarTab === 'list'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <ListFilter className="w-3.5 h-3.5" />
+                <span>전체 일정 ({holidays.length}건)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCalendarTab('matrix')}
+                className={`flex-1 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                  calendarTab === 'matrix'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>4개교 비교 표</span>
+              </button>
+            </div>
 
-              {/* 등록된 방학/휴교 전체 목록 */}
-              <div className="flex flex-col gap-2">
-                <span className="text-xs font-bold text-slate-700">
-                  전체 학사일정 ({holidays.length}건)
-                </span>
-                <div className="flex flex-col gap-2">
-                  {holidays.map((h) => {
-                    const sc = schools.find((s) => s.id === h.schoolId);
-                    return (
-                      <div
-                        key={h.id}
-                        onClick={() => {
-                          useScheduleStore.getState().setServiceDate(h.startDate);
-                          setIsCalendarSheetOpen(false);
-                        }}
-                        className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50 transition cursor-pointer flex items-center justify-between"
-                      >
-                        <div className="flex flex-col">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-xs text-slate-900">{h.name}</span>
-                            {sc && (
-                              <span
-                                className="text-[10px] font-black px-1.5 py-0.2 rounded"
-                                style={{
-                                  backgroundColor: sc.badgeBg,
-                                  color: sc.color,
-                                }}
-                              >
-                                {sc.shortName}
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-[10px] font-mono text-slate-500">
-                            {h.startDate} ~ {h.endDate}
-                          </span>
-                        </div>
-                        <span className="text-[10px] font-bold text-blue-600">이동 ➔</span>
-                      </div>
+            {/* 시트 본문 콘텐츠 */}
+            <div className="p-3.5 sm:p-4 flex flex-col gap-4 overflow-y-auto flex-1 overscroll-contain">
+              {calendarTab === 'calendar' && (
+                <MobileAcademicCalendar
+                  holidays={holidays}
+                  schools={schools}
+                  currentDate={serviceDate}
+                  activeHoliday={activeHoliday}
+                  onSelectHoliday={(h) => setActiveHoliday(h)}
+                  onSelectDate={(date) => {
+                    const matched = holidays.find(
+                      (h) => date >= h.startDate && date <= h.endDate
                     );
-                  })}
+                    if (matched) {
+                      setActiveHoliday(matched);
+                    }
+                  }}
+                  onGoToSchedule={(date) => {
+                    setServiceDate(date);
+                    setIsCalendarSheetOpen(false);
+                  }}
+                />
+              )}
+
+              {calendarTab === 'list' && (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-xs font-bold text-slate-700">
+                      전체 등록된 방학/휴교 일정 ({holidays.length}건)
+                    </span>
+                    <span className="text-[10.5px] text-blue-600 font-bold">
+                      터치 시 캘린더 상 기간 표시 ➔
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    {holidays.map((h) => {
+                      const sc = schools.find((s) => s.id === h.schoolId);
+                      const daysCount = getDaysDifference(h.startDate, h.endDate);
+                      const isThisActive = activeHoliday?.id === h.id;
+
+                      return (
+                        <div
+                          key={h.id}
+                          onClick={() => {
+                            setActiveHoliday(h);
+                            setCalendarTab('calendar');
+                          }}
+                          className={`p-3 rounded-2xl border transition cursor-pointer flex items-center justify-between shadow-2xs active:scale-[0.99] group ${
+                            isThisActive
+                              ? 'bg-amber-50/90 border-amber-300 ring-2 ring-amber-300'
+                              : 'bg-white border-slate-200 hover:border-blue-400 hover:bg-blue-50/60'
+                          }`}
+                        >
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-sm">🌴</span>
+                              <span className="font-extrabold text-xs text-slate-900 group-hover:text-blue-900">
+                                {h.name}
+                              </span>
+                              {sc && (
+                                <span
+                                  className="text-[10px] font-black px-1.5 py-0.2 rounded"
+                                  style={{
+                                    backgroundColor: sc.badgeBg,
+                                    color: sc.color,
+                                  }}
+                                >
+                                  {sc.shortName}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500">
+                              <span>
+                                {h.startDate} ~ {h.endDate}
+                              </span>
+                              <span className="font-bold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200/60">
+                                {daysCount}일간
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0">
+                            <span className="text-[11px] font-bold text-blue-700 bg-blue-50 group-hover:bg-blue-600 group-hover:text-white px-2.5 py-1 rounded-lg border border-blue-200 transition flex items-center gap-1 shadow-2xs">
+                              <span>캘린더 기간 보기</span>
+                              <span>➔</span>
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {calendarTab === 'matrix' && (
+                <div className="flex flex-col gap-3">
+                  <SchoolCalendarMatrix
+                    onJump={(date) => {
+                      const matched = holidays.find(
+                        (h) => date >= h.startDate && date <= h.endDate
+                      );
+                      if (matched) {
+                        setActiveHoliday(matched);
+                      }
+                      setCalendarTab('calendar');
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>

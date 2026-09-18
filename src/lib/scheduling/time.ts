@@ -66,3 +66,13 @@ export function getTodayDateString(): string {
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
+
+export function getDaysDifference(startStr: string, endStr: string): number {
+  if (!startStr || !endStr) return 1;
+  const [y1, m1, d1] = startStr.split('-').map(Number);
+  const [y2, m2, d2] = endStr.split('-').map(Number);
+  const date1 = new Date(y1, m1 - 1, d1);
+  const date2 = new Date(y2, m2 - 1, d2);
+  const diffTime = date2.getTime() - date1.getTime();
+  return Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
+}
