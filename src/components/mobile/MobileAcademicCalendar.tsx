@@ -319,16 +319,9 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
       };
     });
 
-    const validDays = schoolResults.filter((r) => r.days > 0).map((r) => r.days);
-    const minDays = validDays.length > 0 ? Math.min(...validDays) : 0;
-    const maxDays = validDays.length > 0 ? Math.max(...validDays) : 0;
-
     return {
       keyword: matchedKw,
       results: schoolResults,
-      minDays,
-      maxDays,
-      isVariable: maxDays > minDays,
     };
   }, [activeHoliday, viewMonth, holidays]);
 
@@ -357,9 +350,6 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
             <div className="flex items-center gap-1.5">
               <span className="text-[11px] font-mono font-black text-amber-950 bg-amber-200/90 px-2 py-0.5 rounded-full border border-amber-300">
                 {currentEventIndex >= 0 ? `${currentEventIndex + 1} / ${currentFilteredHolidays.length}` : ''}
-              </span>
-              <span className="text-[10px] font-black text-amber-800">
-                👈 좌우 스와이프 👉
               </span>
             </div>
 
@@ -707,21 +697,15 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
               <div className="flex items-center gap-1.5">
                 <Layers className="w-4 h-4 text-blue-600 shrink-0" />
                 <span className="text-xs font-black text-slate-900">
-                  4대 학교 [{majorOverlapAnalysis.keyword}] 일정 겹침 및 차이 분석
+                  4대 학교 [{majorOverlapAnalysis.keyword}] 일정
                 </span>
               </div>
-              <span className="text-[10px] font-bold text-blue-700 bg-blue-100/80 px-2 py-0.2 rounded-full border border-blue-200">
-                실시간 대조
-              </span>
             </div>
 
             {/* 학교별 일정 현황 행 */}
             <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-4 gap-1.5 pt-0.5">
               {majorOverlapAnalysis.results.map((item) => {
                 const isSelectedSchool = schoolFilter === item.school.id;
-                const isExtraDays =
-                  majorOverlapAnalysis.isVariable &&
-                  item.days > majorOverlapAnalysis.minDays;
 
                 return (
                   <div
@@ -748,11 +732,6 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
                           {item.school.name}
                         </span>
                       </div>
-                      {isExtraDays && (
-                        <span className="text-[9.5px] font-black text-amber-800 bg-amber-100 px-1 py-0.2 rounded">
-                          +{item.days - majorOverlapAnalysis.minDays}일 추가
-                        </span>
-                      )}
                     </div>
                     <div className="flex items-center justify-between text-[11px] font-mono">
                       <span className="text-slate-600 font-bold">{item.dates}</span>
@@ -762,13 +741,6 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
                 );
               })}
             </div>
-
-            {/* 일정 분석 코멘트 */}
-            {majorOverlapAnalysis.isVariable && (
-              <div className="p-2 rounded-xl bg-blue-50/80 border border-blue-200/80 text-[11px] text-blue-950 font-medium leading-relaxed">
-                💡 <strong>겹침 분석:</strong> 학교별로 방학 시작일 및 종료일에 차이가 있습니다. 각 학교 카드를 누르면 달력 상에서 해당 학교만의 기간을 집중 비교할 수 있습니다.
-              </div>
-            )}
           </div>
         )}
 
