@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useScheduleStore } from '@/lib/store/useScheduleStore';
 import {
   formatMinute,
@@ -17,6 +17,8 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Monitor,
   Clock,
   X,
@@ -74,16 +76,69 @@ export const MobileScheduleView: React.FC = () => {
   const currentWeekday = getWeekdayNumber(serviceDate);
   const weekdayLabel = ['일', '월', '화', '수', '목', '금', '토'][new Date(serviceDate).getDay()];
 
-  // 선택된 호차에 해당하는 학생 목록 필터링
-  const vehicleStudents = useMemo(() => {
-    return students.filter((student) => {
+  // 미운행/방학 학생 목록 접기/펼치기 상태
+  const [isInactiveExpanded, setIsInactiveExpanded] = useState(false);
+
+  // 날짜, 호차, 등/하교 변경 시 미운행 목록 접힘 상태로 리셋
+  useEffect(() => {
+    setIsInactiveExpanded(false);
+  }, [serviceDate, selectedVehicle, scheduleType]);
+
+  // 선택된 호차에 해당하는 학생 목록 필터링 및 실제 탑승자 우선 스마트 정렬
+  const { activeRiders, inactiveStudents, inactiveHolidayNames } = useMemo(() => {
+    const rawList = students.filter((student) => {
       const isV1 =
         student.schoolId === 'NLCS' ||
         student.schoolId === 'CHEONG' ||
         student.schoolId === 'CHEONG_MID';
       return selectedVehicle === 'v1' ? isV1 : !isV1;
     });
-  }, [students, selectedVehicle]);
+
+    const active: typeof rawList = [];
+    const inactive: typeof rawList = [];
+    const holNames = new Set<string>();
+
+    rawList.forEach((student) => {
+      const holiday = holidays.find(
+        (h) =>
+          (h.schoolId === student.schoolId || h.schoolId === 'ALL') &&
+          serviceDate >= h.startDate &&
+          serviceDate <= h.endDate
+      );
+      const schedule = schedules.find(
+        (s) =>
+          s.studentId === student.id &&
+          s.date === serviceDate &&
+          s.type === scheduleType
+      );
+
+      if (!holiday && schedule) {
+        active.push(student);
+      } else {
+        inactive.push(student);
+        if (holiday) {
+          holNames.add(cleanHolidayName(holiday.name));
+        }
+      }
+    });
+
+    // 탑승 학생: 승차/배정 시간 기준 오름차순 정렬 (출발 순서대로 우선 표시)
+    active.sort((a, b) => {
+      const schedA = schedules.find(
+        (s) => s.studentId === a.id && s.date === serviceDate && s.type === scheduleType
+      );
+      const schedB = schedules.find(
+        (s) => s.studentId === b.id && s.date === serviceDate && s.type === scheduleType
+      );
+      return (schedA?.assignedMinute || 0) - (schedB?.assignedMinute || 0);
+    });
+
+    return {
+      activeRiders: active,
+      inactiveStudents: inactive,
+      inactiveHolidayNames: Array.from(holNames),
+    };
+  }, [students, selectedVehicle, holidays, schedules, serviceDate, scheduleType]);
 
   // 선택된 호차의 운행 정보 조회
   const activeTrips = useMemo(() => {
@@ -275,8 +330,17 @@ export const MobileScheduleView: React.FC = () => {
 
         {/* 4. 탑승 학생 명단 카드 목록 (헤더) */}
         <div className="flex items-center justify-between pt-0.5 px-0.5">
-          <h2 className="text-xs font-black text-slate-800">
-            {selectedVehicle === 'v1' ? '1호차' : '2호차'} 탑승 학생 ({vehicleStudents.length}명)
+          <h2 className="text-xs font-black text-slate-800 flex items-center gap-1.5 flex-wrap">
+            <span>{selectedVehicle === 'v1' ? '1호차' : '2호차'} 탑승 학생</span>
+            {inactiveStudents.length > 0 ? (
+              <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200">
+                실제 탑승 {activeRiders.length}명 <span className="text-slate-400 font-normal">/ 미운행 {inactiveStudents.length}명</span>
+              </span>
+            ) : (
+              <span className="text-[11px] font-bold text-slate-500">
+                ({activeRiders.length}명)
+              </span>
+            )}
           </h2>
           {currentRole === 'admin' && (
             <button
@@ -289,119 +353,207 @@ export const MobileScheduleView: React.FC = () => {
           )}
         </div>
 
-        {/* 학생 카드 목록 (컴팩트 높이 & 여백 최적화: 한 화면에 더 많은 학생 표시) */}
+        {/* 1. 실제 탑승 학생 목록 (최상단 스마트 우선 배치) */}
         <div className="flex flex-col gap-1.5">
-          {vehicleStudents.map((student) => {
-            const school = schools.find((s) => s.id === student.schoolId);
-            const schedule = schedules.find(
-              (s) =>
-                s.studentId === student.id &&
-                s.date === serviceDate &&
-                s.type === scheduleType
-            );
-            const holiday = holidays.find(
-              (h) =>
-                (h.schoolId === student.schoolId || h.schoolId === 'ALL') &&
-                serviceDate >= h.startDate &&
-                serviceDate <= h.endDate
-            );
+          {activeRiders.length > 0 ? (
+            activeRiders.map((student) => {
+              const school = schools.find((s) => s.id === student.schoolId);
+              const schedule = schedules.find(
+                (s) =>
+                  s.studentId === student.id &&
+                  s.date === serviceDate &&
+                  s.type === scheduleType
+              );
+              const holiday = holidays.find(
+                (h) =>
+                  (h.schoolId === student.schoolId || h.schoolId === 'ALL') &&
+                  serviceDate >= h.startDate &&
+                  serviceDate <= h.endDate
+              );
 
-            const travelMinutes = scheduleType === 'MORNING' && school
-              ? getSchoolTravelMinutes(school.id, routeSegments)
-              : 10;
+              const travelMinutes = scheduleType === 'MORNING' && school
+                ? getSchoolTravelMinutes(school.id, routeSegments)
+                : 10;
 
-            const departureMin = schedule
-              ? ((schedule.assignedMinute - travelMinutes) as any)
-              : null;
+              const departureMin = schedule
+                ? ((schedule.assignedMinute - travelMinutes) as any)
+                : null;
 
-            const diff =
-              schedule && schedule.requestedMinute
-                ? schedule.assignedMinute - schedule.requestedMinute
-                : 0;
+              const diff =
+                schedule && schedule.requestedMinute
+                  ? schedule.assignedMinute - schedule.requestedMinute
+                  : 0;
 
-            return (
-              <div
-                key={student.id}
-                onClick={() => selectStudent(student.id, false, true)}
-                className={`px-3 py-2 rounded-xl border transition shadow-2xs flex flex-col gap-1.5 cursor-pointer active:scale-[0.99] ${
-                  holiday
-                    ? 'bg-amber-50/70 border-amber-200'
-                    : 'bg-white border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                {/* 1행: 학교배지 + 학생이름 + 학년 + 동호수 */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className="px-1.5 py-0.2 rounded-md text-[10.5px] font-black text-white"
-                      style={{ backgroundColor: school?.color || '#3b82f6' }}
-                    >
-                      {school?.shortName}
-                    </span>
-                    <span className="font-black text-[13.5px] text-slate-950 tracking-tight">
-                      {student.name}
-                    </span>
-                    <span className="text-[11px] text-slate-400 font-bold">
-                      {formatGradeDisplay(student.grade, student.schoolId, false)}
-                    </span>
-                  </div>
-
-                  {/* 동호수 표기 */}
-                  <span className="text-[11px] font-mono font-bold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded-md border border-slate-200/60">
-                    {student.building.includes('동') ? student.building : `${student.building}동`}{' '}
-                    {student.unit.includes('호') ? student.unit : `${student.unit}호`}
-                  </span>
-                </div>
-
-                {/* 2행: 시간 안내 및 상태 배지 (슬림 바) */}
-                {holiday ? (
-                  <div className="py-1 px-2 rounded-lg bg-amber-100/70 border border-amber-300/80 text-amber-950 text-xs font-bold flex items-center justify-between">
-                    <span>🌴 {cleanHolidayName(holiday.name)}</span>
-                    <span className="text-[10px] text-amber-800">통학 미운행</span>
-                  </div>
-                ) : schedule ? (
-                  <div className="flex items-center justify-between bg-slate-50/90 py-1 px-2 rounded-lg border border-slate-200/60 text-xs">
+              return (
+                <div
+                  key={student.id}
+                  onClick={() => selectStudent(student.id, false, true)}
+                  className={`px-3 py-2 rounded-xl border transition shadow-2xs flex flex-col gap-1.5 cursor-pointer active:scale-[0.99] ${
+                    holiday
+                      ? 'bg-amber-50/70 border-amber-200'
+                      : 'bg-white border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  {/* 1행: 학교배지 + 학생이름 + 학년 + 동호수 */}
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <Clock className="w-3 h-3 text-blue-600 shrink-0" />
-                      <span className="font-mono text-[11.5px] text-slate-700">
-                        {departureMin ? (
-                          <>
-                            <strong className="text-slate-800 font-bold">{formatMinute(departureMin)}</strong> 출발{' '}
-                            <span className="text-slate-300 text-[10px]">➔</span>{' '}
-                          </>
-                        ) : ''}
-                        <strong className="text-blue-700 font-black">
-                          {formatMinute(schedule.assignedMinute)} 도착
-                        </strong>
+                      <span
+                        className="px-1.5 py-0.2 rounded-md text-[10.5px] font-black text-white"
+                        style={{ backgroundColor: school?.color || '#3b82f6' }}
+                      >
+                        {school?.shortName}
+                      </span>
+                      <span className="font-black text-[13.5px] text-slate-950 tracking-tight">
+                        {student.name}
+                      </span>
+                      <span className="text-[11px] text-slate-400 font-bold">
+                        {formatGradeDisplay(student.grade, student.schoolId, false)}
                       </span>
                     </div>
 
-                    {/* 희망시간 차이 라벨 */}
-                    {diff === 0 ? (
-                      <span className="text-[9.5px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
-                        희망 일치
-                      </span>
-                    ) : (
-                      <span
-                        className={`text-[9.5px] font-bold px-1.5 py-0.2 rounded border ${
-                          diff < 0
-                            ? 'text-blue-700 bg-blue-50 border-blue-200'
-                            : 'text-amber-700 bg-amber-50 border-amber-200'
-                        }`}
-                      >
-                        {Math.abs(diff)}분 {diff < 0 ? '빠름' : '늦음'}
-                      </span>
-                    )}
+                    {/* 동호수 표기 */}
+                    <span className="text-[11px] font-mono font-bold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded-md border border-slate-200/60">
+                      {student.building.includes('동') ? student.building : `${student.building}동`}{' '}
+                      {student.unit.includes('호') ? student.unit : `${student.unit}호`}
+                    </span>
                   </div>
-                ) : (
-                  <div className="text-[11px] text-slate-400 font-semibold py-0.5 px-1">
-                    {scheduleType === 'AFTERNOON' ? '하교시 이용 안함' : '등교시 이용 안함'}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+
+                  {/* 2행: 시간 안내 및 상태 배지 (슬림 바) */}
+                  {holiday ? (
+                    <div className="py-1 px-2 rounded-lg bg-amber-100/70 border border-amber-300/80 text-amber-950 text-xs font-bold flex items-center justify-between">
+                      <span>🌴 {cleanHolidayName(holiday.name)}</span>
+                      <span className="text-[10px] text-amber-800">통학 미운행</span>
+                    </div>
+                  ) : schedule ? (
+                    <div className="flex items-center justify-between bg-slate-50/90 py-1 px-2 rounded-lg border border-slate-200/60 text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-3 h-3 text-blue-600 shrink-0" />
+                        <span className="font-mono text-[11.5px] text-slate-700">
+                          {departureMin ? (
+                            <>
+                              <strong className="text-slate-800 font-bold">{formatMinute(departureMin)}</strong> 출발{' '}
+                              <span className="text-slate-300 text-[10px]">➔</span>{' '}
+                            </>
+                          ) : ''}
+                          <strong className="text-blue-700 font-black">
+                            {formatMinute(schedule.assignedMinute)} 도착
+                          </strong>
+                        </span>
+                      </div>
+
+                      {/* 희망시간 차이 라벨 */}
+                      {diff === 0 ? (
+                        <span className="text-[9.5px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                          희망 일치
+                        </span>
+                      ) : (
+                        <span
+                          className={`text-[9.5px] font-bold px-1.5 py-0.2 rounded border ${
+                            diff < 0
+                              ? 'text-blue-700 bg-blue-50 border-blue-200'
+                              : 'text-amber-700 bg-amber-50 border-amber-200'
+                          }`}
+                        >
+                          {Math.abs(diff)}분 {diff < 0 ? '빠름' : '늦음'}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-slate-400 font-semibold py-0.5 px-1">
+                      {scheduleType === 'AFTERNOON' ? '하교시 이용 안함' : '등교시 이용 안함'}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            <div className="py-3.5 px-3 rounded-xl bg-white border border-slate-200 text-center text-xs text-slate-500 font-bold shadow-2xs">
+              오늘 운행에 실제 탑승하는 학생이 없습니다.
+            </div>
+          )}
         </div>
+
+        {/* 2. 방학 / 미운행 학생 목록 (아코디언 접기) */}
+        {inactiveStudents.length > 0 && (
+          <div className="flex flex-col gap-1.5 pt-0.5">
+            <button
+              type="button"
+              onClick={() => setIsInactiveExpanded(!isInactiveExpanded)}
+              className="w-full py-2 px-3 rounded-xl border border-amber-200/90 bg-amber-50/80 hover:bg-amber-100/90 text-amber-950 transition flex items-center justify-between text-xs font-bold shadow-2xs cursor-pointer active:scale-[0.99]"
+            >
+              <div className="flex items-center gap-1.5 truncate pr-2">
+                <span className="shrink-0">🌴</span>
+                <span className="truncate">
+                  {inactiveHolidayNames.length > 0 ? `${inactiveHolidayNames.join(' · ')} ` : ''}
+                  미운행 학생 ({inactiveStudents.length}명)
+                </span>
+              </div>
+              <div className="flex items-center gap-1 text-[11px] text-amber-800 font-extrabold shrink-0 bg-amber-200/60 px-2 py-0.5 rounded-md">
+                <span>{isInactiveExpanded ? '목록 접기' : '명단 보기'}</span>
+                {isInactiveExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </div>
+            </button>
+
+            {/* 아코디언 펼침 시 미운행 학생 카드 노출 */}
+            {isInactiveExpanded && (
+              <div className="flex flex-col gap-1.5 pt-0.5 animate-fadeIn">
+                {inactiveStudents.map((student) => {
+                  const school = schools.find((s) => s.id === student.schoolId);
+                  const holiday = holidays.find(
+                    (h) =>
+                      (h.schoolId === student.schoolId || h.schoolId === 'ALL') &&
+                      serviceDate >= h.startDate &&
+                      serviceDate <= h.endDate
+                  );
+
+                  return (
+                    <div
+                      key={student.id}
+                      onClick={() => selectStudent(student.id, false, true)}
+                      className="px-3 py-2 rounded-xl border border-amber-200 bg-amber-50/70 transition shadow-2xs flex flex-col gap-1.5 cursor-pointer active:scale-[0.99]"
+                    >
+                      {/* 1행: 학교배지 + 학생이름 + 학년 + 동호수 */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className="px-1.5 py-0.2 rounded-md text-[10.5px] font-black text-white"
+                            style={{ backgroundColor: school?.color || '#3b82f6' }}
+                          >
+                            {school?.shortName}
+                          </span>
+                          <span className="font-black text-[13.5px] text-slate-950 tracking-tight">
+                            {student.name}
+                          </span>
+                          <span className="text-[11px] text-slate-400 font-bold">
+                            {formatGradeDisplay(student.grade, student.schoolId, false)}
+                          </span>
+                        </div>
+
+                        {/* 동호수 표기 */}
+                        <span className="text-[11px] font-mono font-bold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded-md border border-slate-200/60">
+                          {student.building.includes('동') ? student.building : `${student.building}동`}{' '}
+                          {student.unit.includes('호') ? student.unit : `${student.unit}호`}
+                        </span>
+                      </div>
+
+                      {/* 2행: 방학 / 미운행 상태 배지 */}
+                      {holiday ? (
+                        <div className="py-1 px-2 rounded-lg bg-amber-100/70 border border-amber-300/80 text-amber-950 text-xs font-bold flex items-center justify-between">
+                          <span>🌴 {cleanHolidayName(holiday.name)}</span>
+                          <span className="text-[10px] text-amber-800">통학 미운행</span>
+                        </div>
+                      ) : (
+                        <div className="text-[11px] text-slate-400 font-semibold py-0.5 px-1">
+                          {scheduleType === 'AFTERNOON' ? '하교시 이용 안함' : '등교시 이용 안함'}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 5. 하단 고정 액션 바 (슬림 컴팩트) */}
