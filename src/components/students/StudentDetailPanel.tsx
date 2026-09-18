@@ -294,18 +294,22 @@ export const StudentDetailPanel: React.FC = () => {
         </div>
 
         {/* 상세 정보 그리드 (폰트 크기 및 간격 여유 확보) */}
-        <div className="grid grid-cols-[110px_1fr] sm:grid-cols-[130px_1fr] gap-y-2.5 sm:gap-y-3.5 text-xs sm:text-sm md:text-base py-1 items-center">
-          <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm">
-            <Home className="w-4 h-4 text-slate-400 shrink-0" />
+        <div className="grid grid-cols-[110px_1fr] sm:grid-cols-[130px_1fr] gap-y-2.5 sm:gap-y-3 text-xs sm:text-sm md:text-base py-1 items-center">
+          <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm min-h-[32px]">
+            <span className="p-1 -ml-1 inline-flex items-center justify-center shrink-0">
+              <Home className="w-4 h-4 text-slate-400 shrink-0" />
+            </span>
             동 · 호수
           </span>
-          <span className="font-extrabold text-slate-900">{student.building} {student.unit}</span>
+          <span className="font-extrabold text-slate-900 min-h-[32px] flex items-center">{student.building} {student.unit}</span>
 
-          <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm">
-            <GraduationCap className="w-4 h-4 text-slate-400 shrink-0" />
+          <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm min-h-[32px]">
+            <span className="p-1 -ml-1 inline-flex items-center justify-center shrink-0">
+              <GraduationCap className="w-4 h-4 text-slate-400 shrink-0" />
+            </span>
             학교 / 학년
           </span>
-          <span className="font-extrabold text-slate-900 flex items-center gap-1.5 flex-wrap">
+          <span className="font-extrabold text-slate-900 flex items-center gap-1.5 flex-wrap min-h-[32px]">
             <span>
               {school?.shortName || student.schoolId} · <span className="text-blue-700 font-mono font-black">{formatGradeDisplay(student.grade, student.schoolId)}</span>
             </span>
@@ -316,30 +320,34 @@ export const StudentDetailPanel: React.FC = () => {
             )}
           </span>
 
-          <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm">
-            <User className="w-4 h-4 text-slate-400 shrink-0" />
+          <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm min-h-[32px]">
+            <span className="p-1 -ml-1 inline-flex items-center justify-center shrink-0">
+              <User className="w-4 h-4 text-slate-400 shrink-0" />
+            </span>
             보호자 성함
           </span>
-          <span className="font-extrabold text-slate-900">
+          <span className="font-extrabold text-slate-900 min-h-[32px] flex items-center">
             {privateInfo?.guardianName || '홍길동 (학부모)'}
           </span>
 
-          <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm">
+          <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm min-h-[32px]">
             {currentRole === 'admin' ? (
               <button
                 type="button"
                 onClick={() => copyAndCall(rawPhone, '보호자')}
-                className="p-1 -ml-1 rounded-md text-blue-600 hover:bg-blue-100/80 hover:text-blue-800 transition cursor-pointer active:scale-95 flex items-center justify-center"
+                className="p-1 -ml-1 rounded-md text-blue-600 hover:bg-blue-100/80 hover:text-blue-800 transition cursor-pointer active:scale-95 flex items-center justify-center shrink-0"
                 title="보호자에게 전화 걸기 (클립보드 복사)"
               >
                 <Phone className="w-4 h-4 shrink-0" />
               </button>
             ) : (
-              <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+              <span className="p-1 -ml-1 inline-flex items-center justify-center shrink-0">
+                <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+              </span>
             )}
             보호자 연락처
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-h-[32px]">
             {currentRole === 'admin' ? (
               <a
                 href={`tel:${rawPhone.replace(/[^0-9]/g, '')}`}
@@ -351,13 +359,13 @@ export const StudentDetailPanel: React.FC = () => {
                 <PhoneCall className="w-3.5 h-3.5 text-blue-500 group-hover:text-blue-700 shrink-0 opacity-80 group-hover:opacity-100" />
               </a>
             ) : (
-              <span className="font-mono font-extrabold text-slate-900">{displayPhone}</span>
+              <span className="font-mono font-extrabold text-slate-900 py-0.5 px-1.5 -ml-1.5 inline-flex items-center">{displayPhone}</span>
             )}
             {currentRole === 'admin' && (
               <button
                 type="button"
                 onClick={() => setShowFullPhone(!showFullPhone)}
-                className="text-slate-400 hover:text-blue-600 transition cursor-pointer p-1 rounded-md hover:bg-slate-100"
+                className="text-slate-400 hover:text-blue-600 transition cursor-pointer p-1 rounded-md hover:bg-slate-100 shrink-0"
                 title={showFullPhone ? "가리기" : "전체 번호 보기"}
               >
                 {showFullPhone ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -365,22 +373,24 @@ export const StudentDetailPanel: React.FC = () => {
             )}
           </div>
 
-          <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm">
+          <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm min-h-[32px]">
             {currentRole === 'admin' && rawStudentPhone ? (
               <button
                 type="button"
                 onClick={() => copyAndCall(rawStudentPhone, '학생')}
-                className="p-1 -ml-1 rounded-md text-blue-600 hover:bg-blue-100/80 hover:text-blue-800 transition cursor-pointer active:scale-95 flex items-center justify-center"
+                className="p-1 -ml-1 rounded-md text-blue-600 hover:bg-blue-100/80 hover:text-blue-800 transition cursor-pointer active:scale-95 flex items-center justify-center shrink-0"
                 title="학생에게 전화 걸기 (클립보드 복사)"
               >
                 <Phone className="w-4 h-4 shrink-0" />
               </button>
             ) : (
-              <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+              <span className="p-1 -ml-1 inline-flex items-center justify-center shrink-0">
+                <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+              </span>
             )}
             학생 연락처
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-h-[32px]">
             {currentRole === 'admin' && rawStudentPhone ? (
               <a
                 href={`tel:${rawStudentPhone.replace(/[^0-9]/g, '')}`}
@@ -392,7 +402,7 @@ export const StudentDetailPanel: React.FC = () => {
                 <PhoneCall className="w-3.5 h-3.5 text-blue-500 group-hover:text-blue-700 shrink-0 opacity-80 group-hover:opacity-100" />
               </a>
             ) : (
-              <span className={`font-mono font-extrabold ${rawStudentPhone ? 'text-slate-900' : 'text-slate-400 font-normal'}`}>
+              <span className={`font-mono ${rawStudentPhone ? 'font-extrabold text-slate-900' : 'font-medium text-slate-400'} py-0.5 px-1.5 -ml-1.5 inline-flex items-center`}>
                 {displayStudentPhone}
               </span>
             )}
@@ -400,7 +410,7 @@ export const StudentDetailPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowFullStudentPhone(!showFullStudentPhone)}
-                className="text-slate-400 hover:text-blue-600 transition cursor-pointer p-1 rounded-md hover:bg-slate-100"
+                className="text-slate-400 hover:text-blue-600 transition cursor-pointer p-1 rounded-md hover:bg-slate-100 shrink-0"
                 title={showFullStudentPhone ? "가리기" : "전체 번호 보기"}
               >
                 {showFullStudentPhone ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -408,7 +418,7 @@ export const StudentDetailPanel: React.FC = () => {
             )}
           </div>
 
-          <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm">
+          <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm min-h-[44px]">
             특이사항
           </span>
           <div className="p-2.5 sm:p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-800 leading-relaxed min-h-[44px] flex items-center">
