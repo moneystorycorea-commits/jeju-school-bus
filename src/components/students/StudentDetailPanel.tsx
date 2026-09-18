@@ -43,55 +43,112 @@ export const StudentDetailPanel: React.FC = () => {
     selectStudent(students[nextIndex].id, false, true);
   };
 
+  // 카드 스와이프 드래그 및 날리기 애니메이션 상태
+  const [dragOffset, setDragOffset] = useState<number>(0);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [flyDirection, setFlyDirection] = useState<'left' | 'right' | null>(null);
+
   // 터치 제스처 (손으로 좌우로 쓸어서 이전/다음 학생 넘기기)
   const touchStartXRef = React.useRef<number | null>(null);
   const touchStartYRef = React.useRef<number | null>(null);
   const isHorizontalSwipeRef = React.useRef<boolean | null>(null);
+  const currentDragOffsetRef = React.useRef<number>(0);
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (flyDirection) return;
     touchStartXRef.current = e.touches[0].clientX;
     touchStartYRef.current = e.touches[0].clientY;
     isHorizontalSwipeRef.current = null;
+    currentDragOffsetRef.current = 0;
+    setIsDragging(true);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchStartXRef.current === null || touchStartYRef.current === null) return;
+    if (touchStartXRef.current === null || touchStartYRef.current === null || flyDirection) return;
     const currentX = e.touches[0].clientX;
     const currentY = e.touches[0].clientY;
     const diffX = currentX - touchStartXRef.current;
     const diffY = currentY - touchStartYRef.current;
 
-    // 수평 스와이프인지 수직 스크롤인지 판별 (10px 이상 이동 시)
+    // 수평 스와이프인지 수직 스크롤인지 판별 (8px 이상 이동 시)
     if (isHorizontalSwipeRef.current === null) {
-      if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) {
+      if (Math.abs(diffX) > 8 || Math.abs(diffY) > 8) {
         isHorizontalSwipeRef.current = Math.abs(diffX) > Math.abs(diffY);
       }
     }
+
+    if (isHorizontalSwipeRef.current === true) {
+      const clampedOffset = Math.max(-160, Math.min(160, diffX));
+      currentDragOffsetRef.current = clampedOffset;
+      setDragOffset(clampedOffset);
+    }
   };
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartXRef.current === null || isHorizontalSwipeRef.current !== true) {
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    if (touchStartXRef.current === null || isHorizontalSwipeRef.current !== true || flyDirection) {
       touchStartXRef.current = null;
       touchStartYRef.current = null;
       isHorizontalSwipeRef.current = null;
+      setDragOffset(0);
+      currentDragOffsetRef.current = 0;
       return;
     }
-    const endX = e.changedTouches[0].clientX;
-    const diffX = endX - touchStartXRef.current;
-    const minSwipeThreshold = 40; // 40px 이상 이동 시 넘김
 
-    if (diffX < -minSwipeThreshold) {
-      // 왼쪽으로 밂 -> 다음 학생
-      handleNextStudent();
-    } else if (diffX > minSwipeThreshold) {
-      // 오른쪽으로 밂 -> 이전 학생
-      handlePrevStudent();
+    const finalOffset = currentDragOffsetRef.current;
+    const minSwipeThreshold = 45; // 45px 이상 스와이프 시 넘김
+
+    if (finalOffset < -minSwipeThreshold) {
+      // 왼쪽으로 날려보내기 -> 다음 학생
+      setFlyDirection('left');
+      setTimeout(() => {
+        handleNextStudent();
+        setDragOffset(0);
+        currentDragOffsetRef.current = 0;
+        setFlyDirection(null);
+      }, 180);
+    } else if (finalOffset > minSwipeThreshold) {
+      // 오른쪽으로 날려보내기 -> 이전 학생
+      setFlyDirection('right');
+      setTimeout(() => {
+        handlePrevStudent();
+        setDragOffset(0);
+        currentDragOffsetRef.current = 0;
+        setFlyDirection(null);
+      }, 180);
+    } else {
+      // 원위치 복귀
+      setDragOffset(0);
+      currentDragOffsetRef.current = 0;
     }
 
     touchStartXRef.current = null;
     touchStartYRef.current = null;
     isHorizontalSwipeRef.current = null;
   };
+
+  // 카드 이동 및 회전 변환 스타일
+  const cardTransformStyle: React.CSSProperties = flyDirection === 'left'
+    ? {
+        transform: 'translateX(-120%) rotate(-12deg)',
+        opacity: 0,
+        transition: 'transform 0.18s cubic-bezier(0.4, 0, 1, 1), opacity 0.18s ease-in',
+      }
+    : flyDirection === 'right'
+    ? {
+        transform: 'translateX(120%) rotate(12deg)',
+        opacity: 0,
+        transition: 'transform 0.18s cubic-bezier(0.4, 0, 1, 1), opacity 0.18s ease-in',
+      }
+    : isDragging && dragOffset !== 0
+    ? {
+        transform: `translateX(${dragOffset}px) rotate(${dragOffset * 0.04}deg)`,
+        transition: 'none',
+      }
+    : {
+        transform: 'translateX(0px) rotate(0deg)',
+        transition: 'transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1)',
+      };
 
   useEffect(() => {
     if (!isStudentPanelOpen) return;
@@ -156,44 +213,52 @@ export const StudentDetailPanel: React.FC = () => {
         <ChevronRight className="w-6 h-6 sm:w-7 sm:h-7 translate-x-0.5 group-hover:scale-110 transition-transform" />
       </button>
 
-      <div
-        onClick={(e) => e.stopPropagation()}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        className="relative bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-[740px] w-full p-5 sm:p-7 md:p-8 flex flex-col gap-4 sm:gap-5 select-none animate-scaleIn max-h-[92vh] overflow-y-auto z-10 touch-pan-y"
-      >
-        {/* 모달 헤더 */}
-        <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-100">
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <span className="text-lg sm:text-xl font-black text-slate-900">{student.name}</span>
-              {student.gender && (
-                <span className="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold border border-slate-200">
-                  {student.gender}
-                </span>
-              )}
-              {school && (
-                <span className={`text-xs font-black px-2.5 py-0.5 rounded-lg border shadow-2xs ${school.badgeBg}`}>
-                  {school.shortName}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold text-slate-400 mt-0.5">
-              <span className="whitespace-nowrap">학생 정보 및 주간 통학 프로필</span>
-              <span className="text-slate-300">·</span>
-              <span className="text-blue-600 font-bold whitespace-nowrap">👈 쓸어서 넘기기 👉</span>
-            </div>
-          </div>
+      {/* 카드 스택 래퍼 (카드 겹침 시각 효과) */}
+      <div className="relative max-w-[740px] w-full flex items-center justify-center">
+        {/* 뒤에 겹쳐진 세 번째 카드 */}
+        <div className="absolute inset-x-5 sm:inset-x-8 -bottom-3 top-4 bg-slate-300/40 rounded-3xl border border-slate-300/60 shadow-xs pointer-events-none transform scale-[0.96]" />
 
-          <button
-            onClick={closeStudentPanel}
-            className="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 transition cursor-pointer"
-            title="닫기"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        {/* 뒤에 겹쳐진 두 번째 카드 */}
+        <div className="absolute inset-x-2.5 sm:inset-x-4 -bottom-1.5 top-2 bg-white/90 rounded-3xl border border-slate-200/80 shadow-md pointer-events-none transform scale-[0.98]" />
+
+        {/* 메인 활성 카드 */}
+        <div
+          onClick={(e) => e.stopPropagation()}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          style={cardTransformStyle}
+          className="relative bg-white rounded-3xl border border-slate-200 shadow-2xl w-full p-5 sm:p-7 md:p-8 flex flex-col gap-4 sm:gap-5 select-none animate-scaleIn max-h-[92vh] overflow-y-auto z-10 touch-pan-y will-change-transform"
+        >
+          {/* 모달 헤더 */}
+          <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-100">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className="text-lg sm:text-xl font-black text-slate-900">{student.name}</span>
+                {student.gender && (
+                  <span className="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold border border-slate-200">
+                    {student.gender}
+                  </span>
+                )}
+                {school && (
+                  <span className={`text-xs font-black px-2.5 py-0.5 rounded-lg border shadow-2xs ${school.badgeBg}`}>
+                    {school.shortName}
+                  </span>
+                )}
+              </div>
+              <span className="text-[11px] sm:text-xs font-semibold text-slate-400 mt-0.5">
+                학생 정보 및 주간 통학 프로필
+              </span>
+            </div>
+
+            <button
+              onClick={closeStudentPanel}
+              className="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 transition cursor-pointer"
+              title="닫기"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
         {/* 상세 정보 그리드 (폰트 크기 및 간격 여유 확보) */}
         <div className="grid grid-cols-[110px_1fr] sm:grid-cols-[130px_1fr] gap-y-2.5 sm:gap-y-3.5 text-xs sm:text-sm md:text-base py-1 items-center">
@@ -351,6 +416,7 @@ export const StudentDetailPanel: React.FC = () => {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );
