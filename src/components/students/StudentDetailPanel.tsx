@@ -28,6 +28,13 @@ export const StudentDetailPanel: React.FC = () => {
   } = useScheduleStore();
 
   const [showFullPhone, setShowFullPhone] = useState(false);
+  const [showFullStudentPhone, setShowFullStudentPhone] = useState(false);
+
+  // 학생 전환 시 민감정보 마스킹 상태 자동 초기화
+  useEffect(() => {
+    setShowFullPhone(false);
+    setShowFullStudentPhone(false);
+  }, [selectedStudentId]);
 
   const handlePrevStudent = () => {
     const currentIndex = students.findIndex((s) => s.id === selectedStudentId);
@@ -119,10 +126,17 @@ export const StudentDetailPanel: React.FC = () => {
   const school = schools.find((sc) => sc.id === student.schoolId);
   const privateInfo = getPrivateInfo(student.id);
 
-  // 비상연락망 마스킹 처리
+  // 보호자 연락처(비상연락망) 마스킹 처리
   const rawPhone = privateInfo?.emergencyContact || '010-3849-1234';
   const maskedPhone = '***-****-' + rawPhone.slice(-4);
   const displayPhone = currentRole === 'admin' && showFullPhone ? rawPhone : maskedPhone;
+
+  // 학생 연락처 마스킹 처리
+  const rawStudentPhone = privateInfo?.studentPhone;
+  const maskedStudentPhone = rawStudentPhone ? '***-****-' + rawStudentPhone.slice(-4) : '미등록';
+  const displayStudentPhone = rawStudentPhone
+    ? (currentRole === 'admin' && showFullStudentPhone ? rawStudentPhone : maskedStudentPhone)
+    : '미등록';
 
   return (
     <div
@@ -269,9 +283,21 @@ export const StudentDetailPanel: React.FC = () => {
             <Phone className="w-4 h-4 text-slate-400 shrink-0" />
             학생 연락처
           </span>
-          <span className="font-mono font-extrabold text-slate-900">
-            {privateInfo?.studentPhone || '010-****-8415'}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className={`font-mono font-extrabold ${rawStudentPhone ? 'text-slate-900' : 'text-slate-400 font-normal'}`}>
+              {displayStudentPhone}
+            </span>
+            {currentRole === 'admin' && rawStudentPhone && (
+              <button
+                type="button"
+                onClick={() => setShowFullStudentPhone(!showFullStudentPhone)}
+                className="text-slate-400 hover:text-blue-600 transition cursor-pointer p-1 rounded-md hover:bg-slate-100"
+                title={showFullStudentPhone ? "가리기" : "전체 번호 보기"}
+              >
+                {showFullStudentPhone ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            )}
+          </div>
 
           {student.notes && (
             <>
