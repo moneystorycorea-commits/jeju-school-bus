@@ -440,11 +440,11 @@ export const ScheduleDetailDrawer: React.FC = () => {
       </div>
 
       {/* 3. 본문 콘텐츠 */}
-      <div className="p-4 flex flex-col gap-4.5 flex-1">
+      <div className="p-3 sm:p-3.5 flex flex-col gap-2.5 flex-1">
         {detailDrawerTab === 'info' && (
           <>
             {/* 3-A. 운행 일자 달력 (클릭 시 왼쪽 창 요일별 운행표 연동 + 학교별 방학 표시) */}
-            <div className="flex flex-col gap-2.5 border border-slate-200 rounded-2xl p-3.5 bg-slate-50/50">
+            <div className="flex flex-col gap-2 border border-slate-200 rounded-2xl p-3 bg-slate-50/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <CalendarIcon className="w-4 h-4 text-blue-600" />
@@ -474,7 +474,7 @@ export const ScheduleDetailDrawer: React.FC = () => {
               </div>
 
               {/* 2026-2027 학사년도 빠른 이동 바로가기 */}
-              <div className="flex items-center gap-1 overflow-x-auto pb-1 text-[10px] font-bold text-slate-600 no-scrollbar">
+              <div className="flex items-center gap-1 overflow-x-auto pb-0.5 text-[10px] font-bold text-slate-600 no-scrollbar">
                 <span className="text-slate-400 shrink-0 font-normal">바로가기:</span>
                 <button
                   type="button"
@@ -576,7 +576,7 @@ export const ScheduleDetailDrawer: React.FC = () => {
               </div>
 
               {/* 요일 헤더 */}
-              <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-slate-400 py-1.5 border-b border-slate-200/60">
+              <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-slate-400 py-1 border-b border-slate-200/60">
                 <span className="text-red-400">일</span>
                 <span>월</span>
                 <span>화</span>
@@ -586,11 +586,11 @@ export const ScheduleDetailDrawer: React.FC = () => {
                 <span className="text-blue-400">토</span>
               </div>
 
-              {/* 날짜 그리드 (높이 대폭 확대: h-[86px] sm:h-[94px]) */}
-              <div className="grid grid-cols-7 gap-1.5 text-center">
+              {/* 날짜 그리드 (높이 최적화: 한 화면에 맞추어 스크롤 없이 표시되도록 h-[66px] sm:h-[70px] 조정) */}
+              <div className="grid grid-cols-7 gap-1 sm:gap-1.5 text-center">
                 {/* 첫 날 이전 빈칸 */}
                 {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-                  <div key={`empty-${i}`} className="min-h-[86px] sm:min-h-[94px] h-[86px] sm:h-[94px]" />
+                  <div key={`empty-${i}`} className="min-h-[66px] sm:min-h-[70px] h-[66px] sm:h-[70px]" />
                 ))}
 
                 {/* 해당 월 날짜 */}
@@ -620,9 +620,9 @@ export const ScheduleDetailDrawer: React.FC = () => {
                       key={day}
                       type="button"
                       onClick={() => handleDateClick(day)}
-                      className={`min-h-[86px] sm:min-h-[94px] h-[86px] sm:h-[94px] rounded-xl font-bold transition flex flex-col items-center justify-between p-1 cursor-pointer relative text-xs sm:text-sm overflow-hidden select-none ${
+                      className={`min-h-[66px] sm:min-h-[70px] h-[66px] sm:h-[70px] rounded-xl font-bold transition flex flex-col items-center justify-between p-1 cursor-pointer relative text-xs sm:text-sm overflow-hidden select-none ${
                         isSelected
-                          ? 'bg-blue-50/90 text-blue-900 font-extrabold border-2 border-blue-600 ring-2 ring-blue-300 shadow-md'
+                          ? 'bg-blue-50/90 text-blue-900 font-extrabold border-2 border-blue-600 ring-2 ring-blue-300 shadow-sm'
                           : uniqueDayHolidays.length > 0
                           ? 'bg-amber-50/50 text-amber-950 hover:bg-amber-100/60 border border-amber-200/80 font-bold'
                           : isSun
@@ -638,14 +638,14 @@ export const ScheduleDetailDrawer: React.FC = () => {
                       }
                     >
                       {/* 상단 날짜 번호 영역 */}
-                      <div className="w-full flex items-center justify-center shrink-0 pt-0.5">
+                      <div className="w-full flex items-center justify-center shrink-0">
                         {isSelected ? (
-                          <span className="w-5 h-5 sm:w-5.5 sm:h-5.5 rounded-full bg-blue-600 text-white text-[11px] sm:text-xs font-black flex items-center justify-center shadow-xs">
+                          <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] sm:text-[11px] font-black flex items-center justify-center shadow-xs">
                             {day}
                           </span>
                         ) : (
                           <span
-                            className={`text-[11px] sm:text-xs font-black leading-none ${
+                            className={`text-[10px] sm:text-[11px] font-black leading-none ${
                               isSun ? 'text-red-500' : isSat ? 'text-blue-500' : 'text-slate-700'
                             }`}
                           >
@@ -656,20 +656,20 @@ export const ScheduleDetailDrawer: React.FC = () => {
 
                       {/* 학교별 방학 표시: 자대고 그은 것 처럼 굵은 색상 선 + 학교 약자 라벨 */}
                       {uniqueDayHolidays.length > 0 ? (
-                        <div className="w-full flex flex-col gap-[2px] mt-auto pb-0.5 px-0.5">
+                        <div className="w-full flex flex-col gap-[1.5px] mt-auto pb-0.5 px-0.5">
                           {uniqueDayHolidays.slice(0, 4).map((dh) => {
                             const lineColor = getSchoolHolidayColor(dh.schoolId);
                             const abbr = getSchoolAbbr(dh.schoolId);
                             return (
                               <div
                                 key={dh.id || dh.schoolId}
-                                className="w-full h-[14.5px] sm:h-[15.5px] rounded-[2.5px] flex items-center justify-center transition-all shadow-2xs hover:brightness-110"
+                                className="w-full h-[11.5px] sm:h-[12px] rounded-[2px] flex items-center justify-center transition-all shadow-2xs hover:brightness-110"
                                 style={{
                                   backgroundColor: lineColor,
                                 }}
                                 title={`${dh.schoolId === 'ALL' ? '전체 학교' : dh.schoolId}: ${dh.name}`}
                               >
-                                <span className="text-[9px] sm:text-[9.5px] font-black text-white leading-none tracking-tight truncate px-0.5 drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)]">
+                                <span className="text-[8px] sm:text-[8.5px] font-black text-white leading-none tracking-tight truncate px-0.5 drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">
                                   {abbr}
                                 </span>
                               </div>
@@ -677,7 +677,7 @@ export const ScheduleDetailDrawer: React.FC = () => {
                           })}
                         </div>
                       ) : (
-                        <div className="h-1" />
+                        <div className="h-0.5" />
                       )}
                     </button>
                   );
@@ -685,7 +685,7 @@ export const ScheduleDetailDrawer: React.FC = () => {
               </div>
 
               {/* 달력 하단 선택 정보 & 방학 범례 */}
-              <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-200 text-slate-500">
+              <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-200 text-slate-500">
                 <span className="font-semibold text-slate-700">
                   선택: <strong className="text-blue-600">{serviceDate}</strong> ({['일', '월', '화', '수', '목', '금', '토'][new Date(serviceDate).getDay()]}요일)
                 </span>
@@ -700,7 +700,7 @@ export const ScheduleDetailDrawer: React.FC = () => {
               </div>
 
               {/* 선택 일자(serviceDate) 4대 학교 운행 상태 요약 카드 */}
-              <div className="mt-1 p-2.5 rounded-xl bg-white border border-slate-200 flex flex-col gap-1.5 shadow-2xs">
+              <div className="mt-0.5 p-2 rounded-xl bg-white border border-slate-200 flex flex-col gap-1 shadow-2xs">
                 <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-800 border-b border-slate-100 pb-1">
                   <span>🏫 {serviceDate} 4대 학교 운행 현황</span>
                   <span className="text-[10px] text-slate-400 font-normal">실시간 스케줄 연동</span>
