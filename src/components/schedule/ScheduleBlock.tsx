@@ -141,8 +141,8 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
         };
       case 'NLCS':
         return {
-          backgroundColor: '#132742', // Deep NLCS Oxford Navy (참고 이미지 #1D3B61 대비 좀 더 진하고 품격있는 딥 네이비)
-          borderColor: '#0a1626',
+          backgroundColor: '#2E5880', // NLCS Signature Slate/Sky Blue (#2E5880)
+          borderColor: '#1d3c59',
         };
       case 'KIS':
         return {

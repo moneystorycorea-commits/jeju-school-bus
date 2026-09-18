@@ -13,15 +13,20 @@ export const SidebarNav: React.FC = () => {
 
   return (
     <aside className="w-20 md:w-24 bg-[#1e293b] text-slate-300 flex flex-col items-center py-5 border-r border-slate-800 shrink-0 select-none z-30 shadow-lg">
-      {/* 상단 아주더하이클래스 로고 */}
-      <div className="flex flex-col items-center gap-7 w-full">
-        <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center p-1.5 shadow-md shadow-black/20 overflow-hidden">
+      {/* 상단 아주더하이클래스 시그니처 엠블럼 심볼 로고 (남색 배경 위 순백색 심볼 단독 강조) */}
+      <div className="flex flex-col items-center gap-6 w-full px-2">
+        <button
+          type="button"
+          onClick={() => setActiveNav('schedule')}
+          className="flex items-center justify-center p-1 rounded-xl hover:bg-slate-800/60 transition group cursor-pointer"
+          title="아주더하이클래스 통학버스 시스템"
+        >
           <img
-            src="/logo-highclass.png"
+            src="/logo-symbol-white.png"
             alt="아주더하이클래스"
-            className="w-full h-full object-contain"
+            className="w-12 h-12 md:w-14 md:h-14 object-contain filter drop-shadow-md group-hover:scale-105 transition-transform"
           />
-        </div>
+        </button>
 
         {/* 메뉴 리스트 */}
         <nav className="flex flex-col gap-2.5 w-full px-2">

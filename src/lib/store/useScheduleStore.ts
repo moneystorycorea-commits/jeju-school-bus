@@ -32,7 +32,7 @@ import {
 } from '../mock/initialData';
 import { calculateTripInstance, getSchoolTravelMinutes } from '../scheduling/routeCalculator';
 import { detectAllConflicts } from '../scheduling/conflictDetector';
-import { getWeekdayNumber, formatMinute } from '../scheduling/time';
+import { getWeekdayNumber, formatMinute, getTodayDateString } from '../scheduling/time';
 
 interface HistorySnapshot {
   students: Student[];
@@ -164,8 +164,11 @@ interface ScheduleState {
   saveChanges: () => void;
 }
 
+const initialTodayDate = getTodayDateString();
+const initialTodaySchedules = generateStudentSchedulesForDate(INITIAL_STUDENTS, initialTodayDate);
+
 export const useScheduleStore = create<ScheduleState>((set, get) => ({
-  serviceDate: '2024-10-28', // 시안 기준 (월요일)
+  serviceDate: initialTodayDate, // 첫 접속 시 항상 오늘 날짜 기준
   scheduleType: 'MORNING',
   currentRole: 'admin',
   students: INITIAL_STUDENTS,
@@ -174,7 +177,7 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
   routeSegments: INITIAL_ROUTE_SEGMENTS,
   vehicles: INITIAL_VEHICLES,
   tripTemplates: INITIAL_TRIP_TEMPLATES,
-  schedules: INITIAL_STUDENT_SCHEDULES,
+  schedules: [...INITIAL_STUDENT_SCHEDULES, ...initialTodaySchedules],
   holidays: INITIAL_HOLIDAYS,
   timeRequests: [],
   privateInfoMap: INITIAL_STUDENT_PRIVATE_INFO,
@@ -282,10 +285,11 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       selectedStudentId: studentId,
       isDetailDrawerOpen: openDrawer ? true : get().isDetailDrawerOpen,
       isStudentPanelOpen: openPanel,
+      detailDrawerTab: openDrawer ? 'info' : get().detailDrawerTab,
     });
   },
   closeDetailDrawer: () => set({ isDetailDrawerOpen: false, isDrawerPinned: false }),
-  openDetailDrawer: (pinned = true) => set({ isDetailDrawerOpen: true, isDrawerPinned: pinned }),
+  openDetailDrawer: (pinned = true) => set({ isDetailDrawerOpen: true, isDrawerPinned: pinned, detailDrawerTab: 'info' }),
   closeStudentPanel: () => set({ isStudentPanelOpen: false }),
   openStudentModal: () => set({ isStudentModalOpen: true }),
   closeStudentModal: () => set({ isStudentModalOpen: false }),

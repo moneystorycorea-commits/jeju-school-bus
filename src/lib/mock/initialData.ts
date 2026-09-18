@@ -35,9 +35,9 @@ export const INITIAL_SCHOOLS: School[] = [
     id: 'NLCS',
     name: 'North London Collegiate School Jeju',
     shortName: 'NLCS',
-    color: '#132742', // Deep NLCS Oxford Navy (참고 이미지 #1D3B61 대비 딥 네이비로 심화 조색)
-    badgeBg: 'bg-blue-50 text-blue-950 border-blue-300 font-extrabold',
-    badgeText: 'text-blue-900',
+    color: '#2E5880', // NLCS 첨부 이미지 정확한 하늘/슬레이트 블루 (#2E5880)
+    badgeBg: 'bg-sky-50 text-[#1E3A56] border-[#2E5880]/40 font-extrabold',
+    badgeText: 'text-[#2E5880]',
     defaultLocationId: 'NLCS_MAIN',
     defaultDwellMinutes: 1,
   },

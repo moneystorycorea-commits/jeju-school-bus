@@ -88,13 +88,13 @@ export const StudentRow: React.FC<StudentRowProps> = ({
       {/* 1. 좌측 학생 정보 고정 영역 (이름, 학교, 학년 순 정렬 및 헤더와 열 정렬 일치) */}
       <div
         onClick={() => selectStudent(student.id, true, true)}
-        className="w-[230px] px-2.5 py-1 border-r border-slate-200 bg-white sticky left-0 z-20 flex items-center cursor-pointer select-none shrink-0 h-full"
+        className="w-[230px] px-2 py-1 border-r border-slate-200 bg-white sticky left-0 z-20 flex items-center cursor-pointer select-none shrink-0 h-full"
       >
         {/* Row 드래그 정렬 핸들 */}
         <button
           {...attributes}
           {...listeners}
-          className="w-5 flex items-center justify-center cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-600 p-0.5 shrink-0"
+          className="w-4 flex items-center justify-center cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-600 p-0.5 shrink-0"
           title="위아래로 드래그하여 학생 순서 변경"
         >
           <GripVertical className="w-3.5 h-3.5" />
@@ -117,7 +117,7 @@ export const StudentRow: React.FC<StudentRowProps> = ({
         </div>
 
         {/* 3. 학년 원형 배지 (국제학교는 G 접두사 통일: G1~G12, 한국학교는 숫자) */}
-        <div className="w-11 shrink-0 flex items-center justify-center">
+        <div className="w-15 shrink-0 flex items-center justify-center">
           <div
             className="w-6 h-6 rounded-full bg-slate-100 text-slate-800 font-black text-[10px] flex items-center justify-center border border-slate-300 font-mono shadow-2xs"
             title={student.grade && student.grade !== '?' ? `재학 학년: ${formatGradeDisplay(student.grade, student.schoolId)}` : '학년 미등록 (?)'}

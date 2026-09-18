@@ -47,7 +47,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-100 font-sans text-slate-900 antialiased relative">
+    <div className="flex h-full w-full overflow-hidden bg-slate-100 font-sans text-slate-900 antialiased relative">
 
       {/* 1. 좌측 Navigation Bar (스케줄 / 운행시간표 / 학생 관리 / 설정) */}
       <SidebarNav />
@@ -112,7 +112,7 @@ export const App: React.FC = () => {
         {/* 본문 콘텐츠 + 우측 Drawer Flex 레이아웃 */}
         <div className="flex-1 flex min-h-0 overflow-hidden relative">
           {/* 중앙 스크롤 가능 컨테이너 */}
-          <main className="flex-1 overflow-y-auto p-2 sm:p-2.5 flex flex-col gap-2">
+          <main className="flex-1 overflow-y-auto p-1.5 sm:p-2 flex flex-col gap-1.5">
             {/* 1) 스케줄 탭: 타임라인 보드 중심 (온전히 등/하교 스케줄 표에 집중) */}
             {activeNav === 'schedule' && <ScheduleBoard />}
 

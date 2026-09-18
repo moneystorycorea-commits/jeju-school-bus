@@ -34,21 +34,21 @@ export const TopToolbar: React.FC = () => {
     setServiceDate(getTodayDateString());
   };
 
-  const isRouteDrawerActive = isDetailDrawerOpen && detailDrawerTab === 'route';
+  const isRouteDrawerActive = isDetailDrawerOpen;
 
   const handleCalendarToggle = () => {
-    if (isDetailDrawerOpen && detailDrawerTab === 'vacation') {
+    if (isDetailDrawerOpen && detailDrawerTab === 'info') {
       closeDetailDrawer();
     } else {
-      setDetailDrawerTab('vacation', true);
+      setDetailDrawerTab('info', true);
     }
   };
 
   const handleRouteSettingsToggle = () => {
-    if (isRouteDrawerActive) {
+    if (isDetailDrawerOpen) {
       closeDetailDrawer();
     } else {
-      setDetailDrawerTab('route', true);
+      setDetailDrawerTab('info', true);
     }
   };
 

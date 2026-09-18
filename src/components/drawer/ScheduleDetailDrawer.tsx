@@ -9,8 +9,6 @@ import {
   ChevronLeft,
   ChevronRight,
   CalendarCheck2,
-  Pin,
-  PinOff,
   SlidersHorizontal,
   CheckCircle2,
 } from 'lucide-react';
@@ -23,7 +21,7 @@ import { SchoolCalendarMatrix } from './SchoolCalendarMatrix';
 const getSchoolHolidayColor = (schoolId?: string) => {
   switch (schoolId) {
     case 'NLCS':
-      return '#1d4ed8'; // Blue 700 (선명한 로열 블루)
+      return '#2E5880'; // NLCS Signature Sky/Slate Blue (#2E5880)
     case 'BHA':
       return '#7e22ce'; // Purple 700 (선명한 보라)
     case 'KIS':
@@ -80,7 +78,6 @@ export const ScheduleDetailDrawer: React.FC = () => {
     detailDrawerTab,
     setDetailDrawerTab,
     isDrawerPinned,
-    setIsDrawerPinned,
     selectedStudentId,
     students,
     schools,
@@ -278,7 +275,6 @@ export const ScheduleDetailDrawer: React.FC = () => {
 
   const student = students.find((s) => s.id === selectedStudentId);
   const school = student ? schools.find((sc) => sc.id === student.schoolId) : null;
-  const studentIndex = student ? students.findIndex((s) => s.id === student.id) + 1 : 1;
 
 
 
@@ -344,9 +340,6 @@ export const ScheduleDetailDrawer: React.FC = () => {
       {/* 1. 드로어 헤더 */}
       <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80 sticky top-0 z-10">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shadow-xs">
-            {studentIndex}
-          </div>
           <div className="flex items-center gap-2">
             <span className="text-base font-bold text-slate-900 tracking-tight">
               {student ? student.name : '스케줄 상세 설정'}
@@ -360,21 +353,6 @@ export const ScheduleDetailDrawer: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-1">
-          {/* 창 고정 토글 버튼 */}
-          <button
-            type="button"
-            onClick={() => setIsDrawerPinned(!isDrawerPinned)}
-            className={`px-2 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 text-xs font-bold ${
-              isDrawerPinned
-                ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200 border border-transparent'
-            }`}
-            title={isDrawerPinned ? '창 고정 해제 (커서 벗어나면 자동 슬라이딩 닫힘)' : '창 고정 (커서 벗어나도 열려 있음)'}
-          >
-            {isDrawerPinned ? <PinOff className="w-3.5 h-3.5 text-blue-600" /> : <Pin className="w-3.5 h-3.5" />}
-            <span className="text-[11px]">{isDrawerPinned ? '고정됨' : '고정'}</span>
-          </button>
-
           <button
             type="button"
             onClick={(e) => {
@@ -405,7 +383,7 @@ export const ScheduleDetailDrawer: React.FC = () => {
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
-          운행일자 · 시간
+          운행일자 · 달력
         </button>
         <button
           type="button"

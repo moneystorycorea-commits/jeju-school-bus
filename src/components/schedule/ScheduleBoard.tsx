@@ -17,17 +17,8 @@ import { TimeAxis } from './TimeAxis';
 import { StudentRow } from './StudentRow';
 import { useScheduleStore } from '@/lib/store/useScheduleStore';
 import { Student, School, SchoolHoliday } from '@/types';
-import { AlertTriangle, CheckCircle2, ArrowUpDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { cleanHolidayName } from '@/lib/scheduling/time';
-
-interface SchoolGroup {
-  schoolId: string;
-  school?: School;
-  students: Student[];
-  isOperating: boolean;
-  holiday?: SchoolHoliday;
-  activeCount: number;
-}
 
 export const ScheduleBoard: React.FC = () => {
   const {
@@ -44,6 +35,7 @@ export const ScheduleBoard: React.FC = () => {
 
   const timelineContainerRef = useRef<HTMLDivElement | null>(null);
   const [sortBy, setSortBy] = useState<'manual' | 'grade' | 'school' | 'name'>('manual');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // 미운행 학교 아코디언 펼침 상태 (학교 ID -> boolean)
   const [expandedSchoolIds, setExpandedSchoolIds] = useState<Record<string, boolean>>({});
@@ -60,9 +52,9 @@ export const ScheduleBoard: React.FC = () => {
     }));
   };
 
-  // 등교: 07:00 (420) ~ 10:30 (630)
+  // 등교: 07:30 (450) ~ 10:30 (630) - 사용자 요청으로 기본 시작점을 07:30으로 조정
   // 하교: 13:30 (810) ~ 18:30 (1110) - 저청초 하교(13:45)에 최대한 밀착
-  const startMinute = scheduleType === 'MORNING' ? 420 : 810;
+  const startMinute = scheduleType === 'MORNING' ? 450 : 810;
   const endMinute = scheduleType === 'MORNING' ? 630 : 1110;
 
   const conflicts = getConflicts();
@@ -112,9 +104,57 @@ export const ScheduleBoard: React.FC = () => {
     KIS: 3,
   };
 
-  // 학교별 그룹 구성 및 "운행 있는 학교 최상단 정렬" 함수
-  const buildSchoolGroups = (schoolIds: string[], priorityMap: Record<string, number>): SchoolGroup[] => {
-    const groups: SchoolGroup[] = [];
+  const handleSortToggle = (type: 'name' | 'school' | 'grade') => {
+    if (sortBy === type) {
+      if (type === 'grade') {
+        if (sortOrder === 'desc') setSortOrder('asc');
+        else {
+          setSortBy('manual');
+          setSortOrder('desc');
+        }
+      } else if (type === 'name') {
+        if (sortOrder === 'asc') setSortOrder('desc');
+        else {
+          setSortBy('manual');
+          setSortOrder('asc');
+        }
+      } else {
+        if (sortOrder === 'asc') setSortOrder('desc');
+        else {
+          setSortBy('manual');
+          setSortOrder('asc');
+        }
+      }
+    } else {
+      setSortBy(type);
+      setSortOrder(type === 'grade' ? 'desc' : 'asc');
+    }
+  };
+
+  const parseGradeNum = (gradeStr?: string): number => {
+    if (!gradeStr) return -1;
+    const match = String(gradeStr).match(/\d+/);
+    return match ? parseInt(match[0], 10) : -1;
+  };
+
+  const compareGrades = (gradeA?: string, gradeB?: string, order: 'asc' | 'desc' = 'desc') => {
+    const gA = parseGradeNum(gradeA);
+    const gB = parseGradeNum(gradeB);
+    if (gA === -1 && gB === -1) return 0;
+    if (gA === -1) return 1;
+    if (gB === -1) return -1;
+    return order === 'desc' ? gB - gA : gA - gB;
+  };
+
+  // 차량별 학생 및 미운행 학교 분류 처리
+  const processVehicleStudents = (schoolIds: string[], priorityMap: Record<string, number>) => {
+    const operatingStudents: Student[] = [];
+    const nonOperatingGroups: {
+      schoolId: string;
+      school?: School;
+      students: Student[];
+      holiday?: SchoolHoliday;
+    }[] = [];
 
     schoolIds.forEach((schId) => {
       const schStudents = students.filter((s) => s.schoolId === schId);
@@ -131,72 +171,77 @@ export const ScheduleBoard: React.FC = () => {
       const activeStudents = schStudents.filter(isStudentOperating);
       const isOperating = !holiday && activeStudents.length > 0;
 
-      // 학생 정렬 (학년순/이름순)
-      const sortedStudents = [...schStudents].sort((a, b) => {
-        if (sortBy === 'name') {
-          return a.name.localeCompare(b.name, 'ko');
-        }
-        const parseGrade = (g?: string) => {
-          if (!g) return -1;
-          const match = g.match(/\d+/);
-          return match ? parseInt(match[0], 10) : -1;
-        };
-        const diff = parseGrade(b.grade) - parseGrade(a.grade);
-        if (diff !== 0) return diff;
-        return a.name.localeCompare(b.name, 'ko');
-      });
-
-      groups.push({
-        schoolId: schId,
-        school,
-        students: sortedStudents,
-        isOperating,
-        holiday,
-        activeCount: activeStudents.length,
-      });
-    });
-
-    // 💡 핵심: 운행 있는 학교(isOperating === true)를 최우선 정렬하고,
-    // 운행 없는 학교는 아래로 배치한 뒤 아코디언 적용!
-    return groups.sort((a, b) => {
-      if (a.isOperating !== b.isOperating) {
-        return a.isOperating ? -1 : 1;
+      if (isOperating) {
+        operatingStudents.push(...schStudents);
+      } else {
+        nonOperatingGroups.push({
+          schoolId: schId,
+          school,
+          students: schStudents,
+          holiday,
+        });
       }
-      const pA = priorityMap[a.schoolId] ?? 99;
-      const pB = priorityMap[b.schoolId] ?? 99;
-      return pA - pB;
     });
+
+    // 정렬 로직 적용
+    const sortedOperatingStudents = [...operatingStudents].sort((a, b) => {
+      if (sortBy === 'grade') {
+        const gradeDiff = compareGrades(a.grade, b.grade, sortOrder);
+        if (gradeDiff !== 0) return gradeDiff;
+        return a.name.localeCompare(b.name, 'ko');
+      }
+      if (sortBy === 'name') {
+        const nameDiff = a.name.localeCompare(b.name, 'ko');
+        return sortOrder === 'asc' ? nameDiff : -nameDiff;
+      }
+      if (sortBy === 'school') {
+        const pA = priorityMap[a.schoolId] ?? 99;
+        const pB = priorityMap[b.schoolId] ?? 99;
+        if (pA !== pB) {
+          return sortOrder === 'asc' ? pA - pB : pB - pA;
+        }
+        const gradeDiff = compareGrades(a.grade, b.grade, 'desc');
+        if (gradeDiff !== 0) return gradeDiff;
+        return a.name.localeCompare(b.name, 'ko');
+      }
+      // manual: 기본 탑승 순서 유지
+      return 0;
+    });
+
+    return {
+      operatingStudents: sortedOperatingStudents,
+      nonOperatingGroups,
+    };
   };
 
-  const v1SchoolGroups = useMemo(() => {
-    return buildSchoolGroups(['NLCS', 'CHEONG', 'CHEONG_MID'], V1_SCHOOL_PRIORITY);
-  }, [students, schools, holidays, schedules, serviceDate, scheduleType, currentWeekday, sortBy]);
+  const v1Data = useMemo(() => {
+    return processVehicleStudents(['NLCS', 'CHEONG', 'CHEONG_MID'], V1_SCHOOL_PRIORITY);
+  }, [students, schools, holidays, schedules, serviceDate, scheduleType, currentWeekday, sortBy, sortOrder]);
 
-  const v2SchoolGroups = useMemo(() => {
-    return buildSchoolGroups(['BHA', 'SJA', 'KIS'], V2_SCHOOL_PRIORITY);
-  }, [students, schools, holidays, schedules, serviceDate, scheduleType, currentWeekday, sortBy]);
+  const v2Data = useMemo(() => {
+    return processVehicleStudents(['BHA', 'SJA', 'KIS'], V2_SCHOOL_PRIORITY);
+  }, [students, schools, holidays, schedules, serviceDate, scheduleType, currentWeekday, sortBy, sortOrder]);
 
-  const v1Students = useMemo(() => v1SchoolGroups.flatMap((g) => g.students), [v1SchoolGroups]);
-  const v2Students = useMemo(() => v2SchoolGroups.flatMap((g) => g.students), [v2SchoolGroups]);
-
-  const v1ActiveCount = useMemo(() => v1Students.filter(isStudentOperating).length, [v1Students, serviceDate, scheduleType, currentWeekday, holidays, schedules]);
-  const v2ActiveCount = useMemo(() => v2Students.filter(isStudentOperating).length, [v2Students, serviceDate, scheduleType, currentWeekday, holidays, schedules]);
+  const v1ActiveCount = useMemo(() => v1Data.operatingStudents.filter(isStudentOperating).length, [v1Data, serviceDate, scheduleType, currentWeekday, holidays, schedules]);
+  const v2ActiveCount = useMemo(() => v2Data.operatingStudents.filter(isStudentOperating).length, [v2Data, serviceDate, scheduleType, currentWeekday, holidays, schedules]);
 
   // dnd-kit 용 보이는 학생 ID 목록
   const visibleStudentIds = useMemo(() => {
     const ids: string[] = [];
-    v1SchoolGroups.forEach((g) => {
-      if (g.isOperating || expandedSchoolIds[g.schoolId]) {
+    v1Data.operatingStudents.forEach((s) => ids.push(s.id));
+    v1Data.nonOperatingGroups.forEach((g) => {
+      if (expandedSchoolIds[g.schoolId]) {
         g.students.forEach((s) => ids.push(s.id));
       }
     });
-    v2SchoolGroups.forEach((g) => {
-      if (g.isOperating || expandedSchoolIds[g.schoolId]) {
+    v2Data.operatingStudents.forEach((s) => ids.push(s.id));
+    v2Data.nonOperatingGroups.forEach((g) => {
+      if (expandedSchoolIds[g.schoolId]) {
         g.students.forEach((s) => ids.push(s.id));
       }
     });
     return ids;
-  }, [v1SchoolGroups, v2SchoolGroups, expandedSchoolIds]);
+  }, [v1Data, v2Data, expandedSchoolIds]);
 
   // dnd-kit 센서 설정 (Row 정렬용)
   const sensors = useSensors(
@@ -271,7 +316,7 @@ export const ScheduleBoard: React.FC = () => {
           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-indigo-50 border border-indigo-200 text-xs font-bold shadow-2xs">
             <span className="px-1.5 py-0.2 rounded bg-indigo-600 text-white text-[10px] font-black">1호차</span>
             <div className="flex items-center gap-1 text-indigo-950">
-              <span className="w-2 h-2 rounded-full bg-[#132742]" />
+              <span className="w-2 h-2 rounded-full bg-[#2E5880]" />
               <span>NLCS</span>
               <span className="text-indigo-300">·</span>
               <span className="w-2 h-2 rounded-full bg-[#0e7490]" />
@@ -302,52 +347,58 @@ export const ScheduleBoard: React.FC = () => {
           {/* 시간축 헤더 행 (sticky top-0 z-30) */}
           <div className="flex items-center border-b border-slate-200 bg-slate-50 sticky top-0 z-30 shadow-2xs">
             {/* 좌측 고정 열 헤더 (학생관리 테이블 헤더와 동일한 text-sm font-bold 정렬) */}
-            <div className="w-[230px] px-2.5 py-1.5 border-r border-slate-200 sticky top-0 left-0 z-40 bg-slate-100 text-sm font-bold text-slate-700 flex items-center shrink-0 shadow-2xs">
-              <div className="w-5 shrink-0" /> {/* Grip 핸들 정렬용 빈 공간 */}
+            <div className="w-[230px] px-2 py-1.5 border-r border-slate-200 sticky top-0 left-0 z-40 bg-slate-100 text-sm font-bold text-slate-700 flex items-center shrink-0 shadow-2xs">
+              <div className="w-4 shrink-0" /> {/* Grip 핸들 정렬용 빈 공간 */}
 
               {/* 1. 이름 정렬 버튼 */}
               <button
                 type="button"
-                onClick={() => setSortBy(sortBy === 'name' ? 'manual' : 'name')}
-                className={`flex-1 min-w-0 flex items-center justify-start gap-1 px-1 py-0.5 rounded text-sm transition cursor-pointer ${
+                onClick={() => handleSortToggle('name')}
+                className={`flex-1 min-w-0 flex items-center justify-start gap-1 px-1.5 py-0.5 rounded text-sm transition cursor-pointer whitespace-nowrap ${
                   sortBy === 'name'
                     ? 'bg-blue-600 text-white font-black shadow-xs'
                     : 'text-slate-700 hover:bg-slate-200 font-bold'
                 }`}
-                title="이름 가나다순 정렬"
+                title={sortBy === 'name' ? (sortOrder === 'asc' ? '이름 역순(ㅎ->ㄱ) 정렬' : '기본 순서로 복귀') : '이름 가나다순 정렬'}
               >
-                <span>이름</span>
-                <ArrowUpDown className={`w-3.5 h-3.5 ${sortBy === 'name' ? 'text-white' : 'text-slate-400'}`} />
+                <span className="truncate">이름</span>
+                <span className="text-xs shrink-0 font-mono font-bold">
+                  {sortBy === 'name' ? (sortOrder === 'asc' ? '↓' : '↑') : '↕'}
+                </span>
               </button>
 
               {/* 2. 학교 정렬 버튼 */}
               <button
                 type="button"
-                onClick={() => setSortBy(sortBy === 'school' ? 'manual' : 'school')}
-                className={`w-14 shrink-0 flex items-center justify-center gap-0.5 px-1 py-0.5 rounded text-sm transition cursor-pointer ${
+                onClick={() => handleSortToggle('school')}
+                className={`w-14 shrink-0 flex items-center justify-center gap-0.5 px-1 py-0.5 rounded text-sm transition cursor-pointer whitespace-nowrap ${
                   sortBy === 'school'
                     ? 'bg-blue-600 text-white font-black shadow-xs'
                     : 'text-slate-700 hover:bg-slate-200 font-bold'
                 }`}
-                title="학교별 정렬"
+                title={sortBy === 'school' ? (sortOrder === 'asc' ? '학교 역순 정렬' : '기본 순서로 복귀') : '학교별 정렬'}
               >
                 <span>학교</span>
-                <ArrowUpDown className={`w-3.5 h-3.5 ${sortBy === 'school' ? 'text-white' : 'text-slate-400'}`} />
+                <span className="text-xs shrink-0 font-mono font-bold">
+                  {sortBy === 'school' ? (sortOrder === 'asc' ? '↓' : '↑') : '↕'}
+                </span>
               </button>
 
               {/* 3. 학년 정렬 버튼 */}
               <button
                 type="button"
-                onClick={() => setSortBy(sortBy === 'grade' ? 'manual' : 'grade')}
-                className={`w-11 shrink-0 flex items-center justify-center gap-0.5 px-1 py-0.5 rounded text-sm transition cursor-pointer ${
+                onClick={() => handleSortToggle('grade')}
+                className={`w-15 shrink-0 flex items-center justify-center gap-0.5 px-1 py-0.5 rounded text-sm transition cursor-pointer whitespace-nowrap ${
                   sortBy === 'grade'
                     ? 'bg-blue-600 text-white font-black shadow-xs'
                     : 'text-slate-700 hover:bg-slate-200 font-bold'
                 }`}
-                title="학년순 정렬"
+                title={sortBy === 'grade' ? (sortOrder === 'desc' ? '저학년순 정렬' : '기본 순서로 복귀') : '고학년순 정렬'}
               >
-                <span>학년</span>
-                <ArrowUpDown className={`w-3.5 h-3.5 ${sortBy === 'grade' ? 'text-white' : 'text-slate-400'}`} />
+                <span className="whitespace-nowrap">학년</span>
+                <span className="text-xs shrink-0 font-mono font-bold">
+                  {sortBy === 'grade' ? (sortOrder === 'desc' ? '↓' : '↑') : '↕'}
+                </span>
               </button>
             </div>
             {/* 우측 시간축 */}
@@ -384,7 +435,7 @@ export const ScheduleBoard: React.FC = () => {
                     <span className="text-[11px] text-slate-700 font-medium truncate">
                       {scheduleType === 'MORNING' ? (
                         <>
-                          <span className="font-bold text-indigo-950">07:40</span> 단지출발 ➔ <span className="font-bold text-[#132742]">07:50 NLCS</span>
+                          <span className="font-bold text-indigo-950">07:40</span> 단지출발 ➔ <span className="font-bold text-[#2E5880]">07:50 NLCS</span>
                           <span className="mx-2 text-indigo-300">|</span>
                           <span className="font-bold text-indigo-950">08:20</span> 단지출발 ➔ <span className="font-bold text-[#0e7490]">08:25 저청</span>
                         </>
@@ -392,7 +443,7 @@ export const ScheduleBoard: React.FC = () => {
                         <>
                           <span className="font-bold text-[#0e7490]">13:50 저청</span>
                           <span className="mx-2 text-indigo-300">|</span>
-                          <span className="font-bold text-[#132742]">15:30 / 16:30 / 17:30 NLCS</span>
+                          <span className="font-bold text-[#2E5880]">15:30 / 16:30 / 17:30 NLCS</span>
                         </>
                       )}
                     </span>
@@ -403,65 +454,92 @@ export const ScheduleBoard: React.FC = () => {
                 </div>
               </div>
 
-              {/* 1호차 학교 그룹 및 학생 목록 (운행 있는 학교 우선 렌더링 + 미운행 학교 아코디언) */}
-              {v1SchoolGroups.map((group, groupIdx) => {
+              {/* 1호차 운행 학생 목록 (전체 통합 정렬 적용) */}
+              {v1Data.operatingStudents.map((student, sIdx) => {
+                const schedule = schedules.find(
+                  (s) =>
+                    s.studentId === student.id &&
+                    s.date === serviceDate &&
+                    s.type === scheduleType
+                );
+                const conflict = conflicts.find((c) => c.studentId === student.id);
+                const school = schools.find((sc) => sc.id === student.schoolId);
+                const isNewSchoolGroup =
+                  (sortBy === 'manual' || sortBy === 'school') &&
+                  sIdx > 0 &&
+                  v1Data.operatingStudents[sIdx - 1].schoolId !== student.schoolId;
+
+                return (
+                  <StudentRow
+                    key={student.id}
+                    student={student}
+                    schedule={schedule}
+                    school={school}
+                    index={sIdx}
+                    startMinute={startMinute}
+                    endMinute={endMinute}
+                    timelineContainerRef={timelineContainerRef}
+                    hasConflict={!!conflict}
+                    conflictMessage={conflict?.message}
+                    isNewSchoolGroup={isNewSchoolGroup}
+                  />
+                );
+              })}
+
+              {/* 1호차 미운행 학교 아코디언 */}
+              {v1Data.nonOperatingGroups.map((group) => {
                 const isExpanded = !!expandedSchoolIds[group.schoolId];
 
                 return (
                   <React.Fragment key={group.schoolId}>
-                    {/* 운행이 없는 학교인 경우: 아코디언 헤더 바 */}
-                    {!group.isOperating && (
-                      <div
-                        onClick={() => toggleSchoolExpand(group.schoolId)}
-                        className="flex items-center h-9.5 border-b border-amber-200/90 bg-amber-50/70 hover:bg-amber-100/70 transition-colors select-none cursor-pointer"
-                      >
-                        {/* 좌측 230px 고정 정보 */}
-                        <div className="w-[230px] px-2.5 py-1 border-r border-amber-200 bg-amber-50/95 sticky left-0 z-20 flex items-center shrink-0 h-full shadow-2xs">
-                          <div className="w-5 flex items-center justify-center shrink-0">
-                            <span className="text-amber-500 text-xs">🌴</span>
-                          </div>
-                          <div className="w-14 shrink-0 flex items-center justify-center">
-                            <span
-                              className="text-xs font-black px-2 py-0.5 rounded border shadow-2xs text-white"
-                              style={{ backgroundColor: group.school?.color || '#f59e0b' }}
-                            >
-                              {group.school?.shortName || group.schoolId}
-                            </span>
-                          </div>
-                          <div className="flex-1 min-w-0 pl-1.5 flex items-center">
-                            <span className="text-xs font-extrabold text-amber-900 tracking-tight">
-                              미운행 ({group.students.length}명)
-                            </span>
-                          </div>
-                          <div className="w-6 shrink-0 flex items-center justify-center text-amber-700">
-                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                          </div>
+                    {/* 아코디언 헤더 바 */}
+                    <div
+                      onClick={() => toggleSchoolExpand(group.schoolId)}
+                      className="flex items-center h-9.5 border-b border-amber-200/90 bg-amber-50/70 hover:bg-amber-100/70 transition-colors select-none cursor-pointer"
+                    >
+                      <div className="w-[230px] px-2 py-1 border-r border-amber-200 bg-amber-50/95 sticky left-0 z-20 flex items-center shrink-0 h-full shadow-2xs">
+                        <div className="w-4 flex items-center justify-center shrink-0">
+                          <span className="text-amber-500 text-xs">🌴</span>
                         </div>
-
-                        {/* 우측 타임라인 영역: 휴일명 및 펼치기/접기 버튼 */}
-                        <div className="relative flex-1 h-full flex items-center justify-between px-3">
-                          <div className="flex items-center gap-2 truncate">
-                            <span className="text-xs font-bold text-amber-950 truncate">
-                              🌴 {group.holiday ? cleanHolidayName(group.holiday.name) : (scheduleType === 'MORNING' ? '등교 셔틀 미이용' : '하교 셔틀 미이용')}
-                            </span>
-                            {group.holiday?.notes && (
-                              <span className="text-[11px] text-amber-700/80 truncate font-normal">
-                                ({group.holiday.notes})
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                            <span className="text-[11px] font-black text-amber-900 bg-amber-200/80 hover:bg-amber-300/80 px-2.5 py-0.5 rounded-md border border-amber-300 shadow-2xs transition flex items-center gap-1">
-                              <span>{isExpanded ? '목록 접기' : '명단 보기'}</span>
-                              {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                            </span>
-                          </div>
+                        <div className="w-14 shrink-0 flex items-center justify-center">
+                          <span
+                            className="text-xs font-black px-2 py-0.5 rounded border shadow-2xs text-white"
+                            style={{ backgroundColor: group.school?.color || '#f59e0b' }}
+                          >
+                            {group.school?.shortName || group.schoolId}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0 pl-1.5 flex items-center">
+                          <span className="text-xs font-extrabold text-amber-900 tracking-tight truncate">
+                            미운행 ({group.students.length}명)
+                          </span>
+                        </div>
+                        <div className="w-6 shrink-0 flex items-center justify-center text-amber-700">
+                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </div>
                       </div>
-                    )}
 
-                    {/* 운행이 있는 학교이거나, 아코디언이 펼쳐진 경우 학생 행 렌더링 */}
-                    {(group.isOperating || isExpanded) &&
+                      <div className="relative flex-1 h-full flex items-center justify-between px-3">
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="text-xs font-bold text-amber-950 truncate">
+                            🌴 {group.holiday ? cleanHolidayName(group.holiday.name) : (scheduleType === 'MORNING' ? '등교 셔틀 미이용' : '하교 셔틀 미이용')}
+                          </span>
+                          {group.holiday?.notes && (
+                            <span className="text-[11px] text-amber-700/80 truncate font-normal">
+                              ({group.holiday.notes})
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                          <span className="text-[11px] font-black text-amber-900 bg-amber-200/80 hover:bg-amber-300/80 px-2.5 py-0.5 rounded-md border border-amber-300 shadow-2xs transition flex items-center gap-1">
+                            <span>{isExpanded ? '목록 접기' : '명단 보기'}</span>
+                            {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {isExpanded &&
                       group.students.map((student, sIdx) => {
                         const schedule = schedules.find(
                           (s) =>
@@ -470,7 +548,6 @@ export const ScheduleBoard: React.FC = () => {
                             s.type === scheduleType
                         );
                         const conflict = conflicts.find((c) => c.studentId === student.id);
-                        const isNewSchoolGroup = groupIdx > 0 && sIdx === 0;
 
                         return (
                           <StudentRow
@@ -478,13 +555,13 @@ export const ScheduleBoard: React.FC = () => {
                             student={student}
                             schedule={schedule}
                             school={group.school}
-                            index={sIdx}
+                            index={v1Data.operatingStudents.length + sIdx}
                             startMinute={startMinute}
                             endMinute={endMinute}
                             timelineContainerRef={timelineContainerRef}
                             hasConflict={!!conflict}
                             conflictMessage={conflict?.message}
-                            isNewSchoolGroup={isNewSchoolGroup}
+                            isNewSchoolGroup={sIdx === 0}
                           />
                         );
                       })}
@@ -527,65 +604,92 @@ export const ScheduleBoard: React.FC = () => {
                 </div>
               </div>
 
-              {/* 2호차 학교 그룹 및 학생 목록 (운행 있는 학교 우선 렌더링 + 미운행 학교 아코디언) */}
-              {v2SchoolGroups.map((group, groupIdx) => {
+              {/* 2호차 운행 학생 목록 (전체 통합 정렬 적용) */}
+              {v2Data.operatingStudents.map((student, sIdx) => {
+                const schedule = schedules.find(
+                  (s) =>
+                    s.studentId === student.id &&
+                    s.date === serviceDate &&
+                    s.type === scheduleType
+                );
+                const conflict = conflicts.find((c) => c.studentId === student.id);
+                const school = schools.find((sc) => sc.id === student.schoolId);
+                const isNewSchoolGroup =
+                  (sortBy === 'manual' || sortBy === 'school') &&
+                  sIdx > 0 &&
+                  v2Data.operatingStudents[sIdx - 1].schoolId !== student.schoolId;
+
+                return (
+                  <StudentRow
+                    key={student.id}
+                    student={student}
+                    schedule={schedule}
+                    school={school}
+                    index={v1Data.operatingStudents.length + sIdx}
+                    startMinute={startMinute}
+                    endMinute={endMinute}
+                    timelineContainerRef={timelineContainerRef}
+                    hasConflict={!!conflict}
+                    conflictMessage={conflict?.message}
+                    isNewSchoolGroup={isNewSchoolGroup}
+                  />
+                );
+              })}
+
+              {/* 2호차 미운행 학교 아코디언 */}
+              {v2Data.nonOperatingGroups.map((group) => {
                 const isExpanded = !!expandedSchoolIds[group.schoolId];
 
                 return (
                   <React.Fragment key={group.schoolId}>
-                    {/* 운행이 없는 학교인 경우: 아코디언 헤더 바 */}
-                    {!group.isOperating && (
-                      <div
-                        onClick={() => toggleSchoolExpand(group.schoolId)}
-                        className="flex items-center h-9.5 border-b border-amber-200/90 bg-amber-50/70 hover:bg-amber-100/70 transition-colors select-none cursor-pointer"
-                      >
-                        {/* 좌측 230px 고정 정보 */}
-                        <div className="w-[230px] px-2.5 py-1 border-r border-amber-200 bg-amber-50/95 sticky left-0 z-20 flex items-center shrink-0 h-full shadow-2xs">
-                          <div className="w-5 flex items-center justify-center shrink-0">
-                            <span className="text-amber-500 text-xs">🌴</span>
-                          </div>
-                          <div className="w-14 shrink-0 flex items-center justify-center">
-                            <span
-                              className="text-xs font-black px-2 py-0.5 rounded border shadow-2xs text-white"
-                              style={{ backgroundColor: group.school?.color || '#f59e0b' }}
-                            >
-                              {group.school?.shortName || group.schoolId}
-                            </span>
-                          </div>
-                          <div className="flex-1 min-w-0 pl-1.5 flex items-center">
-                            <span className="text-xs font-extrabold text-amber-900 tracking-tight">
-                              미운행 ({group.students.length}명)
-                            </span>
-                          </div>
-                          <div className="w-6 shrink-0 flex items-center justify-center text-amber-700">
-                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                          </div>
+                    {/* 아코디언 헤더 바 */}
+                    <div
+                      onClick={() => toggleSchoolExpand(group.schoolId)}
+                      className="flex items-center h-9.5 border-b border-amber-200/90 bg-amber-50/70 hover:bg-amber-100/70 transition-colors select-none cursor-pointer"
+                    >
+                      <div className="w-[230px] px-2 py-1 border-r border-amber-200 bg-amber-50/95 sticky left-0 z-20 flex items-center shrink-0 h-full shadow-2xs">
+                        <div className="w-4 flex items-center justify-center shrink-0">
+                          <span className="text-amber-500 text-xs">🌴</span>
                         </div>
-
-                        {/* 우측 타임라인 영역: 휴일명 및 펼치기/접기 버튼 */}
-                        <div className="relative flex-1 h-full flex items-center justify-between px-3">
-                          <div className="flex items-center gap-2 truncate">
-                            <span className="text-xs font-bold text-amber-950 truncate">
-                              🌴 {group.holiday ? cleanHolidayName(group.holiday.name) : (scheduleType === 'MORNING' ? '등교 셔틀 미이용' : '하교 셔틀 미이용')}
-                            </span>
-                            {group.holiday?.notes && (
-                              <span className="text-[11px] text-amber-700/80 truncate font-normal">
-                                ({group.holiday.notes})
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                            <span className="text-[11px] font-black text-amber-900 bg-amber-200/80 hover:bg-amber-300/80 px-2.5 py-0.5 rounded-md border border-amber-300 shadow-2xs transition flex items-center gap-1">
-                              <span>{isExpanded ? '목록 접기' : '명단 보기'}</span>
-                              {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                            </span>
-                          </div>
+                        <div className="w-14 shrink-0 flex items-center justify-center">
+                          <span
+                            className="text-xs font-black px-2 py-0.5 rounded border shadow-2xs text-white"
+                            style={{ backgroundColor: group.school?.color || '#f59e0b' }}
+                          >
+                            {group.school?.shortName || group.schoolId}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0 pl-1.5 flex items-center">
+                          <span className="text-xs font-extrabold text-amber-900 tracking-tight truncate">
+                            미운행 ({group.students.length}명)
+                          </span>
+                        </div>
+                        <div className="w-6 shrink-0 flex items-center justify-center text-amber-700">
+                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </div>
                       </div>
-                    )}
 
-                    {/* 운행이 있는 학교이거나, 아코디언이 펼쳐진 경우 학생 행 렌더링 */}
-                    {(group.isOperating || isExpanded) &&
+                      <div className="relative flex-1 h-full flex items-center justify-between px-3">
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="text-xs font-bold text-amber-950 truncate">
+                            🌴 {group.holiday ? cleanHolidayName(group.holiday.name) : (scheduleType === 'MORNING' ? '등교 셔틀 미이용' : '하교 셔틀 미이용')}
+                          </span>
+                          {group.holiday?.notes && (
+                            <span className="text-[11px] text-amber-700/80 truncate font-normal">
+                              ({group.holiday.notes})
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                          <span className="text-[11px] font-black text-amber-900 bg-amber-200/80 hover:bg-amber-300/80 px-2.5 py-0.5 rounded-md border border-amber-300 shadow-2xs transition flex items-center gap-1">
+                            <span>{isExpanded ? '목록 접기' : '명단 보기'}</span>
+                            {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {isExpanded &&
                       group.students.map((student, sIdx) => {
                         const schedule = schedules.find(
                           (s) =>
@@ -594,7 +698,6 @@ export const ScheduleBoard: React.FC = () => {
                             s.type === scheduleType
                         );
                         const conflict = conflicts.find((c) => c.studentId === student.id);
-                        const isNewSchoolGroup = groupIdx > 0 && sIdx === 0;
 
                         return (
                           <StudentRow
@@ -602,13 +705,13 @@ export const ScheduleBoard: React.FC = () => {
                             student={student}
                             schedule={schedule}
                             school={group.school}
-                            index={v1Students.length + sIdx}
+                            index={v1Data.operatingStudents.length + v2Data.operatingStudents.length + sIdx}
                             startMinute={startMinute}
                             endMinute={endMinute}
                             timelineContainerRef={timelineContainerRef}
                             hasConflict={!!conflict}
                             conflictMessage={conflict?.message}
-                            isNewSchoolGroup={isNewSchoolGroup}
+                            isNewSchoolGroup={sIdx === 0}
                           />
                         );
                       })}
