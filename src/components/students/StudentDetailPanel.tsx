@@ -165,47 +165,24 @@ export const StudentDetailPanel: React.FC = () => {
       >
         {/* 모달 헤더 */}
         <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-100">
-          <div className="flex items-center gap-2.5 sm:gap-3.5">
-            {/* 이전/다음 학생 이동 미니 버튼 (9/16 텍스트 삭제 및 슬림 디자인) */}
-            <div className="flex items-center rounded-xl bg-slate-100 p-0.5 border border-slate-200 shrink-0">
-              <button
-                type="button"
-                onClick={handlePrevStudent}
-                className="w-7 h-7 rounded-lg hover:bg-white text-slate-600 hover:text-slate-900 flex items-center justify-center transition cursor-pointer active:scale-95"
-                title="이전 학생 (←)"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <div className="w-[1px] h-3.5 bg-slate-300 mx-0.5" />
-              <button
-                type="button"
-                onClick={handleNextStudent}
-                className="w-7 h-7 rounded-lg hover:bg-white text-slate-600 hover:text-slate-900 flex items-center justify-center transition cursor-pointer active:scale-95"
-                title="다음 학생 (→)"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <span className="text-lg sm:text-xl font-black text-slate-900">{student.name}</span>
+              {student.gender && (
+                <span className="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold border border-slate-200">
+                  {student.gender}
+                </span>
+              )}
+              {school && (
+                <span className={`text-xs font-black px-2.5 py-0.5 rounded-lg border shadow-2xs ${school.badgeBg}`}>
+                  {school.shortName}
+                </span>
+              )}
             </div>
-
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="text-lg sm:text-xl font-black text-slate-900">{student.name}</span>
-                {student.gender && (
-                  <span className="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold border border-slate-200">
-                    {student.gender}
-                  </span>
-                )}
-                {school && (
-                  <span className={`text-xs font-black px-2.5 py-0.5 rounded-lg border shadow-2xs ${school.badgeBg}`}>
-                    {school.shortName}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold text-slate-400 mt-0.5">
-                <span>학생 정보 및 주간 통학 프로필</span>
-                <span className="text-slate-300">·</span>
-                <span className="text-blue-600 font-bold">👈 쓸어서 넘기기 👉</span>
-              </div>
+            <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold text-slate-400 mt-0.5">
+              <span className="whitespace-nowrap">학생 정보 및 주간 통학 프로필</span>
+              <span className="text-slate-300">·</span>
+              <span className="text-blue-600 font-bold whitespace-nowrap">👈 쓸어서 넘기기 👉</span>
             </div>
           </div>
 
