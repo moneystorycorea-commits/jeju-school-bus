@@ -15,10 +15,29 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { useScheduleStore } from '@/lib/store/useScheduleStore';
-import { formatMinute, getWeekdayNumber } from '@/lib/scheduling/time';
+import { getWeekdayNumber } from '@/lib/scheduling/time';
 import { RouteSegment, HolidayCategory } from '@/types';
 import { SchoolCalendarMatrix } from './SchoolCalendarMatrix';
 
+// 학교별 방학 및 학사일정 구분 색상 (적당한 굵기의 선 표시용)
+const getSchoolHolidayColor = (schoolId?: string) => {
+  switch (schoolId) {
+    case 'NLCS':
+      return '#2563eb'; // Blue
+    case 'BHA':
+      return '#9333ea'; // Purple
+    case 'KIS':
+      return '#0284c7'; // Sky / Cyan
+    case 'SJA':
+      return '#16a34a'; // Green
+    case 'CHEONG':
+    case 'CHEONG_MID':
+      return '#0d9488'; // Teal
+    case 'ALL':
+    default:
+      return '#f59e0b'; // Amber
+  }
+};
 
 export const ScheduleDetailDrawer: React.FC = () => {
   const {
@@ -32,9 +51,7 @@ export const ScheduleDetailDrawer: React.FC = () => {
     selectedStudentId,
     students,
     schools,
-    schedules,
     serviceDate,
-    scheduleType,
     routeSegments,
     updateRouteSegmentTravelTime,
     resetRouteSegments,
@@ -42,7 +59,6 @@ export const ScheduleDetailDrawer: React.FC = () => {
     holidays,
     addHoliday,
     removeHoliday,
-    updateStudentWeeklySchedule,
     setServiceDate,
   } = useScheduleStore();
 
@@ -239,26 +255,9 @@ export const ScheduleDetailDrawer: React.FC = () => {
   const student = students.find((s) => s.id === selectedStudentId);
   const school = student ? schools.find((sc) => sc.id === student.schoolId) : null;
   const studentIndex = student ? students.findIndex((s) => s.id === student.id) + 1 : 1;
-  const currentSchedule = schedules.find(
-    (s) => s.studentId === selectedStudentId && s.date === serviceDate && s.type === scheduleType
-  );
 
-  // 선택된 요일의 희망/배정 시간
-  const weekdayData = student?.weeklySchedule?.[selectedWeekday];
-  const morningMin = weekdayData ? weekdayData.morningMinute : (currentSchedule?.assignedMinute || 460);
-  const afternoonMin = weekdayData ? weekdayData.afternoonMinute : 930;
 
-  const handleMorningChange = (delta: number) => {
-    if (!student) return;
-    const newMin = Math.max(360, Math.min(600, morningMin + delta));
-    updateStudentWeeklySchedule(student.id, selectedWeekday, newMin, afternoonMin);
-  };
 
-  const handleAfternoonChange = (delta: number) => {
-    if (!student) return;
-    const newMin = Math.max(780, Math.min(1110, afternoonMin + delta));
-    updateStudentWeeklySchedule(student.id, selectedWeekday, morningMin, newMin);
-  };
 
   // 달력 월 변경 핸들러
   const handlePrevMonth = () => {
@@ -512,31 +511,36 @@ export const ScheduleDetailDrawer: React.FC = () => {
                 </button>
               </div>
 
-              {/* 달력 학교 필터 칩 */}
-              <div className="flex items-center gap-1 text-[11px] font-bold">
+              {/* 달력 학교 필터 칩 (학교별 대표 색상 선 프리뷰 포함) */}
+              <div className="flex items-center gap-1.5 text-[11px] font-bold flex-wrap">
                 <span className="text-slate-400 text-[10px] shrink-0">학교 필터:</span>
                 {['ALL', 'NLCS', 'BHA', 'KIS', 'SJA'].map((schId) => {
                   const sc = schools.find((s) => s.id === schId);
                   const isSelected = calendarSchoolFilter === schId;
+                  const lineColor = getSchoolHolidayColor(schId);
                   return (
                     <button
                       key={schId}
                       type="button"
                       onClick={() => setCalendarSchoolFilter(schId)}
-                      className={`px-2 py-0.5 rounded-md text-[10px] transition cursor-pointer font-bold ${
+                      className={`px-2 py-0.5 rounded-md text-[10px] transition cursor-pointer font-bold flex items-center gap-1.5 ${
                         isSelected
                           ? 'bg-slate-800 text-white shadow-2xs font-extrabold'
                           : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
                       }`}
                     >
-                      {schId === 'ALL' ? '전체 학교' : sc?.shortName || schId}
+                      <span
+                        className="w-2.5 h-[3.5px] rounded-full inline-block shrink-0"
+                        style={{ backgroundColor: lineColor }}
+                      />
+                      <span>{schId === 'ALL' ? '전체 학교' : sc?.shortName || schId}</span>
                     </button>
                   );
                 })}
               </div>
 
               {/* 요일 헤더 */}
-              <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-slate-400 py-1 border-b border-slate-200/60">
+              <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-slate-400 py-1.5 border-b border-slate-200/60">
                 <span className="text-red-400">일</span>
                 <span>월</span>
                 <span>화</span>
@@ -546,11 +550,11 @@ export const ScheduleDetailDrawer: React.FC = () => {
                 <span className="text-blue-400">토</span>
               </div>
 
-              {/* 날짜 그리드 */}
-              <div className="grid grid-cols-7 gap-1 text-center">
+              {/* 날짜 그리드 (높이 50% 확대: 기존 h-8/h-9 32~36px -> h-[52px]/sm:h-[56px]로 약 50% 확대) */}
+              <div className="grid grid-cols-7 gap-1.5 text-center">
                 {/* 첫 날 이전 빈칸 */}
                 {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-                  <div key={`empty-${i}`} className="h-8 md:h-9" />
+                  <div key={`empty-${i}`} className="h-[52px] sm:h-[56px]" />
                 ))}
 
                 {/* 해당 월 날짜 */}
@@ -575,7 +579,7 @@ export const ScheduleDetailDrawer: React.FC = () => {
                       key={day}
                       type="button"
                       onClick={() => handleDateClick(day)}
-                      className={`h-8 md:h-9 rounded-lg font-bold transition flex flex-col items-center justify-center cursor-pointer relative text-xs ${
+                      className={`h-[52px] sm:h-[56px] rounded-xl font-bold transition flex flex-col items-center justify-between p-1.5 cursor-pointer relative text-xs sm:text-sm ${
                         isSelected
                           ? 'bg-blue-600 text-white font-extrabold shadow-sm ring-2 ring-blue-300'
                           : dayHolidays.length > 0
@@ -588,27 +592,32 @@ export const ScheduleDetailDrawer: React.FC = () => {
                       }`}
                       title={
                         dayHolidays.length > 0
-                          ? `${dateStr}: ${dayHolidays.map((h) => h.name).join(', ')}`
+                          ? `${dateStr}: ${dayHolidays.map((h) => `${h.schoolId === 'ALL' ? '전체' : h.schoolId} - ${h.name}`).join(', ')}`
                           : dateStr
                       }
                     >
-                      <span className="leading-none">{day}</span>
-                      {/* 학교별 방학 표시 닷 */}
-                      {dayHolidays.length > 0 && (
-                        <div className="flex items-center gap-0.5 mt-0.5">
-                          {dayHolidays.slice(0, 3).map((dh) => {
-                            const sc = schools.find((s) => s.id === dh.schoolId);
+                      <span className="leading-none pt-0.5">{day}</span>
+
+                      {/* 학교별 방학 표시 적당한 굵기의 색상 선 (Colored Lines) */}
+                      {dayHolidays.length > 0 ? (
+                        <div className="w-full flex flex-col gap-[2px] mt-auto pb-0.5 px-0.5">
+                          {dayHolidays.slice(0, 4).map((dh) => {
+                            const lineColor = getSchoolHolidayColor(dh.schoolId);
                             return (
-                              <span
+                              <div
                                 key={dh.id}
-                                className="w-1.5 h-1.5 rounded-full"
+                                className="w-full h-[3.5px] rounded-full transition-all"
                                 style={{
-                                  backgroundColor: isSelected ? '#ffffff' : (sc?.color || '#f59e0b'),
+                                  backgroundColor: isSelected ? '#ffffff' : lineColor,
+                                  opacity: isSelected ? 0.95 : 1,
                                 }}
+                                title={`${dh.schoolId === 'ALL' ? '전체 학교' : dh.schoolId}: ${dh.name}`}
                               />
                             );
                           })}
                         </div>
+                      ) : (
+                        <div className="h-[3.5px] mb-0.5" />
                       )}
                     </button>
                   );
@@ -680,102 +689,6 @@ export const ScheduleDetailDrawer: React.FC = () => {
                       </div>
                     );
                   })}
-                </div>
-              </div>
-            </div>
-
-
-            {/* 3-B. 요일별 등교 / 하교 시간 (5분 스냅 +/- 조절기) */}
-            <div className="flex flex-col gap-2.5 border border-slate-200 rounded-2xl p-3.5 bg-slate-50/50">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-slate-900">
-                  {student?.name || '학생'} 요일별 등/하교 시간
-                </span>
-                <span className="text-xs text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                  5분 단위 Snap
-                </span>
-              </div>
-
-              {/* 요일 선택 버튼 */}
-              <div className="flex items-center gap-1 bg-slate-200/70 p-1 rounded-xl">
-                {[
-                  { day: 1, label: '월' },
-                  { day: 2, label: '화' },
-                  { day: 3, label: '수' },
-                  { day: 4, label: '목' },
-                  { day: 5, label: '금' },
-                ].map(({ day, label }) => (
-                  <button
-                    key={day}
-                    type="button"
-                    onClick={() => setSelectedWeekday(day)}
-                    className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                      selectedWeekday === day
-                        ? 'bg-blue-600 text-white shadow-xs font-extrabold'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              {/* 선택된 요일의 등교/하교 시간 조절기 */}
-              <div className="grid grid-cols-2 gap-2.5 pt-1">
-                {/* 등교 시간 */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-xs font-bold text-slate-700">
-                    {['', '월', '화', '수', '목', '금'][selectedWeekday]}요일 등교 시간
-                  </span>
-                  <div className="flex items-center justify-between border border-slate-300 rounded-xl p-1 bg-white shadow-2xs">
-                    <button
-                      type="button"
-                      onClick={() => handleMorningChange(-5)}
-                      className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-700 transition cursor-pointer"
-                      title="5분 감소"
-                    >
-                      <Minus className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="text-xs font-bold text-slate-900 font-mono">
-                      {formatMinute(morningMin)}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleMorningChange(5)}
-                      className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-700 transition cursor-pointer"
-                      title="5분 증가"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* 하교 시간 */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-xs font-bold text-slate-700">
-                    {['', '월', '화', '수', '목', '금'][selectedWeekday]}요일 하교 시간
-                  </span>
-                  <div className="flex items-center justify-between border border-slate-300 rounded-xl p-1 bg-white shadow-2xs">
-                    <button
-                      type="button"
-                      onClick={() => handleAfternoonChange(-5)}
-                      className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-700 transition cursor-pointer"
-                      title="5분 감소"
-                    >
-                      <Minus className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="text-xs font-bold text-slate-900 font-mono">
-                      {formatMinute(afternoonMin)}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleAfternoonChange(5)}
-                      className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-700 transition cursor-pointer"
-                      title="5분 증가"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>
@@ -1209,39 +1122,37 @@ export const ScheduleDetailDrawer: React.FC = () => {
         )}
       </div>
 
-      {/* 4. 하단 액션 바 */}
-      <div className="p-4 border-t border-slate-200 flex items-center justify-between gap-2 bg-slate-50 sticky bottom-0">
-        <button
-          type="button"
-          onClick={() => {
-            if (student && confirm(`${student.name} 학생의 일정을 삭제하시겠습니까?`)) {
-              alert('일정이 삭제되었습니다.');
-            }
-          }}
-          className="px-3.5 py-2 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 text-xs font-bold transition cursor-pointer"
-        >
-          삭제
-        </button>
-
-        <div className="flex items-center gap-2">
+      {/* 4. 하단 액션 바 (구간 소요시간 탭일 때만 저장/취소, info 탭에서는 닫기) */}
+      <div className="p-3.5 border-t border-slate-200 flex items-center justify-end gap-2 bg-slate-50 sticky bottom-0">
+        {detailDrawerTab === 'route' ? (
+          <>
+            <button
+              type="button"
+              onClick={closeDetailDrawer}
+              className="px-4 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-bold transition cursor-pointer shadow-2xs"
+            >
+              취소
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                saveChanges();
+                closeDetailDrawer();
+              }}
+              className="px-5 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 text-xs font-bold shadow-xs transition cursor-pointer"
+            >
+              저장
+            </button>
+          </>
+        ) : (
           <button
             type="button"
             onClick={closeDetailDrawer}
-            className="px-4 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-bold transition cursor-pointer shadow-2xs"
+            className="px-5 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-bold transition cursor-pointer shadow-2xs"
           >
-            취소
+            닫기
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              saveChanges();
-              closeDetailDrawer();
-            }}
-            className="px-5 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 text-xs font-bold shadow-xs transition cursor-pointer"
-          >
-            저장
-          </button>
-        </div>
+        )}
       </div>
     </div>
   );
