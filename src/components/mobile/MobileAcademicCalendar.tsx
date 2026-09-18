@@ -8,6 +8,7 @@ import {
   ExternalLink,
   X,
   Info,
+  Layers,
 } from 'lucide-react';
 
 interface MobileAcademicCalendarProps {
@@ -19,6 +20,14 @@ interface MobileAcademicCalendarProps {
   onSelectDate: (date: string) => void;
   onGoToSchedule: (date: string) => void;
 }
+
+// 4대 국제학교 식별 및 시각화용 색상/메타데이터
+const MAJOR_SCHOOLS = [
+  { id: 'NLCS', name: 'NLCS', hex: '#2563eb', bg: 'bg-blue-600', dot: 'bg-blue-600' },
+  { id: 'BHA', name: 'BHA', hex: '#ea580c', bg: 'bg-orange-500', dot: 'bg-orange-500' },
+  { id: 'KIS', name: 'KIS', hex: '#4f46e5', bg: 'bg-indigo-600', dot: 'bg-indigo-600' },
+  { id: 'SJA', name: 'SJA', hex: '#059669', bg: 'bg-emerald-600', dot: 'bg-emerald-600' },
+];
 
 export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
   holidays,
@@ -52,9 +61,6 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
       setViewYear(y);
       setViewMonth(m - 1);
       setSelectedDayDate(activeHoliday.startDate);
-      if (activeHoliday.schoolId && activeHoliday.schoolId !== 'ALL') {
-        setSchoolFilter(activeHoliday.schoolId);
-      }
     }
   }, [activeHoliday]);
 
@@ -120,17 +126,6 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
     }
   };
 
-  // 선택된 날짜에 걸쳐 있는 모든 학사일정
-  const holidaysOnSelectedDay = useMemo(() => {
-    if (!selectedDayDate) return [];
-    return holidays.filter((h) => {
-      if (schoolFilter !== 'ALL' && h.schoolId !== schoolFilter && h.schoolId !== 'ALL') {
-        return false;
-      }
-      return selectedDayDate >= h.startDate && selectedDayDate <= h.endDate;
-    });
-  }, [selectedDayDate, holidays, schoolFilter]);
-
   // 현재 학교 필터가 적용된 정렬된 학사일정 목록 (시작일 오름차순)
   const currentFilteredHolidays = useMemo(() => {
     return holidays
@@ -143,6 +138,81 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
     if (!activeHoliday) return -1;
     return currentFilteredHolidays.findIndex((h) => h.id === activeHoliday.id);
   }, [currentFilteredHolidays, activeHoliday]);
+
+  // 학교 필터 칩 클릭 시: 현재 조회 중인 일정(또는 월)과 동일한 유형의 일정을 지능적으로 매칭
+  const handleSchoolFilterClick = (targetSchoolId: string) => {
+    setSchoolFilter(targetSchoolId);
+
+    const targetHolidays = holidays
+      .filter((h) => targetSchoolId === 'ALL' || h.schoolId === targetSchoolId || h.schoolId === 'ALL')
+      .sort((a, b) => a.startDate.localeCompare(b.startDate));
+
+    if (targetHolidays.length === 0) {
+      onSelectHoliday(null);
+      return;
+    }
+
+    if (activeHoliday) {
+      // 1. 핵심 키워드 매칭 (추석, 개학, 가을, 겨울, 설날, 봄, 종업, 연수 등)
+      const keywords = [
+        '추석', 'Chuseok',
+        '개학', '개학일', 'Academic Year',
+        '가을', 'Fall', 'Half-Term',
+        '겨울', 'Winter',
+        '설날', 'Seollal',
+        '봄', 'Spring',
+        '종업', 'Last Day',
+        '연수', '교사연수', 'INSET', 'PD',
+        '현충일', '어린이날', '한글날', '광복절'
+      ];
+
+      const currentKw = keywords.find((kw) =>
+        activeHoliday.name.toLowerCase().includes(kw.toLowerCase())
+      );
+
+      if (currentKw) {
+        const kwMatch = targetHolidays.find((h) =>
+          h.name.toLowerCase().includes(currentKw.toLowerCase())
+        );
+        if (kwMatch) {
+          onSelectHoliday(kwMatch);
+          return;
+        }
+      }
+
+      // 2. 동일 시기(날짜 중복) 매칭
+      const overlapMatch = targetHolidays.find(
+        (h) => h.startDate <= activeHoliday.endDate && h.endDate >= activeHoliday.startDate
+      );
+      if (overlapMatch) {
+        onSelectHoliday(overlapMatch);
+        return;
+      }
+
+      // 3. activeHoliday와 동일한 월 매칭
+      const activeMonthPrefix = activeHoliday.startDate.substring(0, 7);
+      const sameMonthMatch = targetHolidays.find(
+        (h) => h.startDate.startsWith(activeMonthPrefix) || h.endDate.startsWith(activeMonthPrefix)
+      );
+      if (sameMonthMatch) {
+        onSelectHoliday(sameMonthMatch);
+        return;
+      }
+    }
+
+    // 4. 현재 달력에서 보고 있는 viewYear, viewMonth와 동일한 월 매칭
+    const currentViewMonthPrefix = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
+    const viewMonthMatch = targetHolidays.find(
+      (h) => h.startDate.startsWith(currentViewMonthPrefix) || h.endDate.startsWith(currentViewMonthPrefix)
+    );
+    if (viewMonthMatch) {
+      onSelectHoliday(viewMonthMatch);
+      return;
+    }
+
+    // 5. 만약 현재 월에 일정이 없다면 달력 화면을 강제 리셋하지 않고 첫 번째 일정 선택
+    onSelectHoliday(targetHolidays[0]);
+  };
 
   // 이전 이벤트로 넘기기
   const handlePrevEvent = () => {
@@ -194,11 +264,73 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
     setTouchEndX(null);
   };
 
+  // 선택된 날짜에 걸쳐 있는 모든 학사일정
+  const holidaysOnSelectedDay = useMemo(() => {
+    if (!selectedDayDate) return [];
+    return holidays.filter((h) => {
+      if (schoolFilter !== 'ALL' && h.schoolId !== schoolFilter && h.schoolId !== 'ALL') {
+        return false;
+      }
+      return selectedDayDate >= h.startDate && selectedDayDate <= h.endDate;
+    });
+  }, [selectedDayDate, holidays, schoolFilter]);
+
   // 활성 이벤트 학교 정보
   const activeSchool = schools.find((s) => s.id === activeHoliday?.schoolId);
   const activeDaysCount = activeHoliday
     ? getDaysDifference(activeHoliday.startDate, activeHoliday.endDate)
     : 0;
+
+  // 현재 보고 있는 월/이벤트에 대한 4대 학교 겹침 및 차이 분석 데이터
+  const majorOverlapAnalysis = useMemo(() => {
+    const targetKeywords = ['추석', '개학', '가을', '겨울', '설날', '봄', '종업'];
+    let matchedKw = '';
+    if (activeHoliday) {
+      matchedKw = targetKeywords.find((kw) =>
+        activeHoliday.name.toLowerCase().includes(kw.toLowerCase())
+      ) || '';
+    }
+
+    if (!matchedKw) {
+      if (viewMonth === 7) matchedKw = '개학'; // 8월
+      else if (viewMonth === 8) matchedKw = '추석'; // 9월
+      else if (viewMonth === 9 || viewMonth === 10) matchedKw = '가을'; // 10-11월
+      else if (viewMonth === 11 || viewMonth === 0) matchedKw = '겨울'; // 12-1월
+      else if (viewMonth === 1) matchedKw = '설날'; // 2월
+      else if (viewMonth === 2 || viewMonth === 3) matchedKw = '봄'; // 3-4월
+      else if (viewMonth === 5) matchedKw = '종업'; // 6월
+    }
+
+    if (!matchedKw) return null;
+
+    const schoolResults = MAJOR_SCHOOLS.map((s) => {
+      const match = holidays.find(
+        (h) =>
+          h.schoolId === s.id &&
+          h.name.toLowerCase().includes(matchedKw.toLowerCase())
+      );
+      return {
+        school: s,
+        holiday: match || null,
+        dates: match ? `${match.startDate.substring(5)} ~ ${match.endDate.substring(5)}` : '일정 없음',
+        days: match ? getDaysDifference(match.startDate, match.endDate) : 0,
+        fullStartDate: match?.startDate,
+        fullEndDate: match?.endDate,
+      };
+    });
+
+    const validDays = schoolResults.filter((r) => r.days > 0).map((r) => r.days);
+    const minDays = validDays.length > 0 ? Math.min(...validDays) : 0;
+    const maxDays = validDays.length > 0 ? Math.max(...validDays) : 0;
+
+    return {
+      keyword: matchedKw,
+      results: schoolResults,
+      minDays,
+      maxDays,
+      isVariable: maxDays > minDays,
+    };
+  }, [activeHoliday, viewMonth, holidays]);
 
   return (
     <div className="flex flex-col gap-3">
@@ -322,7 +454,7 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
         </div>
       )}
 
-      {/* 2. 캘린더 네비게이션 헤더 & 학교 필터 */}
+      {/* 2. 캘린더 네비게이션 헤더 & 학교 필터 & 학교별 컬러 선 범례 */}
       <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xs">
         <div className="flex items-center justify-between pb-2 border-b border-slate-100">
           <div className="flex items-center gap-1.5">
@@ -360,8 +492,20 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
           </div>
         </div>
 
+        {/* 학교별 컬러 선 범례 (4개교 겹침 알아보기 쉬운 가이드) */}
+        <div className="flex items-center gap-2 text-[10.5px] font-bold text-slate-600 py-1.5 px-2.5 bg-slate-50 rounded-xl border border-slate-200/70 flex-wrap">
+          <span className="text-slate-400 shrink-0 text-[10px] font-semibold">학교별 컬러 선:</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-1 rounded-full bg-blue-600" />NLCS</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-1 rounded-full bg-orange-500" />BHA</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-1 rounded-full bg-indigo-600" />KIS</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-1 rounded-full bg-emerald-600" />SJA</span>
+          <span className="text-[9.5px] text-amber-900 bg-amber-200/90 px-1.5 py-0.2 rounded border border-amber-300 font-black ml-auto">
+            4개교 공통
+          </span>
+        </div>
+
         {/* 빠른 학사일정 바로가기 칩 */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[10.5px] font-bold scrollbar-none">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-[10.5px] font-bold scrollbar-none">
           <span className="text-slate-400 shrink-0 text-[10px]">빠른 이동:</span>
           {quickJumpEvents.map((item, idx) => (
             <button
@@ -375,7 +519,7 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
           ))}
         </div>
 
-        {/* 학교 필터 칩 */}
+        {/* 학교 필터 칩 (클릭 시 동일 이벤트/월 유지 지능형 탐색) */}
         <div className="flex items-center gap-1.5 overflow-x-auto text-[10.5px] font-bold pt-0.5 scrollbar-none">
           <span className="text-slate-400 shrink-0 text-[10px]">학교 필터:</span>
           {['ALL', 'NLCS', 'BHA', 'KIS', 'SJA'].map((schId) => {
@@ -385,15 +529,7 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
               <button
                 key={schId}
                 type="button"
-                onClick={() => {
-                  setSchoolFilter(schId);
-                  const filtered = holidays
-                    .filter((h) => schId === 'ALL' || h.schoolId === schId || h.schoolId === 'ALL')
-                    .sort((a, b) => a.startDate.localeCompare(b.startDate));
-                  if (filtered.length > 0) {
-                    onSelectHoliday(filtered[0]);
-                  }
-                }}
+                onClick={() => handleSchoolFilterClick(schId)}
                 className={`px-2 py-0.5 rounded-md transition cursor-pointer shrink-0 ${
                   isSelected
                     ? 'bg-slate-900 text-white font-black shadow-2xs'
@@ -417,11 +553,11 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
           <span className="text-blue-500">토</span>
         </div>
 
-        {/* 4. 날짜 그리드 (선택된 이벤트 기간 연속 하이라이트 밴드) */}
+        {/* 4. 날짜 그리드 (반투명 레이어 및 4개 학교별 컬러 선 시각화) */}
         <div className="grid grid-cols-7 gap-y-1 gap-x-0.5 text-center">
           {/* 이전 달 빈 칸 */}
           {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-            <div key={`empty-${i}`} className="h-10 sm:h-11" />
+            <div key={`empty-${i}`} className="h-12 sm:h-13" />
           ))}
 
           {/* 해당 월 날짜들 */}
@@ -448,15 +584,26 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
             const roundedLeft = isRangeStart || isSun || isSingleDayRange;
             const roundedRight = isRangeEnd || isSat || isSingleDayRange;
 
-            // 해당 날짜의 학교별 휴교/방학 목록 (학교 필터 적용)
+            // 4대 학교 중 해당 날짜에 휴교 중인 학교 목록
+            const schoolsOffToday = MAJOR_SCHOOLS.filter((s) => {
+              return holidays.some(
+                (h) =>
+                  (h.schoolId === s.id || h.schoolId === 'ALL') &&
+                  dateStr >= h.startDate &&
+                  dateStr <= h.endDate
+              );
+            });
+
+            const countOff = schoolsOffToday.length;
+            const isAllFourOff = countOff === 4;
+
+            // 현재 선택된 학교 필터 기준 휴교 여부
             const dayHolidays = holidays.filter((h) => {
               if (schoolFilter !== 'ALL' && h.schoolId !== schoolFilter && h.schoolId !== 'ALL') {
                 return false;
               }
               return dateStr >= h.startDate && dateStr <= h.endDate;
             });
-
-            const hasHolidays = dayHolidays.length > 0;
 
             return (
               <button
@@ -469,7 +616,7 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
                     onSelectHoliday(dayHolidays[0]);
                   }
                 }}
-                className={`h-10 sm:h-11 flex flex-col items-center justify-center relative transition cursor-pointer text-xs ${
+                className={`h-12 sm:h-13 flex flex-col items-center justify-between py-1 relative transition cursor-pointer text-xs ${
                   isInActiveRange
                     ? roundedLeft && roundedRight
                       ? 'rounded-xl'
@@ -478,15 +625,17 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
                       : roundedRight
                       ? 'rounded-r-xl'
                       : 'rounded-none'
-                    : 'rounded-lg'
+                    : 'rounded-xl'
                 } ${
                   isInActiveRange
                     ? isRangeStart || isRangeEnd
                       ? 'bg-amber-500 text-white font-black shadow-xs ring-1 ring-amber-400 z-10'
-                      : 'bg-amber-100 text-amber-950 font-bold border-y border-amber-300'
+                      : 'bg-amber-100/95 text-amber-950 font-bold border-y border-amber-300'
                     : isSelected
                     ? 'bg-blue-600 text-white font-black shadow-sm ring-2 ring-blue-300 z-10'
-                    : hasHolidays
+                    : isAllFourOff
+                    ? 'bg-amber-100/80 hover:bg-amber-200/80 text-amber-950 border border-amber-300 font-extrabold shadow-2xs'
+                    : countOff > 0
                     ? 'bg-amber-50/80 hover:bg-amber-100/80 text-amber-950 border border-amber-200/70 font-bold'
                     : isSun
                     ? 'text-rose-500 hover:bg-slate-100 font-semibold'
@@ -495,52 +644,136 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
                     : 'text-slate-800 hover:bg-slate-100 font-medium'
                 } ${isToday && !isInActiveRange && !isSelected ? 'ring-2 ring-blue-500 font-black' : ''}`}
                 title={
-                  hasHolidays
-                    ? `${dateStr}: ${dayHolidays.map((h) => h.name).join(', ')}`
+                  countOff > 0
+                    ? `${dateStr}: ${schoolsOffToday.map((s) => s.name).join(', ')} 휴교`
                     : dateStr
                 }
               >
-                <span className="leading-none text-[12px]">{day}</span>
+                {/* 1행: 날짜 숫자 */}
+                <span className="leading-none text-[12px] font-black">{day}</span>
 
-                {/* 기간 시작/종료 또는 휴교 라벨 */}
+                {/* 2행: 기간 상태 라벨 또는 겹침 배지 */}
                 {isInActiveRange ? (
-                  <span className="text-[8.5px] leading-none mt-0.5 font-bold opacity-90">
+                  <span className="text-[8px] leading-none font-black opacity-95">
                     {isSingleDayRange
                       ? '휴교'
                       : isRangeStart
                       ? '시작'
                       : isRangeEnd
                       ? '종료'
+                      : isAllFourOff
+                      ? '4개교'
                       : '휴교'}
                   </span>
-                ) : hasHolidays ? (
-                  /* 학교별 색상 닷 표시 */
-                  <div className="flex items-center gap-0.5 mt-0.5">
-                    {dayHolidays.slice(0, 3).map((dh) => {
-                      const sc = schools.find((s) => s.id === dh.schoolId);
-                      return (
-                        <span
-                          key={dh.id}
-                          className="w-1.5 h-1.5 rounded-full shrink-0"
-                          style={{
-                            backgroundColor: isSelected ? '#ffffff' : sc?.color || '#f59e0b',
-                          }}
-                        />
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <span className="text-[8px] leading-none mt-0.5 text-transparent select-none">
-                    .
+                ) : isAllFourOff ? (
+                  <span className="text-[7.5px] leading-none font-black text-amber-900 bg-amber-200/90 px-1 py-0.2 rounded-sm shadow-2xs">
+                    4개교
                   </span>
+                ) : countOff > 0 ? (
+                  <span className="text-[7.5px] leading-none font-bold text-slate-700 bg-white/80 px-1 py-0.2 rounded-sm border border-slate-200/60">
+                    {countOff}개교
+                  </span>
+                ) : (
+                  <span className="text-[7px] leading-none text-transparent select-none">.</span>
                 )}
+
+                {/* 3행: 4대 학교별 컬러 선 (Horizontal Color Strips) */}
+                <div className="w-full px-1 flex items-center justify-center gap-0.5">
+                  {MAJOR_SCHOOLS.map((s) => {
+                    const isOff = schoolsOffToday.some((so) => so.id === s.id);
+                    return (
+                      <div
+                        key={s.id}
+                        className={`h-1 flex-1 rounded-full transition-all ${
+                          isOff ? 'opacity-100 shadow-2xs' : 'opacity-15 bg-slate-300'
+                        }`}
+                        style={{
+                          backgroundColor: isOff ? s.hex : undefined,
+                        }}
+                        title={`${s.name}: ${isOff ? '휴교' : '정상운행'}`}
+                      />
+                    );
+                  })}
+                </div>
               </button>
             );
           })}
         </div>
 
-        {/* 5. 선택된 날짜 상세 카드 */}
-        <div className="mt-2 pt-2.5 border-t border-slate-100 flex flex-col gap-2">
+        {/* 5. 4대 학교 일정 겹침 및 차이 분석 요약 카드 (전체 학교 보기 또는 주요 방학 선택 시) */}
+        {majorOverlapAnalysis && (
+          <div className="mt-2.5 p-3 rounded-2xl border border-slate-200 bg-slate-50/70 flex flex-col gap-2 shadow-2xs">
+            <div className="flex items-center justify-between pb-1 border-b border-slate-200/80">
+              <div className="flex items-center gap-1.5">
+                <Layers className="w-4 h-4 text-blue-600 shrink-0" />
+                <span className="text-xs font-black text-slate-900">
+                  4대 학교 [{majorOverlapAnalysis.keyword}] 일정 겹침 및 차이 분석
+                </span>
+              </div>
+              <span className="text-[10px] font-bold text-blue-700 bg-blue-100/80 px-2 py-0.2 rounded-full border border-blue-200">
+                실시간 대조
+              </span>
+            </div>
+
+            {/* 학교별 일정 현황 행 */}
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-4 gap-1.5 pt-0.5">
+              {majorOverlapAnalysis.results.map((item) => {
+                const isSelectedSchool = schoolFilter === item.school.id;
+                const isExtraDays =
+                  majorOverlapAnalysis.isVariable &&
+                  item.days > majorOverlapAnalysis.minDays;
+
+                return (
+                  <div
+                    key={item.school.id}
+                    onClick={() => {
+                      if (item.holiday) {
+                        setSchoolFilter(item.school.id);
+                        onSelectHoliday(item.holiday);
+                      }
+                    }}
+                    className={`p-2 rounded-xl border transition cursor-pointer flex flex-col gap-1 ${
+                      isSelectedSchool
+                        ? 'bg-blue-50/90 border-blue-300 ring-1 ring-blue-400'
+                        : 'bg-white border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: item.school.hex }}
+                        />
+                        <span className="font-extrabold text-xs text-slate-900">
+                          {item.school.name}
+                        </span>
+                      </div>
+                      {isExtraDays && (
+                        <span className="text-[9.5px] font-black text-amber-800 bg-amber-100 px-1 py-0.2 rounded">
+                          +{item.days - majorOverlapAnalysis.minDays}일 추가
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-slate-600 font-bold">{item.dates}</span>
+                      <span className="font-black text-blue-700">{item.days}일간</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* 일정 분석 코멘트 */}
+            {majorOverlapAnalysis.isVariable && (
+              <div className="p-2 rounded-xl bg-blue-50/80 border border-blue-200/80 text-[11px] text-blue-950 font-medium leading-relaxed">
+                💡 <strong>겹침 분석:</strong> 학교별로 방학 시작일 및 종료일에 차이가 있습니다. 각 학교 카드를 누르면 달력 상에서 해당 학교만의 기간을 집중 비교할 수 있습니다.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 6. 선택된 날짜 상세 카드 */}
+        <div className="mt-1 pt-2 border-t border-slate-100 flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-xs font-black text-slate-800">
               <Info className="w-3.5 h-3.5 text-blue-600" />
