@@ -151,34 +151,31 @@ export const TripManagementView: React.FC = () => {
       {/* ========================================================================= */}
       {/* 1. [인쇄 전용] 그대로 게시 가능한 수준의 여백과 균형성을 갖춘 A4 공고문   */}
       {/* ========================================================================= */}
-      <div className="hidden print:flex flex-col justify-between w-full bg-white text-slate-900 select-none min-h-[268mm] p-0 m-0">
+      <div className="hidden print:flex flex-col justify-between w-full bg-white text-slate-900 select-none min-h-[268mm] pt-6 pb-2 px-1 m-0">
         <div>
           {/* A4 최상단: 단정한 공고문 헤더 (글자 군더더기 없이 딱 제목만 표시) */}
-          <div className="text-center pb-2 mb-4 border-b-2 border-slate-900 bg-white">
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight py-2">
+          <div className="text-center pb-3 mb-6 border-b-2 border-slate-900 bg-white">
+            <h1 className="text-2xl font-black text-slate-900 tracking-wider py-1">
               통학차량 운행 시간표
             </h1>
           </div>
 
           {/* 1-A. 등교(오전) 운행시간표 섹션 */}
-          <div className="mb-4 bg-white">
-            <div className="flex items-center justify-between mb-1.5 px-0.5">
+          <div className="mb-6 bg-white">
+            <div className="flex items-center justify-between mb-2 px-0.5">
               <h2 className="text-xs font-black text-slate-900 flex items-center gap-1.5">
                 <span className="w-2 h-3.5 bg-blue-700 inline-block rounded-xs"></span>
                 <span>1. 등교(오전) 운행시간표</span>
               </h2>
-              <span className="text-[9.5px] text-slate-600 font-medium">
-                ※ 단지 출발 5분 전까지 지정 탑승 위치(단지 정문)에서 대기해 주시기 바랍니다.
-              </span>
             </div>
 
             <table className="w-full text-left border-collapse border border-slate-700 table-fixed text-[10.5px] bg-white">
               <thead>
                 <tr className="bg-slate-100 text-slate-900 font-black border-b border-slate-500">
-                  <th className="py-1.5 px-1.5 w-[8%] text-center border-r border-slate-400">호차</th>
-                  <th className="py-1.5 px-2.5 w-[72%] border-r border-slate-400">운행 코스 및 시간</th>
-                  <th className="py-1.5 px-1.5 w-[10%] text-center border-r border-slate-400">운행 요일</th>
-                  <th className="py-1.5 px-1.5 w-[10%] text-center">단지 복귀</th>
+                  <th className="py-2 px-1.5 w-[8%] text-center border-r border-slate-400">호차</th>
+                  <th className="py-2 px-2.5 w-[72%] border-r border-slate-400">운행 코스 및 시간</th>
+                  <th className="py-2 px-1.5 w-[10%] text-center border-r border-slate-400">운행 요일</th>
+                  <th className="py-2 px-1.5 w-[10%] text-center">단지 복귀</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-300 text-slate-900 bg-white">
@@ -186,19 +183,19 @@ export const TripManagementView: React.FC = () => {
                   const data = getTemplateData(tpl);
                   return (
                     <tr key={tpl.id} className="bg-white">
-                      <td className="py-1.5 px-1.5 text-center font-bold border-r border-slate-300">
+                      <td className="py-2 px-1.5 text-center font-bold border-r border-slate-300">
                         {data.vehicleName}
                       </td>
-                      <td className="py-1.5 px-2.5 border-r border-slate-300 leading-tight">
-                        <div className="flex flex-wrap items-center gap-y-1 gap-x-1.5 text-[10px]">
+                      <td className="py-2 px-2.5 border-r border-slate-300 leading-tight">
+                        <div className="flex flex-wrap items-center gap-y-1.5 gap-x-2 text-[10.5px]">
                           {data.combinedSteps.map((step, idx) => (
                             <span key={idx} className="inline-flex items-center gap-1 whitespace-nowrap">
-                              {idx > 0 && <span className="text-slate-400 font-bold mx-0.5 text-[9px]">→</span>}
-                              <span className={step.isStart ? "font-black text-blue-900" : "font-bold text-slate-800"}>
+                              {idx > 0 && <span className="text-slate-300 font-semibold mx-1 text-[9px]">→</span>}
+                              <span className={step.isStart ? "font-black text-slate-900" : "font-bold text-slate-800"}>
                                 {step.name}
                               </span>
                               {step.time && (
-                                <span className="font-mono font-bold text-[9.5px] text-blue-700 bg-blue-50 px-1 py-0.2 rounded border border-blue-200/70">
+                                <span className="font-mono font-bold text-[10.5px] text-slate-800 ml-0.5">
                                   {step.time}
                                 </span>
                               )}
@@ -206,10 +203,10 @@ export const TripManagementView: React.FC = () => {
                           ))}
                         </div>
                       </td>
-                      <td className="py-1.5 px-1.5 text-center font-bold border-r border-slate-300">
+                      <td className="py-2 px-1.5 text-center font-bold border-r border-slate-300">
                         {data.weekdaysText}
                       </td>
-                      <td className="py-1.5 px-1.5 text-center font-mono font-bold">
+                      <td className="py-2 px-1.5 text-center font-mono font-bold text-slate-800">
                         {data.refReturn ? formatMinute(data.refReturn) : '-'}
                       </td>
                     </tr>
@@ -220,24 +217,21 @@ export const TripManagementView: React.FC = () => {
           </div>
 
           {/* 1-B. 하교(오후) 운행시간표 섹션 */}
-          <div className="mb-4 bg-white">
-            <div className="flex items-center justify-between mb-1.5 px-0.5">
+          <div className="mb-6 bg-white">
+            <div className="flex items-center justify-between mb-2 px-0.5">
               <h2 className="text-xs font-black text-slate-900 flex items-center gap-1.5">
                 <span className="w-2 h-3.5 bg-amber-700 inline-block rounded-xs"></span>
                 <span>2. 하교(오후) 운행시간표</span>
               </h2>
-              <span className="text-[9.5px] text-slate-600 font-medium">
-                ※ 학교별 정규 수업 및 방과후 활동 종료 시간에 맞춰 지정 승차장에서 탑승합니다.
-              </span>
             </div>
 
             <table className="w-full text-left border-collapse border border-slate-700 table-fixed text-[10.5px] bg-white">
               <thead>
                 <tr className="bg-slate-100 text-slate-900 font-black border-b border-slate-500">
-                  <th className="py-1.5 px-1.5 w-[8%] text-center border-r border-slate-400">호차</th>
-                  <th className="py-1.5 px-2.5 w-[72%] border-r border-slate-400">운행 코스 및 시간</th>
-                  <th className="py-1.5 px-1.5 w-[10%] text-center border-r border-slate-400">운행 요일</th>
-                  <th className="py-1.5 px-1.5 w-[10%] text-center">단지 복귀</th>
+                  <th className="py-2 px-1.5 w-[8%] text-center border-r border-slate-400">호차</th>
+                  <th className="py-2 px-2.5 w-[72%] border-r border-slate-400">운행 코스 및 시간</th>
+                  <th className="py-2 px-1.5 w-[10%] text-center border-r border-slate-400">운행 요일</th>
+                  <th className="py-2 px-1.5 w-[10%] text-center">단지 복귀</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-300 text-slate-900 bg-white">
@@ -245,19 +239,19 @@ export const TripManagementView: React.FC = () => {
                   const data = getTemplateData(tpl);
                   return (
                     <tr key={tpl.id} className="bg-white">
-                      <td className="py-1.5 px-1.5 text-center font-bold border-r border-slate-300">
+                      <td className="py-2 px-1.5 text-center font-bold border-r border-slate-300">
                         {data.vehicleName}
                       </td>
-                      <td className="py-1.5 px-2.5 border-r border-slate-300 leading-tight">
-                        <div className="flex flex-wrap items-center gap-y-1 gap-x-1.5 text-[10px]">
+                      <td className="py-2 px-2.5 border-r border-slate-300 leading-tight">
+                        <div className="flex flex-wrap items-center gap-y-1.5 gap-x-2 text-[10.5px]">
                           {data.combinedSteps.map((step, idx) => (
                             <span key={idx} className="inline-flex items-center gap-1 whitespace-nowrap">
-                              {idx > 0 && <span className="text-slate-400 font-bold mx-0.5 text-[9px]">→</span>}
-                              <span className={step.isStart ? "font-black text-amber-900" : "font-bold text-slate-800"}>
+                              {idx > 0 && <span className="text-slate-300 font-semibold mx-1 text-[9px]">→</span>}
+                              <span className={step.isStart ? "font-black text-slate-900" : "font-bold text-slate-800"}>
                                 {step.name}
                               </span>
                               {step.time && (
-                                <span className="font-mono font-bold text-[9.5px] text-amber-700 bg-amber-50 px-1 py-0.2 rounded border border-amber-200/70">
+                                <span className="font-mono font-bold text-[10.5px] text-slate-800 ml-0.5">
                                   {step.time}
                                 </span>
                               )}
@@ -265,10 +259,10 @@ export const TripManagementView: React.FC = () => {
                           ))}
                         </div>
                       </td>
-                      <td className="py-1.5 px-1.5 text-center font-bold border-r border-slate-300">
+                      <td className="py-2 px-1.5 text-center font-bold border-r border-slate-300">
                         {data.weekdaysText}
                       </td>
-                      <td className="py-1.5 px-1.5 text-center font-mono font-bold">
+                      <td className="py-2 px-1.5 text-center font-mono font-bold text-slate-800">
                         {data.refReturn ? formatMinute(data.refReturn) : '-'}
                       </td>
                     </tr>
@@ -409,11 +403,7 @@ export const TripManagementView: React.FC = () => {
                                   {step.name}
                                 </span>
                                 {step.time && (
-                                  <span className={`font-mono font-bold text-xs px-1.5 py-0.5 rounded border ${
-                                    template.type === 'MORNING'
-                                      ? 'text-blue-700 bg-blue-50 border-blue-200/70'
-                                      : 'text-amber-700 bg-amber-50 border-amber-200/70'
-                                  }`}>
+                                  <span className="font-mono font-bold text-xs text-slate-700 ml-0.5">
                                     {step.time}
                                   </span>
                                 )}
