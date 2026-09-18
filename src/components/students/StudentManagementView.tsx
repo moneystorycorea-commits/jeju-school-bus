@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Users, UserPlus, Eye, EyeOff, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Users, UserPlus, Eye, EyeOff, ArrowUpDown, ArrowUp, ArrowDown, Printer } from 'lucide-react';
 import { useScheduleStore } from '@/lib/store/useScheduleStore';
 import { formatMinute } from '@/lib/scheduling/time';
 import { formatGradeDisplay } from '@/lib/constants/schools';
@@ -21,6 +21,10 @@ export const StudentManagementView: React.FC = () => {
   const [showPhoneMap, setShowPhoneMap] = useState<Record<string, boolean>>({});
   const [sortField, setSortField] = useState<SortField>('index');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   const togglePhone = (id: string) => {
     setShowPhoneMap((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -124,8 +128,111 @@ export const StudentManagementView: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-3 select-none animate-fadeIn max-w-5xl w-full">
-      {/* 1. 상단 타이틀 배너 (높이 축소 및 회색 보조설명 삭제로 테이블 접근성 극대화) */}
-      <div className="bg-white rounded-xl border border-slate-200 py-2.5 px-4 shadow-xs flex flex-wrap items-center justify-between gap-3">
+      {/* ========================================================================= */}
+      {/* [인쇄/PDF 전용] A4 1페이지 최적화 등록학생 명단 공고문 (hidden print:flex) */}
+      {/* ========================================================================= */}
+      <div
+        className="hidden print:flex flex-col justify-between w-full bg-white text-slate-900 select-none min-h-[268mm] pt-5 pb-2 px-1 m-0"
+        style={{
+          fontFamily: "'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif",
+          WebkitPrintColorAdjust: 'exact',
+          printColorAdjust: 'exact',
+        }}
+      >
+        <div>
+          {/* 상단 공고문 타이틀 */}
+          <div className="text-center pb-2 mb-4 border-b-2 border-slate-900 bg-white">
+            <h1 className="text-2xl font-black text-slate-900 tracking-wider py-0.5">
+              통학차량 등록학생 명단
+            </h1>
+            <p className="text-xs font-bold text-slate-600 mt-0.5">
+              아주 더 하이클래스 제주 단지 내 통학버스 정규 이용 학생 현황 (총 {students.length}명)
+            </p>
+          </div>
+
+          {/* 인쇄용 학생 명단 테이블 */}
+          <table className="w-full text-left border-collapse border border-slate-700 table-fixed text-[11px]">
+            <thead>
+              <tr className="bg-slate-100 text-slate-900 font-black border-b border-slate-500 text-center" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+                <th className="py-1.5 px-1 w-[5%] border-r border-slate-400">No.</th>
+                <th className="py-1.5 px-1.5 w-[9%] border-r border-slate-400">성명</th>
+                <th className="py-1.5 px-1 w-[5%] border-r border-slate-400">성별</th>
+                <th className="py-1.5 px-1.5 w-[12%] border-r border-slate-400">동·호수</th>
+                <th className="py-1.5 px-2 w-[18%] border-r border-slate-400">학교 / 학년</th>
+                <th className="py-1.5 px-2 w-[19%] border-r border-slate-400">보호자 / 비상연락처</th>
+                <th className="py-1.5 px-2 w-[21%] border-r border-slate-400">등·하교 요약</th>
+                <th className="py-1.5 px-1.5 w-[11%]">비고</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-300 text-slate-900">
+              {students.map((st, idx) => {
+                const sc = schools.find((s) => s.id === st.schoolId);
+                const priv = getPrivateInfo(st.id);
+                const contact = priv?.emergencyContact || '010-3849-1234';
+                const guardian = priv?.guardianName ? `${priv.guardianName} (${contact})` : contact;
+                
+                // 등하교 요약
+                const monWs = st.weeklySchedule?.[1];
+                const monM = monWs?.morningActive !== false ? formatMinute(monWs?.morningMinute || 460) : '미이용';
+                const monA = monWs?.afternoonActive !== false ? formatMinute(monWs?.afternoonMinute || 930) : '미이용';
+                const isUniform = [2, 3, 4, 5].every((d) => {
+                  const ws = st.weeklySchedule?.[d];
+                  const m = ws?.morningActive !== false ? formatMinute(ws?.morningMinute || 460) : '미이용';
+                  const a = ws?.afternoonActive !== false ? formatMinute(ws?.afternoonMinute || 930) : '미이용';
+                  return m === monM && a === monA;
+                });
+                const scheduleSummary = isUniform
+                  ? `등 ${monM} / 하 ${monA}`
+                  : `등 ${monM}~ / 하 ${monA}~`;
+
+                return (
+                  <tr
+                    key={st.id}
+                    className={idx % 2 === 1 ? 'bg-slate-50/80' : 'bg-white'}
+                    style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
+                  >
+                    <td className="py-1.5 px-1 text-center font-black text-slate-700 border-r border-slate-300">
+                      {idx + 1}
+                    </td>
+                    <td className="py-1.5 px-1.5 font-black text-slate-950 border-r border-slate-300 whitespace-nowrap">
+                      {st.name}
+                    </td>
+                    <td className="py-1.5 px-1 text-center font-bold text-slate-700 border-r border-slate-300">
+                      {st.gender || '-'}
+                    </td>
+                    <td className="py-1.5 px-1.5 font-bold text-slate-800 border-r border-slate-300 whitespace-nowrap">
+                      {st.building} {st.unit}
+                    </td>
+                    <td className="py-1.5 px-2 border-r border-slate-300 whitespace-nowrap">
+                      <span className="font-extrabold text-slate-900">{sc?.shortName || st.schoolId}</span>
+                      <span className="text-blue-900 font-bold ml-1">({formatGradeDisplay(st.grade, st.schoolId)})</span>
+                    </td>
+                    <td className="py-1.5 px-2 font-mono font-bold text-slate-800 border-r border-slate-300 whitespace-nowrap text-[10.5px]">
+                      {guardian}
+                    </td>
+                    <td className="py-1.5 px-2 font-mono font-bold text-slate-900 border-r border-slate-300 whitespace-nowrap text-[10.5px]">
+                      {scheduleSummary}
+                    </td>
+                    <td className="py-1.5 px-1.5 text-slate-600 text-[10px] truncate max-w-[80px]">
+                      {st.notes || st.gate || '-'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* 공고문 하단 관리사무소 서명 */}
+        <div className="border-t-2 border-slate-400 pt-2 mt-3 text-center bg-white">
+          <div className="font-black text-xs text-slate-900 tracking-[0.3em]">
+            아 주 더 하 이 클 래 스  관 리 사 무 소
+          </div>
+        </div>
+      </div>
+
+      {/* 1. 상단 타이틀 배너 (화면 전용: no-print) */}
+      <div className="bg-white rounded-xl border border-slate-200 py-2.5 px-4 shadow-xs flex flex-wrap items-center justify-between gap-3 no-print">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs shrink-0">
             <Users className="w-5 h-5" />
@@ -138,17 +245,31 @@ export const StudentManagementView: React.FC = () => {
           </div>
         </div>
 
-        <button
-          onClick={openStudentModal}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-blue-600 text-white text-xs sm:text-sm font-bold hover:bg-blue-700 shadow-2xs transition cursor-pointer"
-        >
-          <UserPlus className="w-4 h-4" />
-          <span>새 학생 추가</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* 학생 명단 인쇄 / PDF 버튼 */}
+          <button
+            type="button"
+            onClick={handlePrint}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold shadow-2xs transition cursor-pointer"
+            title="A4 1페이지 최적화 등록학생 명단 인쇄 / PDF 저장"
+          >
+            <Printer className="w-4 h-4" />
+            <span>학생 명단 인쇄 / PDF</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={openStudentModal}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-blue-600 text-white text-xs sm:text-sm font-bold hover:bg-blue-700 shadow-2xs transition cursor-pointer"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>새 학생 추가</span>
+          </button>
+        </div>
       </div>
 
-      {/* 학교별 학생 분포 칩 */}
-      <div className="flex items-center gap-2 flex-wrap">
+      {/* 학교별 학생 분포 칩 (화면 전용: no-print) */}
+      <div className="flex items-center gap-2 flex-wrap no-print">
         {schools.map((sc) => {
           const count = students.filter((s) => s.schoolId === sc.id).length;
           return (
@@ -165,8 +286,8 @@ export const StudentManagementView: React.FC = () => {
         })}
       </div>
 
-      {/* 2. 등록 학생 명단 테이블 */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden w-full">
+      {/* 2. 등록 학생 명단 테이블 (화면 전용: no-print) */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden w-full no-print">
         <div className="px-5 py-2.5 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <h3 className="text-base font-bold text-slate-900">등록 학생 명단</h3>

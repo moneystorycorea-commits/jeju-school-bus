@@ -316,7 +316,7 @@ export const ScheduleDetailDrawer: React.FC = () => {
     <div
       onMouseEnter={handleDrawerMouseEnter}
       onMouseLeave={handleDrawerMouseLeave}
-      className="fixed inset-y-0 right-0 w-full sm:w-[580px] bg-white border-l border-slate-200 flex flex-col shrink-0 h-full overflow-y-auto select-none shadow-2xl z-40 animate-slideLeft transition-all duration-300 no-print"
+      className="fixed inset-y-0 right-0 w-full sm:w-[840px] md:w-[880px] lg:w-[940px] bg-white border-l border-slate-200 flex flex-col shrink-0 h-full overflow-y-auto select-none shadow-2xl z-40 animate-slideLeft transition-all duration-300 no-print"
     >
       {/* 1. 드로어 헤더 */}
       <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80 sticky top-0 z-10">

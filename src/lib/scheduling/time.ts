@@ -58,3 +58,11 @@ export function getWeekdayNumber(dateStr: string): number {
   const day = date.getDay();
   return day === 0 ? 7 : day; // 1:월 ~ 7:일
 }
+
+export function getTodayDateString(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}

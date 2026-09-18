@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useScheduleStore } from '@/lib/store/useScheduleStore';
-import { formatMinute, getWeekdayNumber } from '@/lib/scheduling/time';
+import { formatMinute, getWeekdayNumber, getTodayDateString } from '@/lib/scheduling/time';
 import { formatGradeDisplay } from '@/lib/constants/schools';
 import { getSchoolTravelMinutes } from '@/lib/scheduling/routeCalculator';
 import { SchoolCalendarMatrix } from '@/components/drawer/SchoolCalendarMatrix';
@@ -19,6 +19,7 @@ import { UserRole } from '@/types';
 export const MobileScheduleView: React.FC = () => {
   const {
     serviceDate,
+    setServiceDate,
     nextDate,
     prevDate,
     scheduleType,
@@ -38,6 +39,13 @@ export const MobileScheduleView: React.FC = () => {
 
   const [selectedVehicle, setSelectedVehicle] = useState<'v1' | 'v2'>('v1');
   const [isCalendarSheetOpen, setIsCalendarSheetOpen] = useState(false);
+
+  const todayStr = getTodayDateString();
+  const isToday = serviceDate === todayStr;
+
+  const handleToday = () => {
+    setServiceDate(todayStr);
+  };
 
   const currentWeekday = getWeekdayNumber(serviceDate);
   const weekdayLabel = ['일', '월', '화', '수', '목', '금', '토'][new Date(serviceDate).getDay()];
@@ -120,9 +128,22 @@ export const MobileScheduleView: React.FC = () => {
             </button>
             <button
               onClick={nextDate}
-              className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+              className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+              title="다음 날짜"
             >
               <ChevronRight className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={handleToday}
+              className={`px-2 py-1.5 rounded-lg text-xs font-black transition cursor-pointer border ${
+                isToday
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+              }`}
+              title="오늘 날짜로 바로 이동"
+            >
+              오늘
             </button>
           </div>
 
@@ -341,7 +362,9 @@ export const MobileScheduleView: React.FC = () => {
                     )}
                   </div>
                 ) : (
-                  <div className="text-xs text-slate-400">배정된 스케줄 없음</div>
+                  <div className="text-xs text-slate-400 font-medium">
+                    {scheduleType === 'AFTERNOON' ? '하교시 이용 안함' : '등교시 이용 안함'}
+                  </div>
                 )}
               </div>
             );

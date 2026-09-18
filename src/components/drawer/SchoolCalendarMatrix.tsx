@@ -99,21 +99,28 @@ export const SchoolCalendarMatrix: React.FC = () => {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse text-[11px]">
+        <table className="w-full text-left border-collapse text-[11px] table-fixed">
+          <colgroup>
+            <col className="w-[28%]" />
+            <col className="w-[18%]" />
+            <col className="w-[18%]" />
+            <col className="w-[18%]" />
+            <col className="w-[18%]" />
+          </colgroup>
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 font-bold">
-              <th className="py-2.5 px-3 min-w-[140px]">학사 일정</th>
-              <th className="py-2 px-2 text-center">
-                <span className="px-2 py-0.5 rounded bg-blue-100/70 text-blue-700 font-black text-[11px]">NLCS</span>
+              <th className="py-2.5 px-3">학사 일정</th>
+              <th className="py-2 px-1 text-center">
+                <span className="inline-block px-2.5 py-0.5 rounded-md bg-blue-100/80 text-blue-700 font-black text-xs">NLCS</span>
               </th>
-              <th className="py-2 px-2 text-center">
-                <span className="px-2 py-0.5 rounded bg-orange-100/70 text-orange-700 font-black text-[11px]">BHA</span>
+              <th className="py-2 px-1 text-center">
+                <span className="inline-block px-2.5 py-0.5 rounded-md bg-orange-100/80 text-orange-700 font-black text-xs">BHA</span>
               </th>
-              <th className="py-2 px-2 text-center">
-                <span className="px-2 py-0.5 rounded bg-indigo-100/70 text-indigo-700 font-black text-[11px]">KIS</span>
+              <th className="py-2 px-1 text-center">
+                <span className="inline-block px-2.5 py-0.5 rounded-md bg-indigo-100/80 text-indigo-700 font-black text-xs">KIS</span>
               </th>
-              <th className="py-2 px-2.5 text-center">
-                <span className="px-2 py-0.5 rounded bg-emerald-100/70 text-emerald-700 font-black text-[11px]">SJA</span>
+              <th className="py-2 px-1 text-center">
+                <span className="inline-block px-2.5 py-0.5 rounded-md bg-emerald-100/80 text-emerald-700 font-black text-xs">SJA</span>
               </th>
             </tr>
           </thead>
@@ -125,20 +132,22 @@ export const SchoolCalendarMatrix: React.FC = () => {
                 className="hover:bg-blue-50/70 transition cursor-pointer group"
                 title={`클릭하면 ${row.jumpDate} 운행표 및 달력으로 이동합니다.`}
               >
-                <td className="py-2 px-3 font-bold text-slate-800 flex items-center justify-between gap-1.5">
-                  <span className="truncate">{row.title}</span>
-                  <ExternalLink className="w-3 h-3 text-slate-300 group-hover:text-blue-600 shrink-0" />
+                <td className="py-2.5 px-3">
+                  <div className="flex items-center justify-between gap-1.5 font-bold text-slate-800 text-xs">
+                    <span className="truncate">{row.title}</span>
+                    <ExternalLink className="w-3 h-3 text-slate-300 group-hover:text-blue-600 shrink-0" />
+                  </div>
                 </td>
-                <td className="py-2 px-2 font-mono text-[10.5px] text-slate-700 text-center whitespace-nowrap">
+                <td className="py-2.5 px-1 font-mono text-[11px] font-semibold text-slate-700 text-center whitespace-nowrap">
                   {row.nlcs}
                 </td>
-                <td className="py-2 px-2 font-mono text-[10.5px] text-slate-700 text-center whitespace-nowrap">
+                <td className="py-2.5 px-1 font-mono text-[11px] font-semibold text-slate-700 text-center whitespace-nowrap">
                   {row.bha}
                 </td>
-                <td className="py-2 px-2 font-mono text-[10.5px] text-slate-700 text-center whitespace-nowrap">
+                <td className="py-2.5 px-1 font-mono text-[11px] font-semibold text-slate-700 text-center whitespace-nowrap">
                   {row.kis}
                 </td>
-                <td className="py-2 px-2.5 font-mono text-[10.5px] text-slate-700 text-center whitespace-nowrap">
+                <td className="py-2.5 px-1 font-mono text-[11px] font-semibold text-slate-700 text-center whitespace-nowrap">
                   {row.sja}
                 </td>
               </tr>

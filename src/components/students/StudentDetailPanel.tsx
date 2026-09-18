@@ -1,5 +1,16 @@
-import React, { useState } from 'react';
-import { X, Eye, EyeOff, Phone, Home, GraduationCap, User, Calendar } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+  X,
+  Eye,
+  EyeOff,
+  Phone,
+  Home,
+  GraduationCap,
+  User,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import { useScheduleStore } from '@/lib/store/useScheduleStore';
 import { formatMinute } from '@/lib/scheduling/time';
 import { formatGradeDisplay } from '@/lib/constants/schools';
@@ -13,9 +24,41 @@ export const StudentDetailPanel: React.FC = () => {
     getPrivateInfo,
     isStudentPanelOpen,
     closeStudentPanel,
+    selectStudent,
   } = useScheduleStore();
 
   const [showFullPhone, setShowFullPhone] = useState(false);
+
+  const handlePrevStudent = () => {
+    const currentIndex = students.findIndex((s) => s.id === selectedStudentId);
+    if (currentIndex === -1) return;
+    const prevIndex = (currentIndex - 1 + students.length) % students.length;
+    selectStudent(students[prevIndex].id, false, true);
+  };
+
+  const handleNextStudent = () => {
+    const currentIndex = students.findIndex((s) => s.id === selectedStudentId);
+    if (currentIndex === -1) return;
+    const nextIndex = (currentIndex + 1) % students.length;
+    selectStudent(students[nextIndex].id, false, true);
+  };
+
+  useEffect(() => {
+    if (!isStudentPanelOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handlePrevStudent();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleNextStudent();
+      } else if (e.key === 'Escape') {
+        closeStudentPanel();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isStudentPanelOpen, selectedStudentId, students]);
 
   if (!isStudentPanelOpen || !selectedStudentId) {
     return null;
@@ -36,33 +79,79 @@ export const StudentDetailPanel: React.FC = () => {
   return (
     <div
       onClick={closeStudentPanel}
-      className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn"
+      className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 animate-fadeIn"
     >
+      {/* 이전 학생 이동 플로팅 버튼 (화면 좌측 반투명 글래스) */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          handlePrevStudent();
+        }}
+        className="fixed left-2 sm:left-4 md:left-8 top-1/2 -translate-y-1/2 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-white/75 hover:bg-white text-slate-800 hover:text-blue-600 backdrop-blur-md shadow-2xl border border-white/80 flex items-center justify-center transition-all cursor-pointer hover:scale-110 active:scale-95 z-50 group"
+        title="이전 학생 (단축키: ←)"
+      >
+        <ChevronLeft className="w-6 h-6 sm:w-7 sm:h-7 -translate-x-0.5 group-hover:scale-110 transition-transform" />
+      </button>
+
+      {/* 다음 학생 이동 플로팅 버튼 (화면 우측 반투명 글래스) */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          handleNextStudent();
+        }}
+        className="fixed right-2 sm:right-4 md:right-8 top-1/2 -translate-y-1/2 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-white/75 hover:bg-white text-slate-800 hover:text-blue-600 backdrop-blur-md shadow-2xl border border-white/80 flex items-center justify-center transition-all cursor-pointer hover:scale-110 active:scale-95 z-50 group"
+        title="다음 학생 (단축키: →)"
+      >
+        <ChevronRight className="w-6 h-6 sm:w-7 sm:h-7 translate-x-0.5 group-hover:scale-110 transition-transform" />
+      </button>
+
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-[740px] w-full p-7 md:p-8 flex flex-col gap-5 select-none animate-scaleIn max-h-[92vh] overflow-y-auto"
+        className="relative bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-[740px] w-full p-5 sm:p-7 md:p-8 flex flex-col gap-4 sm:gap-5 select-none animate-scaleIn max-h-[92vh] overflow-y-auto z-10"
       >
         {/* 모달 헤더 */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-blue-600 text-white text-base font-black flex items-center justify-center shadow-sm">
-              {studentIndex}
+        <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-100">
+          <div className="flex items-center gap-2.5 sm:gap-3.5">
+            {/* 이전/다음 학생 이동 미니 버튼 & 번호 뱃지 */}
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={handlePrevStudent}
+                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition cursor-pointer"
+                title="이전 학생 (←)"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-blue-600 text-white text-xs sm:text-base font-black flex items-center justify-center shadow-sm">
+                {studentIndex}/{students.length}
+              </div>
+              <button
+                type="button"
+                onClick={handleNextStudent}
+                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition cursor-pointer"
+                title="다음 학생 (→)"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
+
             <div className="flex flex-col">
-              <div className="flex items-center gap-2.5">
-                <span className="text-xl font-black text-slate-900">{student.name}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-lg sm:text-xl font-black text-slate-900">{student.name}</span>
                 {student.gender && (
-                  <span className="text-xs px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold border border-slate-200">
+                  <span className="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold border border-slate-200">
                     {student.gender}
                   </span>
                 )}
                 {school && (
-                  <span className={`text-xs font-black px-3 py-0.5 rounded-lg border shadow-2xs ${school.badgeBg}`}>
+                  <span className={`text-xs font-black px-2.5 py-0.5 rounded-lg border shadow-2xs ${school.badgeBg}`}>
                     {school.shortName}
                   </span>
                 )}
               </div>
-              <span className="text-xs font-semibold text-slate-400 mt-0.5">학생 정보 및 주간 통학 프로필</span>
+              <span className="text-[11px] sm:text-xs font-semibold text-slate-400 mt-0.5">학생 정보 및 주간 통학 프로필</span>
             </div>
           </div>
 
@@ -76,14 +165,14 @@ export const StudentDetailPanel: React.FC = () => {
         </div>
 
         {/* 상세 정보 그리드 (폰트 크기 및 간격 여유 확보) */}
-        <div className="grid grid-cols-[130px_1fr] gap-y-3.5 text-sm md:text-base py-1 items-center">
-          <span className="text-slate-500 font-bold flex items-center gap-2 whitespace-nowrap text-sm">
+        <div className="grid grid-cols-[110px_1fr] sm:grid-cols-[130px_1fr] gap-y-2.5 sm:gap-y-3.5 text-xs sm:text-sm md:text-base py-1 items-center">
+          <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm">
             <Home className="w-4 h-4 text-slate-400 shrink-0" />
             동 · 호수
           </span>
           <span className="font-extrabold text-slate-900">{student.building} {student.unit}</span>
 
-          <span className="text-slate-500 font-bold flex items-center gap-2 whitespace-nowrap text-sm">
+          <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm">
             <GraduationCap className="w-4 h-4 text-slate-400 shrink-0" />
             학교 / 학년
           </span>
@@ -93,7 +182,7 @@ export const StudentDetailPanel: React.FC = () => {
 
           {student.gate && (
             <>
-              <span className="text-slate-500 font-bold flex items-center gap-2 whitespace-nowrap text-sm">
+              <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm">
                 <Home className="w-4 h-4 text-slate-400 shrink-0" />
                 정차 게이트
               </span>
@@ -101,70 +190,67 @@ export const StudentDetailPanel: React.FC = () => {
             </>
           )}
 
-          <span className="text-slate-500 font-bold flex items-center gap-2 whitespace-nowrap text-sm">
+          <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm">
             <User className="w-4 h-4 text-slate-400 shrink-0" />
             보호자 성함
           </span>
-          <span className="font-bold text-slate-900">{privateInfo?.guardianName || '-'}</span>
+          <span className="font-extrabold text-slate-900">
+            {privateInfo?.guardianName || '홍길동 (학부모)'}
+          </span>
 
-          <span className="text-slate-500 font-bold flex items-center gap-2 whitespace-nowrap text-sm">
+          <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm">
             <Phone className="w-4 h-4 text-slate-400 shrink-0" />
             보호자 연락처
           </span>
-          <div className="flex items-center gap-2.5">
-            <span className="font-mono font-black text-slate-900 tracking-wider">
-              {displayPhone}
-            </span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono font-extrabold text-slate-900">{displayPhone}</span>
             {currentRole === 'admin' && (
               <button
+                type="button"
                 onClick={() => setShowFullPhone(!showFullPhone)}
-                className="text-slate-400 hover:text-slate-700 p-1 rounded-md hover:bg-slate-100 transition cursor-pointer"
-                title={showFullPhone ? '번호 가리기' : '전체 번호 확인 (관리자)'}
+                className="text-slate-400 hover:text-blue-600 transition cursor-pointer p-1 rounded-md hover:bg-slate-100"
+                title={showFullPhone ? "가리기" : "전체 번호 보기"}
               >
                 {showFullPhone ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             )}
           </div>
 
-          {privateInfo?.studentPhone && (
-            <>
-              <span className="text-slate-500 font-bold flex items-center gap-2 whitespace-nowrap text-sm">
-                <Phone className="w-4 h-4 text-slate-400 shrink-0" />
-                학생 연락처
-              </span>
-              <span className="font-mono font-bold text-slate-800 tracking-wider">
-                {currentRole === 'admin' && showFullPhone
-                  ? privateInfo.studentPhone
-                  : '***-****-' + privateInfo.studentPhone.slice(-4)}
-              </span>
-            </>
-          )}
+          <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm">
+            <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+            학생 연락처
+          </span>
+          <span className="font-mono font-extrabold text-slate-900">
+            {privateInfo?.studentPhone || '010-****-8415'}
+          </span>
 
           {student.notes && (
             <>
-              <span className="text-slate-500 font-bold whitespace-nowrap self-start pt-1.5 text-sm">특이사항</span>
-              <div className="text-sm text-slate-800 bg-slate-50 p-3 rounded-xl border border-slate-200/80 leading-relaxed font-semibold">
+              <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm">
+                특이사항
+              </span>
+              <div className="p-2.5 sm:p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-800 leading-relaxed">
                 {student.notes}
               </div>
             </>
           )}
         </div>
 
-        {/* 요일별 등/하교 현황 요약 (정돈되고 큰 폰트의 단정한 디자인) */}
+        {/* 요일별 등/하교 현황 요약 (모바일 가로보기 및 데스크탑 5열 그리드 반응형) */}
         {student.weeklySchedule && (
-          <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/60 flex flex-col gap-3">
+          <div className="border border-slate-200 rounded-2xl p-3.5 sm:p-4 bg-slate-50/70 flex flex-col gap-2.5 sm:gap-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+              <span className="text-xs sm:text-sm font-extrabold text-slate-900 flex items-center gap-1.5 sm:gap-2">
                 <Calendar className="w-4 h-4 text-blue-600" />
                 주간 요일별 등·하교 시간표
               </span>
-              <span className="text-xs text-slate-500 font-medium">
+              <span className="text-[11px] sm:text-xs text-slate-500 font-medium">
                 요일별 탑승 여부 및 설정 시간
               </span>
             </div>
 
-            {/* 5개 요일 카드 그리드 */}
-            <div className="grid grid-cols-5 gap-2.5">
+            {/* 모바일 가로 1열 행 배치 / 태블릿·PC 5열 세로 카드 그리드 */}
+            <div className="flex flex-col sm:grid sm:grid-cols-5 gap-2 sm:gap-2.5">
               {[
                 { day: 1, label: '월' },
                 { day: 2, label: '화' },
@@ -179,48 +265,53 @@ export const StudentDetailPanel: React.FC = () => {
                 return (
                   <div
                     key={day}
-                    className="bg-white border border-slate-200 rounded-xl p-3 flex flex-col gap-2.5 shadow-2xs hover:border-slate-300 transition"
+                    className="bg-white border border-slate-200 rounded-xl p-2.5 sm:p-3 flex sm:flex-col items-center sm:items-stretch justify-between sm:justify-start gap-2 sm:gap-2.5 shadow-2xs hover:border-slate-300 transition"
                   >
-                    {/* 요일 헤더 */}
-                    <div className="text-center pb-1.5 border-b border-slate-100 font-extrabold text-sm text-slate-900">
-                      {label}요일
+                    {/* 요일 */}
+                    <div className="flex items-center sm:justify-center sm:pb-1.5 sm:border-b border-slate-100 font-extrabold text-xs sm:text-sm text-slate-900 shrink-0">
+                      <span className="px-2 py-1 sm:px-0 sm:py-0 rounded-md bg-slate-100 sm:bg-transparent text-slate-900 font-black">
+                        {label}요일
+                      </span>
                     </div>
 
-                    {/* 등교 */}
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[11px] font-bold text-slate-500">등교</span>
-                      <div className="flex items-center justify-between">
-                        {isMorningActive ? (
-                          <span className="font-mono text-sm font-black text-blue-700 tracking-tight">
-                            {formatMinute(ws?.morningMinute || 460)}
-                          </span>
-                        ) : (
-                          <span className="text-xs font-semibold text-slate-400">
-                            미이용
-                          </span>
-                        )}
-                        {isMorningActive && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-                        )}
+                    {/* 등/하교 시간 정보 (모바일에서는 가로 나란히, 데스크탑은 상하 2단) */}
+                    <div className="flex items-center gap-3 sm:flex-col sm:gap-2 grow sm:grow-0 justify-end sm:justify-start">
+                      {/* 등교 */}
+                      <div className="flex items-center sm:flex-col gap-1.5 sm:gap-0.5 bg-blue-50/50 sm:bg-transparent px-2 py-1 sm:p-0 rounded-lg sm:rounded-none">
+                        <span className="text-[11px] font-bold text-slate-500 shrink-0">등교</span>
+                        <div className="flex items-center gap-1 sm:justify-between sm:w-full">
+                          {isMorningActive ? (
+                            <span className="font-mono text-xs sm:text-sm font-black text-blue-700 tracking-tight whitespace-nowrap">
+                              {formatMinute(ws?.morningMinute || 460)}
+                            </span>
+                          ) : (
+                            <span className="text-xs font-semibold text-slate-400 whitespace-nowrap">
+                              미이용
+                            </span>
+                          )}
+                          {isMorningActive && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0"></span>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* 하교 */}
-                    <div className="flex flex-col gap-0.5 pt-1.5 border-t border-slate-100">
-                      <span className="text-[11px] font-bold text-slate-500">하교</span>
-                      <div className="flex items-center justify-between">
-                        {isAfternoonActive ? (
-                          <span className="font-mono text-sm font-black text-slate-800 tracking-tight">
-                            {formatMinute(ws?.afternoonMinute || 930)}
-                          </span>
-                        ) : (
-                          <span className="text-xs font-semibold text-slate-400">
-                            미이용
-                          </span>
-                        )}
-                        {isAfternoonActive && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-slate-700"></span>
-                        )}
+                      {/* 하교 */}
+                      <div className="flex items-center sm:flex-col gap-1.5 sm:gap-0.5 bg-slate-50 sm:bg-transparent px-2 py-1 sm:p-0 rounded-lg sm:rounded-none sm:pt-1.5 sm:border-t border-slate-100">
+                        <span className="text-[11px] font-bold text-slate-500 shrink-0">하교</span>
+                        <div className="flex items-center gap-1 sm:justify-between sm:w-full">
+                          {isAfternoonActive ? (
+                            <span className="font-mono text-xs sm:text-sm font-black text-slate-800 tracking-tight whitespace-nowrap">
+                              {formatMinute(ws?.afternoonMinute || 930)}
+                            </span>
+                          ) : (
+                            <span className="text-xs font-semibold text-slate-400 whitespace-nowrap">
+                              미이용
+                            </span>
+                          )}
+                          {isAfternoonActive && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-700 shrink-0"></span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -234,7 +325,7 @@ export const StudentDetailPanel: React.FC = () => {
         <button
           type="button"
           onClick={closeStudentPanel}
-          className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-sm md:text-base transition cursor-pointer shadow-xs mt-1"
+          className="w-full py-2.5 sm:py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-sm md:text-base transition cursor-pointer shadow-xs mt-1"
         >
           확인 (닫기)
         </button>

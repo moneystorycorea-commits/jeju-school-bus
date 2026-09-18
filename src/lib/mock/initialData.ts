@@ -572,7 +572,7 @@ export const INITIAL_TRIP_TEMPLATES: TripTemplate[] = [
     id: 't-a-1',
     vehicleId: 'v1',
     type: 'AFTERNOON',
-    weekdays: [1, 2, 3, 4, 5], // 월~금
+    weekdays: [1, 2, 3, 4], // 월~목 (금요일은 2호차 t-a-5 15:20 귀원으로 분리)
     defaultDepartureMinute: 825, // 13:45
     referenceReturnMinute: 835,  // 13:55
     stops: [

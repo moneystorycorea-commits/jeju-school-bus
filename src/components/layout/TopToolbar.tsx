@@ -10,7 +10,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { useScheduleStore } from '@/lib/store/useScheduleStore';
-import { formatKoreanDate } from '@/lib/scheduling/time';
+import { formatKoreanDate, getTodayDateString } from '@/lib/scheduling/time';
 
 export const TopToolbar: React.FC = () => {
   const {
@@ -31,7 +31,7 @@ export const TopToolbar: React.FC = () => {
   } = useScheduleStore();
 
   const handleToday = () => {
-    setServiceDate('2024-10-28'); // 기준 Mock Date
+    setServiceDate(getTodayDateString());
   };
 
   const isRouteDrawerActive = isDetailDrawerOpen && detailDrawerTab === 'route';
