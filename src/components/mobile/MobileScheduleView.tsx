@@ -72,25 +72,25 @@ export const MobileScheduleView: React.FC = () => {
   }, [tripTemplates, selectedVehicle, scheduleType, currentWeekday]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-100 text-slate-900 font-sans pb-20">
-      {/* 1. 상단 모바일 앱 헤더 */}
-      <header className="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white px-4 py-3 shadow-md sticky top-0 z-30 flex items-center justify-between">
+    <div className="flex flex-col min-h-screen bg-slate-100 text-slate-900 font-sans pb-14">
+      {/* 1. 상단 모바일 앱 헤더 (컴팩트 높이) */}
+      <header className="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white px-3.5 py-2 shadow-sm sticky top-0 z-30 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center backdrop-blur-xs">
-            <Bus className="w-5 h-5 text-amber-300" />
+          <div className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center backdrop-blur-xs">
+            <Bus className="w-4 h-4 text-amber-300" />
           </div>
           <div>
-            <h1 className="text-sm font-extrabold tracking-tight">제주 아주더하이클래스</h1>
-            <p className="text-[10px] text-blue-200">통학버스 실시간 스케줄</p>
+            <h1 className="text-xs sm:text-sm font-black tracking-tight leading-tight">제주 아주더하이클래스</h1>
+            <p className="text-[9.5px] text-blue-200 leading-tight">통학버스 실시간 스케줄</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {/* 권한 선택기 */}
           <select
             value={currentRole}
             onChange={(e) => setCurrentRole(e.target.value as UserRole)}
-            className="text-[11px] font-bold bg-white/20 border border-white/30 rounded-lg px-2 py-1 text-white"
+            className="text-[10px] font-bold bg-white/20 border border-white/30 rounded-md px-1.5 py-0.5 text-white"
           >
             <option value="admin" className="text-slate-900">관리자</option>
             <option value="guardian" className="text-slate-900">학부모</option>
@@ -100,43 +100,44 @@ export const MobileScheduleView: React.FC = () => {
           {/* PC 모드로 전환 버튼 */}
           <button
             onClick={() => setForceDesktopView(true)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-white text-[11px] font-bold transition border border-white/20"
+            className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/15 hover:bg-white/25 text-white text-[10px] font-bold transition border border-white/20 cursor-pointer"
             title="넓은 PC 타임라인 슬라이더 화면으로 전환"
           >
-            <Monitor className="w-3.5 h-3.5" />
+            <Monitor className="w-3 h-3" />
             <span>PC버전</span>
           </button>
         </div>
       </header>
 
-      {/* 2. 날짜 선택기 & 등하교 토글 */}
-      <div className="bg-white border-b border-slate-200 p-3 shadow-2xs flex flex-col gap-2.5 sticky top-[53px] z-20">
+      {/* 2. 날짜 선택기 & 등하교 토글 & 호차 탭 (컴팩트 마진 및 높이 최적화) */}
+      <div className="bg-white border-b border-slate-200 p-2 px-3 shadow-2xs flex flex-col gap-1.5 sticky top-[41px] z-20">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
             <button
               onClick={prevDate}
-              className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+              className="p-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+              title="이전 날짜"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => setIsCalendarSheetOpen(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-900 font-extrabold text-xs"
+              className="flex items-center gap-1 px-2 py-1 rounded-md bg-blue-50 border border-blue-200 text-blue-900 font-extrabold text-xs cursor-pointer"
             >
               <Calendar className="w-3.5 h-3.5 text-blue-600" />
               <span>{serviceDate} ({weekdayLabel})</span>
             </button>
             <button
               onClick={nextDate}
-              className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+              className="p-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
               title="다음 날짜"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
               onClick={handleToday}
-              className={`px-2 py-1.5 rounded-lg text-xs font-black transition cursor-pointer border ${
+              className={`px-1.5 py-1 rounded-md text-xs font-black transition cursor-pointer border ${
                 isToday
                   ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
                   : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
@@ -148,10 +149,10 @@ export const MobileScheduleView: React.FC = () => {
           </div>
 
           {/* 등교 / 하교 토글 */}
-          <div className="flex bg-slate-100 p-0.5 rounded-xl text-xs font-bold border border-slate-200">
+          <div className="flex bg-slate-100 p-0.5 rounded-lg text-xs font-bold border border-slate-200">
             <button
               onClick={() => setScheduleType('MORNING')}
-              className={`px-3 py-1 rounded-lg transition ${
+              className={`px-2.5 py-0.5 rounded-md transition cursor-pointer ${
                 scheduleType === 'MORNING'
                   ? 'bg-blue-600 text-white font-extrabold shadow-xs'
                   : 'text-slate-600'
@@ -161,7 +162,7 @@ export const MobileScheduleView: React.FC = () => {
             </button>
             <button
               onClick={() => setScheduleType('AFTERNOON')}
-              className={`px-3 py-1 rounded-lg transition ${
+              className={`px-2.5 py-0.5 rounded-md transition cursor-pointer ${
                 scheduleType === 'AFTERNOON'
                   ? 'bg-blue-600 text-white font-extrabold shadow-xs'
                   : 'text-slate-600'
@@ -173,51 +174,51 @@ export const MobileScheduleView: React.FC = () => {
         </div>
 
         {/* 차량 1호차 / 2호차 선택 탭 */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-1.5">
           <button
             onClick={() => setSelectedVehicle('v1')}
-            className={`py-2 px-3 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-1.5 ${
+            className={`py-1.5 px-2 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer ${
               selectedVehicle === 'v1'
-                ? 'bg-blue-600 text-white shadow-sm'
+                ? 'bg-blue-600 text-white shadow-2xs'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            <Bus className="w-4 h-4" />
+            <Bus className="w-3.5 h-3.5" />
             <span>1호차 (NLCS · 저청)</span>
           </button>
           <button
             onClick={() => setSelectedVehicle('v2')}
-            className={`py-2 px-3 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-1.5 ${
+            className={`py-1.5 px-2 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer ${
               selectedVehicle === 'v2'
-                ? 'bg-blue-600 text-white shadow-sm'
+                ? 'bg-blue-600 text-white shadow-2xs'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            <Bus className="w-4 h-4" />
+            <Bus className="w-3.5 h-3.5" />
             <span>2호차 (BHA · SJA · KIS)</span>
           </button>
         </div>
       </div>
 
-      {/* 3. 모바일 본문: 차량 운행 흐름 요약 카드 */}
-      <div className="p-3 flex flex-col gap-3">
+      {/* 3. 모바일 본문: 차량 운행 흐름 요약 카드 (컴팩트 리본) */}
+      <div className="p-2 sm:p-2.5 flex flex-col gap-2">
         {activeTrips.map((trip, idx) => (
           <div
             key={trip.id}
-            className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col gap-2"
+            className="p-2 px-2.5 rounded-xl bg-white border border-slate-200 shadow-2xs flex flex-col gap-1"
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black text-blue-900 flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-blue-600" />
+              <span className="text-[11px] font-black text-blue-950 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
                 {activeTrips.length > 1 ? `${idx + 1}회차 운행` : '정규 운행 코스'}
               </span>
-              <span className="text-xs font-mono font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+              <span className="text-[11px] font-mono font-black text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200">
                 {formatMinute(trip.defaultDepartureMinute)} 단지 출발
               </span>
             </div>
 
             {/* 정차 정류장 흐름 */}
-            <div className="flex items-center gap-1.5 overflow-x-auto text-[11px] text-slate-600 pt-1 pb-0.5 no-scrollbar">
+            <div className="flex items-center gap-1.5 overflow-x-auto text-[10.5px] text-slate-600 py-0.5 no-scrollbar">
               <span className="font-bold text-slate-900 shrink-0">아주더하이클래스</span>
               {trip.stops.map((st, sIdx) => {
                 const school = schools.find((sc) => st.locationId.includes(sc.id));
@@ -225,7 +226,7 @@ export const MobileScheduleView: React.FC = () => {
                   <React.Fragment key={sIdx}>
                     <span className="text-slate-300">➔</span>
                     <span
-                      className="px-1.5 py-0.5 rounded font-black shrink-0 text-[10px]"
+                      className="px-1.5 py-0.2 rounded font-black shrink-0 text-[10px]"
                       style={{
                         backgroundColor: school?.badgeBg || '#e2e8f0',
                         color: school?.color || '#1e3a8a',
@@ -239,7 +240,7 @@ export const MobileScheduleView: React.FC = () => {
               {trip.referenceReturnMinute && (
                 <>
                   <span className="text-slate-300">➔</span>
-                  <span className="text-slate-400 font-mono shrink-0">
+                  <span className="text-slate-500 font-mono font-bold shrink-0">
                     {formatMinute(trip.referenceReturnMinute)} 복귀
                   </span>
                 </>
@@ -248,15 +249,15 @@ export const MobileScheduleView: React.FC = () => {
           </div>
         ))}
 
-        {/* 4. 탑승 학생 명단 카드 목록 */}
-        <div className="flex items-center justify-between pt-1">
-          <h2 className="text-xs font-extrabold text-slate-800">
+        {/* 4. 탑승 학생 명단 카드 목록 (헤더) */}
+        <div className="flex items-center justify-between pt-0.5 px-0.5">
+          <h2 className="text-xs font-black text-slate-800">
             {selectedVehicle === 'v1' ? '1호차' : '2호차'} 탑승 학생 ({vehicleStudents.length}명)
           </h2>
           {currentRole === 'admin' && (
             <button
               onClick={openStudentModal}
-              className="text-xs font-bold text-blue-600 flex items-center gap-1 hover:underline"
+              className="text-xs font-bold text-blue-600 flex items-center gap-1 hover:underline cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>학생 추가</span>
@@ -264,7 +265,8 @@ export const MobileScheduleView: React.FC = () => {
           )}
         </div>
 
-        <div className="flex flex-col gap-2.5">
+        {/* 학생 카드 목록 (컴팩트 높이 & 여백 최적화: 한 화면에 더 많은 학생 표시) */}
+        <div className="flex flex-col gap-1.5">
           {vehicleStudents.map((student) => {
             const school = schools.find((s) => s.id === student.schoolId);
             const schedule = schedules.find(
@@ -297,48 +299,54 @@ export const MobileScheduleView: React.FC = () => {
               <div
                 key={student.id}
                 onClick={() => selectStudent(student.id, false, true)}
-                className={`p-3.5 rounded-2xl border transition shadow-2xs flex flex-col gap-2 cursor-pointer ${
+                className={`px-3 py-2 rounded-xl border transition shadow-2xs flex flex-col gap-1.5 cursor-pointer active:scale-[0.99] ${
                   holiday
                     ? 'bg-amber-50/70 border-amber-200'
                     : 'bg-white border-slate-200 hover:border-slate-300'
                 }`}
               >
+                {/* 1행: 학교배지 + 학생이름 + 학년 + 동호수 */}
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <span
-                      className="px-2 py-0.5 rounded-lg text-xs font-black text-white"
+                      className="px-1.5 py-0.2 rounded-md text-[10.5px] font-black text-white"
                       style={{ backgroundColor: school?.color || '#3b82f6' }}
                     >
                       {school?.shortName}
                     </span>
-                    <span className="font-extrabold text-sm text-slate-900">
+                    <span className="font-black text-[13.5px] text-slate-950 tracking-tight">
                       {student.name}
                     </span>
-                    <span className="text-xs text-slate-400 font-bold">
+                    <span className="text-[11px] text-slate-400 font-bold">
                       {formatGradeDisplay(student.grade, student.schoolId, false)}
                     </span>
                   </div>
 
                   {/* 동호수 표기 */}
-                  <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                  <span className="text-[11px] font-mono font-bold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded-md border border-slate-200/60">
                     {student.building.includes('동') ? student.building : `${student.building}동`}{' '}
                     {student.unit.includes('호') ? student.unit : `${student.unit}호`}
                   </span>
                 </div>
 
-                {/* 시간 및 방학 안내 */}
+                {/* 2행: 시간 안내 및 상태 배지 (슬림 바) */}
                 {holiday ? (
-                  <div className="p-2 rounded-xl bg-amber-100/70 border border-amber-300/80 text-amber-950 text-xs font-bold flex items-center justify-between">
+                  <div className="py-1 px-2 rounded-lg bg-amber-100/70 border border-amber-300/80 text-amber-950 text-xs font-bold flex items-center justify-between">
                     <span>🌴 {holiday.name}</span>
                     <span className="text-[10px] text-amber-800">통학 미운행</span>
                   </div>
                 ) : schedule ? (
-                  <div className="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-slate-100 text-xs">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-3.5 h-3.5 text-blue-600" />
-                      <span className="font-mono text-slate-600">
-                        {departureMin ? `${formatMinute(departureMin)} 출발` : ''} ➔{' '}
-                        <strong className="text-blue-700 font-bold">
+                  <div className="flex items-center justify-between bg-slate-50/90 py-1 px-2 rounded-lg border border-slate-200/60 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-3 h-3 text-blue-600 shrink-0" />
+                      <span className="font-mono text-[11.5px] text-slate-700">
+                        {departureMin ? (
+                          <>
+                            <strong className="text-slate-800 font-bold">{formatMinute(departureMin)}</strong> 출발{' '}
+                            <span className="text-slate-300 text-[10px]">➔</span>{' '}
+                          </>
+                        ) : ''}
+                        <strong className="text-blue-700 font-black">
                           {formatMinute(schedule.assignedMinute)} 도착
                         </strong>
                       </span>
@@ -346,12 +354,12 @@ export const MobileScheduleView: React.FC = () => {
 
                     {/* 희망시간 차이 라벨 */}
                     {diff === 0 ? (
-                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                      <span className="text-[9.5px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
                         희망 일치
                       </span>
                     ) : (
                       <span
-                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                        className={`text-[9.5px] font-bold px-1.5 py-0.2 rounded border ${
                           diff < 0
                             ? 'text-blue-700 bg-blue-50 border-blue-200'
                             : 'text-amber-700 bg-amber-50 border-amber-200'
@@ -362,7 +370,7 @@ export const MobileScheduleView: React.FC = () => {
                     )}
                   </div>
                 ) : (
-                  <div className="text-xs text-slate-400 font-medium">
+                  <div className="text-[11px] text-slate-400 font-semibold py-0.5 px-1">
                     {scheduleType === 'AFTERNOON' ? '하교시 이용 안함' : '등교시 이용 안함'}
                   </div>
                 )}
@@ -372,11 +380,11 @@ export const MobileScheduleView: React.FC = () => {
         </div>
       </div>
 
-      {/* 5. 하단 고정 액션 바 */}
-      <div className="fixed bottom-0 left-0 right-0 z-20 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-2.5 flex items-center justify-between">
+      {/* 5. 하단 고정 액션 바 (슬림 컴팩트) */}
+      <div className="fixed bottom-0 left-0 right-0 z-20 bg-white/95 backdrop-blur-md border-t border-slate-200 px-3 py-2 flex items-center justify-between">
         <button
           onClick={() => setIsCalendarSheetOpen(true)}
-          className="flex-1 py-2 rounded-xl bg-blue-600 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-98 transition"
+          className="flex-1 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-xs active:scale-98 transition cursor-pointer"
         >
           <Calendar className="w-4 h-4" />
           <span>2026-2027 4대 학교 학사일정 보기</span>
