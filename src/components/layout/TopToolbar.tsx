@@ -83,20 +83,45 @@ export const TopToolbar: React.FC = () => {
           오늘
         </button>
 
-        {/* Undo 버튼 */}
-        <button
-          onClick={undo}
-          disabled={history.length === 0}
-          className={`flex items-center gap-1.5 px-2.5 py-1 text-sm font-bold rounded-lg border transition ${
-            history.length > 0
-              ? 'text-slate-700 bg-white border-slate-300 hover:bg-slate-50 cursor-pointer shadow-2xs'
-              : 'text-slate-300 bg-slate-50 border-slate-200 cursor-not-allowed'
-          }`}
-          title="마지막 변경 취소 (Undo)"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-          <span>되돌리기</span>
-        </button>
+        {/* Undo (되돌리기) 버튼: 마우스 호버 시 즉시 친절한 기능 설명 툴팁 노출 */}
+        <div className="relative group/undo">
+          <button
+            onClick={undo}
+            disabled={history.length === 0}
+            className={`flex items-center gap-1.5 px-2.5 py-1 text-sm font-bold rounded-lg border transition ${
+              history.length > 0
+                ? 'text-slate-700 bg-white border-slate-300 hover:bg-slate-50 cursor-pointer shadow-2xs'
+                : 'text-slate-400 bg-slate-50 border-slate-200 cursor-not-allowed'
+            }`}
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>되돌리기</span>
+            {history.length > 0 && (
+              <span className="ml-0.5 text-[10px] px-1.5 py-0.2 rounded-full bg-blue-100 text-blue-700 font-extrabold font-mono">
+                {history.length}
+              </span>
+            )}
+          </button>
+
+          {/* 호버 시 즉시 나타나는 직관적인 메뉴 설명 툴팁 */}
+          <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-64 p-3 bg-slate-900 text-white rounded-xl shadow-xl pointer-events-none opacity-0 group-hover/undo:opacity-100 transition-all duration-150 z-50 text-xs flex flex-col gap-1.5">
+            <div className="flex items-center justify-between border-b border-slate-700 pb-1.5">
+              <span className="font-black text-slate-100 flex items-center gap-1.5">
+                <RotateCcw className="w-3.5 h-3.5 text-blue-400" />
+                <span>작업 되돌리기 (Undo)</span>
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono">
+                {history.length > 0 ? `${history.length}단계 기록` : '기록 없음'}
+              </span>
+            </div>
+            <p className="text-[11.5px] text-slate-300 leading-relaxed">
+              {history.length > 0
+                ? '학생 시간 변경, 슬라이더 드래그, 운행 코스 수정 등의 직전 작업을 취소하고 이전 상태로 되돌립니다.'
+                : '현재 되돌릴 최근 작업 내역이 없습니다. (타임라인 슬라이더나 시간을 변경하면 활성화됩니다)'}
+            </p>
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-slate-900" />
+          </div>
+        </div>
       </div>
 
       {/* 중앙: 등교 / 하교 Segmented Toggle */}

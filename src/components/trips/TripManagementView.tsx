@@ -187,19 +187,39 @@ export const TripManagementView: React.FC = () => {
                         {data.vehicleName}
                       </td>
                       <td className="py-2 px-2.5 border-r border-slate-300 leading-tight">
-                        <div className="flex flex-wrap items-center gap-y-1.5 gap-x-2 text-[10.5px]">
+                        <div className="flex items-center text-[10.5px]">
                           {data.combinedSteps.map((step, idx) => (
-                            <span key={idx} className="inline-flex items-center gap-1 whitespace-nowrap">
-                              {idx > 0 && <span className="text-slate-300 font-semibold mx-1 text-[9px]">→</span>}
-                              <span className={step.isStart ? "font-black text-slate-900" : "font-bold text-slate-800"}>
-                                {step.name}
-                              </span>
-                              {step.time && (
-                                <span className="font-mono font-bold text-[10.5px] text-slate-800 ml-0.5">
-                                  {step.time}
+                            <React.Fragment key={idx}>
+                              {idx > 0 && (
+                                <span className="text-slate-300 font-bold w-4 text-center shrink-0 text-[9px]">
+                                  →
                                 </span>
                               )}
-                            </span>
+                              <span
+                                className={`inline-flex items-center whitespace-nowrap ${
+                                  idx === 0
+                                    ? 'w-[78px] shrink-0'
+                                    : step.time
+                                    ? 'w-[88px] shrink-0'
+                                    : 'shrink-0'
+                                }`}
+                              >
+                                <span
+                                  className={
+                                    step.name.includes('저청')
+                                      ? "font-black text-slate-950 [-webkit-text-stroke:0.35px_currentColor] tracking-tight"
+                                      : "font-black text-slate-900"
+                                  }
+                                >
+                                  {step.name}
+                                </span>
+                                {step.time && (
+                                  <span className="font-mono font-bold text-[10.5px] text-slate-800 ml-1">
+                                    {step.time}
+                                  </span>
+                                )}
+                              </span>
+                            </React.Fragment>
                           ))}
                         </div>
                       </td>
@@ -243,19 +263,37 @@ export const TripManagementView: React.FC = () => {
                         {data.vehicleName}
                       </td>
                       <td className="py-2 px-2.5 border-r border-slate-300 leading-tight">
-                        <div className="flex flex-wrap items-center gap-y-1.5 gap-x-2 text-[10.5px]">
+                        <div className="flex items-center text-[10.5px]">
                           {data.combinedSteps.map((step, idx) => (
-                            <span key={idx} className="inline-flex items-center gap-1 whitespace-nowrap">
-                              {idx > 0 && <span className="text-slate-300 font-semibold mx-1 text-[9px]">→</span>}
-                              <span className={step.isStart ? "font-black text-slate-900" : "font-bold text-slate-800"}>
-                                {step.name}
-                              </span>
-                              {step.time && (
-                                <span className="font-mono font-bold text-[10.5px] text-slate-800 ml-0.5">
-                                  {step.time}
+                            <React.Fragment key={idx}>
+                              {idx > 0 && (
+                                <span className="text-slate-300 font-bold w-4 text-center shrink-0 text-[9px]">
+                                  →
                                 </span>
                               )}
-                            </span>
+                              <span
+                                className={`inline-flex items-center whitespace-nowrap ${
+                                  step.time
+                                    ? 'w-[88px] shrink-0'
+                                    : 'shrink-0'
+                                }`}
+                              >
+                                <span
+                                  className={
+                                    step.name.includes('저청')
+                                      ? "font-black text-slate-950 [-webkit-text-stroke:0.35px_currentColor] tracking-tight"
+                                      : "font-black text-slate-900"
+                                  }
+                                >
+                                  {step.name}
+                                </span>
+                                {step.time && (
+                                  <span className="font-mono font-bold text-[10.5px] text-slate-800 ml-1">
+                                    {step.time}
+                                  </span>
+                                )}
+                              </span>
+                            </React.Fragment>
                           ))}
                         </div>
                       </td>
