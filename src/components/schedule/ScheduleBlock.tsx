@@ -194,7 +194,7 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
       style={{
         left: isMorning ? `${departurePercent}%` : `${leftPercent}%`,
         width: isMorning ? `${blockWidthPercent}%` : undefined,
-        minWidth: isMorning ? '36px' : '104px',
+        minWidth: isMorning ? '56px' : '104px',
         transform: 'translate(0, -50%)',
         backgroundColor: pastelStyle.backgroundColor,
         borderColor: pastelStyle.borderColor,
@@ -207,8 +207,8 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
                     diff === 0
                       ? ' (희망 일치)'
                       : diff < 0
-                      ? ` (${Math.abs(diff)}분 조기 도착)`
-                      : ` (${diff}분 지연 도착)`
+                      ? ` (${Math.abs(diff)}분 빠름)`
+                      : ` (${diff}분 늦음)`
                   }`
                 : ''
             }`
@@ -244,25 +244,31 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
         </button>
       )}
 
-      {/* 내부 콘텐츠: 등교 시 요청 대비 시간 차이 배지만 표시 (이름은 좌측 고정 열에 표시되므로 공간 절약을 위해 제외) */}
+      {/* 내부 콘텐츠: 등교 시 요청 대비 시간 차이 텍스트 (알약 버튼이나 별도 색상 없이 학교 기본 배경색에 흰색 글자로 표시) */}
       {isMorning ? (
-        <div className="flex items-center justify-center w-full px-0.5 overflow-hidden">
-          {diff !== 0 ? (
-            <span
-              className={`text-[9.5px] font-black px-1.5 py-0.5 rounded leading-none shrink-0 font-mono shadow-2xs whitespace-nowrap ${
-                diff < 0
-                  ? 'bg-sky-400 text-sky-950'
-                  : 'bg-amber-300 text-amber-950'
-              }`}
-              title={`희망 ${formatMinute(requestedMinute!)} 대비 ${Math.abs(diff)}분 ${diff < 0 ? '빠름' : '늦음'}`}
-            >
-              {diff < 0 ? `▼-${Math.abs(diff)}` : `▲+${diff}`}
-            </span>
-          ) : (
-            <span className="text-[10px] font-bold text-white/80 font-mono select-none" title="희망시간 일치">
-              ✓
-            </span>
-          )}
+        <div className="flex items-center justify-center w-full px-1 overflow-hidden">
+          <span
+            className="text-[10.5px] sm:text-[11px] font-extrabold text-white whitespace-nowrap tracking-tight select-none drop-shadow-xs"
+            title={
+              requestedMinute !== undefined
+                ? `희망 ${formatMinute(requestedMinute)} 대비 ${
+                    diff === 0
+                      ? '희망시간 일치'
+                      : diff < 0
+                      ? `${Math.abs(diff)}분 빠름`
+                      : `${diff}분 늦음`
+                  }`
+                : undefined
+            }
+          >
+            {requestedMinute === undefined
+              ? ''
+              : diff === 0
+              ? '희망 일치'
+              : diff < 0
+              ? `${Math.abs(diff)}분 빠름`
+              : `${diff}분 늦음`}
+          </span>
         </div>
       ) : (
         <>
