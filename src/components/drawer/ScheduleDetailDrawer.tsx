@@ -19,24 +19,57 @@ import { getWeekdayNumber } from '@/lib/scheduling/time';
 import { RouteSegment, HolidayCategory } from '@/types';
 import { SchoolCalendarMatrix } from './SchoolCalendarMatrix';
 
-// 학교별 방학 및 학사일정 구분 색상 (적당한 굵기의 선 표시용)
+// 학교별 방학 및 학사일정 구분 색상 (굵은 자대고 그은 선 표시용)
 const getSchoolHolidayColor = (schoolId?: string) => {
   switch (schoolId) {
     case 'NLCS':
-      return '#2563eb'; // Blue
+      return '#1d4ed8'; // Blue 700 (선명한 로열 블루)
     case 'BHA':
-      return '#9333ea'; // Purple
+      return '#7e22ce'; // Purple 700 (선명한 보라)
     case 'KIS':
-      return '#0284c7'; // Sky / Cyan
+      return '#0284c7'; // Sky 600 (선명한 하늘/청록)
     case 'SJA':
-      return '#16a34a'; // Green
+      return '#15803d'; // Green 700 (선명한 에메랄드 포레스트 그린)
     case 'CHEONG':
     case 'CHEONG_MID':
-      return '#0d9488'; // Teal
+      return '#0f766e'; // Teal 700 (짙은 틸)
     case 'ALL':
     default:
-      return '#f59e0b'; // Amber
+      return '#d97706'; // Amber 600 (선명한 앰버 골드)
   }
+};
+
+// 학교별 약자 (굵은 색상선 위 텍스트 라벨용)
+const getSchoolAbbr = (schoolId?: string): string => {
+  switch (schoolId) {
+    case 'NLCS':
+      return 'NLCS';
+    case 'BHA':
+      return 'BHA';
+    case 'KIS':
+      return 'KIS';
+    case 'SJA':
+      return 'SJA';
+    case 'CHEONG':
+      return '저청초';
+    case 'CHEONG_MID':
+      return '저청중';
+    case 'ALL':
+      return '전체';
+    default:
+      return schoolId || '휴교';
+  }
+};
+
+// 달력 내 자대고 그은 듯한 수평 라인 정렬을 위한 학교 고유 순서
+const SCHOOL_SORT_ORDER: Record<string, number> = {
+  NLCS: 1,
+  BHA: 2,
+  KIS: 3,
+  SJA: 4,
+  CHEONG: 5,
+  CHEONG_MID: 6,
+  ALL: 7,
 };
 
 export const ScheduleDetailDrawer: React.FC = () => {
@@ -511,13 +544,14 @@ export const ScheduleDetailDrawer: React.FC = () => {
                 </button>
               </div>
 
-              {/* 달력 학교 필터 칩 (학교별 대표 색상 선 프리뷰 포함) */}
+              {/* 달력 학교 필터 칩 (학교별 대표 색상 선 및 약자 프리뷰 포함) */}
               <div className="flex items-center gap-1.5 text-[11px] font-bold flex-wrap">
                 <span className="text-slate-400 text-[10px] shrink-0">학교 필터:</span>
                 {['ALL', 'NLCS', 'BHA', 'KIS', 'SJA'].map((schId) => {
                   const sc = schools.find((s) => s.id === schId);
                   const isSelected = calendarSchoolFilter === schId;
                   const lineColor = getSchoolHolidayColor(schId);
+                  const abbr = getSchoolAbbr(schId);
                   return (
                     <button
                       key={schId}
@@ -525,14 +559,16 @@ export const ScheduleDetailDrawer: React.FC = () => {
                       onClick={() => setCalendarSchoolFilter(schId)}
                       className={`px-2 py-0.5 rounded-md text-[10px] transition cursor-pointer font-bold flex items-center gap-1.5 ${
                         isSelected
-                          ? 'bg-slate-800 text-white shadow-2xs font-extrabold'
+                          ? 'bg-slate-800 text-white shadow-2xs font-extrabold ring-1 ring-slate-700'
                           : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
                       }`}
                     >
                       <span
-                        className="w-2.5 h-[3.5px] rounded-full inline-block shrink-0"
+                        className="px-1 py-[0.5px] rounded-[2px] text-[8.5px] font-black text-white inline-block shrink-0 leading-tight shadow-2xs"
                         style={{ backgroundColor: lineColor }}
-                      />
+                      >
+                        {abbr}
+                      </span>
                       <span>{schId === 'ALL' ? '전체 학교' : sc?.shortName || schId}</span>
                     </button>
                   );
@@ -550,11 +586,11 @@ export const ScheduleDetailDrawer: React.FC = () => {
                 <span className="text-blue-400">토</span>
               </div>
 
-              {/* 날짜 그리드 (높이 50% 확대: 기존 h-8/h-9 32~36px -> h-[52px]/sm:h-[56px]로 약 50% 확대) */}
+              {/* 날짜 그리드 (높이 대폭 확대: h-[86px] sm:h-[94px]) */}
               <div className="grid grid-cols-7 gap-1.5 text-center">
                 {/* 첫 날 이전 빈칸 */}
                 {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-                  <div key={`empty-${i}`} className="h-[52px] sm:h-[56px]" />
+                  <div key={`empty-${i}`} className="min-h-[86px] sm:min-h-[94px] h-[86px] sm:h-[94px]" />
                 ))}
 
                 {/* 해당 월 날짜 */}
@@ -574,50 +610,74 @@ export const ScheduleDetailDrawer: React.FC = () => {
                     return dateStr >= h.startDate && dateStr <= h.endDate;
                   });
 
+                  // 동일 학교 중복 방학 데이터 필터링 및 학교 순서 고정 정렬 (달력에 자대고 그은 듯한 수평 일관성 보장)
+                  const uniqueDayHolidays = Array.from(
+                    new Map(dayHolidays.map((h) => [h.schoolId, h])).values()
+                  ).sort((a, b) => (SCHOOL_SORT_ORDER[a.schoolId] || 99) - (SCHOOL_SORT_ORDER[b.schoolId] || 99));
+
                   return (
                     <button
                       key={day}
                       type="button"
                       onClick={() => handleDateClick(day)}
-                      className={`h-[52px] sm:h-[56px] rounded-xl font-bold transition flex flex-col items-center justify-between p-1.5 cursor-pointer relative text-xs sm:text-sm ${
+                      className={`min-h-[86px] sm:min-h-[94px] h-[86px] sm:h-[94px] rounded-xl font-bold transition flex flex-col items-center justify-between p-1 cursor-pointer relative text-xs sm:text-sm overflow-hidden select-none ${
                         isSelected
-                          ? 'bg-blue-600 text-white font-extrabold shadow-sm ring-2 ring-blue-300'
-                          : dayHolidays.length > 0
-                          ? 'bg-amber-50/90 text-amber-950 hover:bg-amber-100 border border-amber-200/80 font-bold'
+                          ? 'bg-blue-50/90 text-blue-900 font-extrabold border-2 border-blue-600 ring-2 ring-blue-300 shadow-md'
+                          : uniqueDayHolidays.length > 0
+                          ? 'bg-amber-50/50 text-amber-950 hover:bg-amber-100/60 border border-amber-200/80 font-bold'
                           : isSun
-                          ? 'text-red-500 hover:bg-slate-100'
+                          ? 'text-red-500 hover:bg-slate-100 bg-white border border-slate-100'
                           : isSat
-                          ? 'text-blue-500 hover:bg-slate-100'
-                          : 'text-slate-700 hover:bg-slate-100'
+                          ? 'text-blue-500 hover:bg-slate-100 bg-white border border-slate-100'
+                          : 'text-slate-700 hover:bg-slate-100 bg-white border border-slate-100'
                       }`}
                       title={
-                        dayHolidays.length > 0
-                          ? `${dateStr}: ${dayHolidays.map((h) => `${h.schoolId === 'ALL' ? '전체' : h.schoolId} - ${h.name}`).join(', ')}`
+                        uniqueDayHolidays.length > 0
+                          ? `${dateStr}: ${uniqueDayHolidays.map((h) => `${h.schoolId === 'ALL' ? '전체' : h.schoolId} - ${h.name}`).join(', ')}`
                           : dateStr
                       }
                     >
-                      <span className="leading-none pt-0.5">{day}</span>
+                      {/* 상단 날짜 번호 영역 */}
+                      <div className="w-full flex items-center justify-center shrink-0 pt-0.5">
+                        {isSelected ? (
+                          <span className="w-5 h-5 sm:w-5.5 sm:h-5.5 rounded-full bg-blue-600 text-white text-[11px] sm:text-xs font-black flex items-center justify-center shadow-xs">
+                            {day}
+                          </span>
+                        ) : (
+                          <span
+                            className={`text-[11px] sm:text-xs font-black leading-none ${
+                              isSun ? 'text-red-500' : isSat ? 'text-blue-500' : 'text-slate-700'
+                            }`}
+                          >
+                            {day}
+                          </span>
+                        )}
+                      </div>
 
-                      {/* 학교별 방학 표시 적당한 굵기의 색상 선 (Colored Lines) */}
-                      {dayHolidays.length > 0 ? (
+                      {/* 학교별 방학 표시: 자대고 그은 것 처럼 굵은 색상 선 + 학교 약자 라벨 */}
+                      {uniqueDayHolidays.length > 0 ? (
                         <div className="w-full flex flex-col gap-[2px] mt-auto pb-0.5 px-0.5">
-                          {dayHolidays.slice(0, 4).map((dh) => {
+                          {uniqueDayHolidays.slice(0, 4).map((dh) => {
                             const lineColor = getSchoolHolidayColor(dh.schoolId);
+                            const abbr = getSchoolAbbr(dh.schoolId);
                             return (
                               <div
-                                key={dh.id}
-                                className="w-full h-[3.5px] rounded-full transition-all"
+                                key={dh.id || dh.schoolId}
+                                className="w-full h-[14.5px] sm:h-[15.5px] rounded-[2.5px] flex items-center justify-center transition-all shadow-2xs hover:brightness-110"
                                 style={{
-                                  backgroundColor: isSelected ? '#ffffff' : lineColor,
-                                  opacity: isSelected ? 0.95 : 1,
+                                  backgroundColor: lineColor,
                                 }}
                                 title={`${dh.schoolId === 'ALL' ? '전체 학교' : dh.schoolId}: ${dh.name}`}
-                              />
+                              >
+                                <span className="text-[9px] sm:text-[9.5px] font-black text-white leading-none tracking-tight truncate px-0.5 drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)]">
+                                  {abbr}
+                                </span>
+                              </div>
                             );
                           })}
                         </div>
                       ) : (
-                        <div className="h-[3.5px] mb-0.5" />
+                        <div className="h-1" />
                       )}
                     </button>
                   );
