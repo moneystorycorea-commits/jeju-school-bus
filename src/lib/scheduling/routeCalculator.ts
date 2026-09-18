@@ -116,3 +116,54 @@ export function calculateTripInstance(
 
   return { instance, conflicts };
 }
+
+/**
+ * 단지(COMPLEX_MAIN)에서 특정 학교까지의 누적 등교 소요시간(경유지 하차 1분 포함)을 계산합니다.
+ * NLCS: 단지 -> NLCS (10분)
+ * BHA: 단지 -> NLCS (10분) + 하차 (1분) + NLCS -> BHA (4분) = 15분
+ * KIS: BHA 도착(15분) + 하차 (1분) + BHA -> KIS (4분) = 20분
+ * SJA: KIS 도착(20분) + 하차 (1분) + KIS -> SJA (3분) = 24분
+ * 저청초: 단지 -> 저청초 (5분)
+ */
+export function getSchoolTravelMinutes(
+  schoolId: string,
+  segments: RouteSegment[]
+): number {
+  if (schoolId === 'CHEONG') {
+    const seg = segments.find(
+      (s) => s.originLocationId === 'COMPLEX_MAIN' && s.destinationLocationId === 'CHEONG_MAIN'
+    );
+    return seg ? seg.travelMinutes + (seg.bufferMinutes || 0) : 5;
+  }
+
+  // 1. 단지 -> NLCS
+  const segNlcs = segments.find(
+    (s) => s.originLocationId === 'COMPLEX_MAIN' && s.destinationLocationId === 'NLCS_MAIN'
+  );
+  const timeNlcs = segNlcs ? segNlcs.travelMinutes + (segNlcs.bufferMinutes || 0) : 10;
+  if (schoolId === 'NLCS') return timeNlcs;
+
+  // 2. NLCS -> BHA (+ 하차 1분)
+  const segBha = segments.find(
+    (s) => s.originLocationId === 'NLCS_MAIN' && s.destinationLocationId === 'BHA_GATE1'
+  );
+  const timeBha = timeNlcs + 1 + (segBha ? segBha.travelMinutes + (segBha.bufferMinutes || 0) : 4);
+  if (schoolId === 'BHA') return timeBha;
+
+  // 3. BHA -> KIS (+ 하차 1분)
+  const segKis = segments.find(
+    (s) => s.originLocationId === 'BHA_GATE1' && s.destinationLocationId === 'KIS_MAIN'
+  );
+  const timeKis = timeBha + 1 + (segKis ? segKis.travelMinutes + (segKis.bufferMinutes || 0) : 4);
+  if (schoolId === 'KIS') return timeKis;
+
+  // 4. KIS -> SJA (+ 하차 1분)
+  const segSja = segments.find(
+    (s) => s.originLocationId === 'KIS_MAIN' && s.destinationLocationId === 'SJA_GATE3'
+  );
+  const timeSja = timeKis + 1 + (segSja ? segSja.travelMinutes + (segSja.bufferMinutes || 0) : 3);
+  if (schoolId === 'SJA') return timeSja;
+
+  return 10;
+}
+

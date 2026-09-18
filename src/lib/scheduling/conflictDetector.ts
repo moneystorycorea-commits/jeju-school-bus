@@ -61,43 +61,61 @@ export function detectAllConflicts(params: {
     }
   });
 
-  // 2. ROUTE_INFEASIBLE 검사 (학생 배정 시간 간 물리적 이동시간 부족 검사)
-  // 예: NLCS 07:40 도착(하차1분->07:41 출발), BHA 07:45 도착.
-  // 만약 BHA를 07:45보다 일찍(예: 07:43) 설정하거나 최소 이동시간(4분+1분=5분)이 부족할 때 발생
-  const sortedSchedules = [...schedules].sort((a, b) => a.assignedMinute - b.assignedMinute);
-  for (let i = 0; i < sortedSchedules.length - 1; i++) {
-    const s1 = sortedSchedules[i];
-    const s2 = sortedSchedules[i + 1];
-    
-    // 같은 모드(등교/하교)에서 순서가 다른 두 학교
-    if (s1.schoolId !== s2.schoolId && s1.type === s2.type) {
-      // 학교 간 구간 소요시간 조회 (NLCS_MAIN -> BHA_GATE1 등)
-      // 위치 ID 매핑
-      const s1LocId = s1.schoolId === 'NLCS' ? 'NLCS_MAIN' : s1.schoolId === 'BHA' ? 'BHA_GATE1' : s1.schoolId === 'KIS' ? 'KIS_MAIN' : 'SJA_GATE3';
-      const s2LocId = s2.schoolId === 'NLCS' ? 'NLCS_MAIN' : s2.schoolId === 'BHA' ? 'BHA_GATE1' : s2.schoolId === 'KIS' ? 'KIS_MAIN' : 'SJA_GATE3';
-      
-      const segment = segments.find(s => s.originLocationId === s1LocId && s.destinationLocationId === s2LocId);
-      const minRequiredTravel = segment ? segment.travelMinutes + (segment.bufferMinutes || 0) : 4;
-      const minRequiredTotal = minRequiredTravel + s1.dwellMinutes; // 정차 + 이동시간 (예: 1 + 4 = 5분)
+  // 2. ROUTE_INFEASIBLE 검사 (동일 차량 노선 내 학교 간 물리적 이동시간 부족 검사)
+  // 서로 다른 차량(1호차 vs 2호차)은 물리적으로 분리되어 있으므로 상호 간섭하지 않음
+  // 1호차: NLCS -> BHA -> KIS -> SJA
+  // 2호차: 저청초 (CHEONG)
+  const v1Schools = new Set(['NLCS', 'BHA', 'KIS', 'SJA']);
+  const v2Schools = new Set(['CHEONG']);
 
-      const actualDiff = s2.assignedMinute - s1.assignedMinute;
-      if (actualDiff <= minRequiredTotal) {
-        conflicts.push({
-          id: `infeasible-${s1.studentId}-${s2.studentId}`,
-          type: 'ROUTE_INFEASIBLE',
-          level: 'error',
-          message: `시간 충돌: ${s2.schoolId} 일정이 ${s1.schoolId} 이후 최소 이동시간과 겹칩니다. (최소 ${minRequiredTotal}분 필요)`,
-          studentId: s2.studentId,
-          schoolId: s2.schoolId,
-          details: {
-            requiredMinutes: minRequiredTotal,
-            availableMinutes: actualDiff,
-            diffMinutes: actualDiff - minRequiredTotal,
-          }
-        });
+  const checkGroupInfeasible = (groupSchedules: StudentSchedule[]) => {
+    // 학교별 대표 최소/최대 배정시간 산출
+    const schoolTimes: Record<string, { minTime: number; maxTime: number; studentIds: string[] }> = {};
+    groupSchedules.forEach((s) => {
+      if (!schoolTimes[s.schoolId]) {
+        schoolTimes[s.schoolId] = { minTime: s.assignedMinute, maxTime: s.assignedMinute, studentIds: [] };
+      }
+      schoolTimes[s.schoolId].minTime = Math.min(schoolTimes[s.schoolId].minTime, s.assignedMinute);
+      schoolTimes[s.schoolId].maxTime = Math.max(schoolTimes[s.schoolId].maxTime, s.assignedMinute);
+      schoolTimes[s.schoolId].studentIds.push(s.studentId);
+    });
+
+    const schoolOrder = ['NLCS', 'BHA', 'KIS', 'SJA'];
+    for (let i = 0; i < schoolOrder.length - 1; i++) {
+      const schA = schoolOrder[i];
+      const schB = schoolOrder[i + 1];
+      if (schoolTimes[schA] && schoolTimes[schB]) {
+        const s1LocId = schA === 'NLCS' ? 'NLCS_MAIN' : schA === 'BHA' ? 'BHA_GATE1' : 'KIS_MAIN';
+        const s2LocId = schB === 'BHA' ? 'BHA_GATE1' : schB === 'KIS' ? 'KIS_MAIN' : 'SJA_GATE3';
+
+        const segment = segments.find((s) => s.originLocationId === s1LocId && s.destinationLocationId === s2LocId);
+        const minTravel = segment ? segment.travelMinutes + (segment.bufferMinutes || 0) : 4;
+        const minRequiredTotal = minTravel + 1; // 이동 + 정차 1분 (예: NLCS->BHA = 4+1 = 5분)
+
+        // 다음 학교의 배정시간이 이전 학교 배정시간 + 최소소요시간보다 이르면 충돌
+        const actualDiff = schoolTimes[schB].minTime - schoolTimes[schA].maxTime;
+        if (actualDiff < minRequiredTotal) {
+          conflicts.push({
+            id: `infeasible-${schA}-${schB}`,
+            type: 'ROUTE_INFEASIBLE',
+            level: 'error',
+            message: `경로 시간 충돌: ${schB} 배정시간이 ${schA} 이후 최소 소요시간(${minRequiredTotal}분)보다 빠릅니다. (현재 간격: ${actualDiff}분)`,
+            schoolId: schB,
+            details: {
+              requiredMinutes: minRequiredTotal,
+              availableMinutes: actualDiff,
+              diffMinutes: actualDiff - minRequiredTotal,
+            },
+          });
+        }
       }
     }
-  }
+  };
+
+  // 1호차 그룹 및 2호차 그룹 분리 검사
+  const morningSchedules = schedules.filter((s) => s.type === 'MORNING');
+  checkGroupInfeasible(morningSchedules.filter((s) => v1Schools.has(s.schoolId)));
+  checkGroupInfeasible(morningSchedules.filter((s) => v2Schools.has(s.schoolId)));
 
   // 3. NEXT_TRIP_CONFLICT 및 VEHICLE_OVERLAP 검사
   // 동일 차량의 연속된 Trip 간 시간 충돌 검사

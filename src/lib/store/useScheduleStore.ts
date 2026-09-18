@@ -29,7 +29,7 @@ import {
   INITIAL_HOLIDAYS,
   generateStudentSchedulesForDate,
 } from '../mock/initialData';
-import { calculateTripInstance } from '../scheduling/routeCalculator';
+import { calculateTripInstance, getSchoolTravelMinutes } from '../scheduling/routeCalculator';
 import { detectAllConflicts } from '../scheduling/conflictDetector';
 import { getWeekdayNumber, formatMinute } from '../scheduling/time';
 
@@ -37,6 +37,7 @@ interface HistorySnapshot {
   students: Student[];
   schedules: StudentSchedule[];
   routeSegments: RouteSegment[];
+  tripTemplates: TripTemplate[];
 }
 
 interface ScheduleState {
@@ -279,7 +280,7 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
   setDetailDrawerTab: (tab) => set({ detailDrawerTab: tab, isDetailDrawerOpen: true }),
 
   updateAssignedTime: (studentId: string, newMinute: MinuteOfDay) => {
-    const { students, schedules, routeSegments, currentRole, serviceDate, scheduleType } = get();
+    const { students, schedules, routeSegments, currentRole, serviceDate, scheduleType, tripTemplates } = get();
     
     // Guardian / Student 역할인 경우 실제 배정시간을 변경하지 않고 TimeRequest 생성
     if (currentRole !== 'admin') {
@@ -291,21 +292,89 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       students: [...students],
       schedules: [...schedules],
       routeSegments: [...routeSegments],
+      tripTemplates: [...tripTemplates],
     };
 
-    const updatedSchedules = schedules.map((s) => {
-      if (s.studentId === studentId && s.date === serviceDate && s.type === scheduleType) {
-        return {
-          ...s,
-          assignedMinute: newMinute,
-          calculatedMinute: newMinute,
-        };
+    const targetStudent = students.find((s) => s.id === studentId);
+    const targetSchedule = schedules.find(
+      (s) => s.studentId === studentId && s.date === serviceDate && s.type === scheduleType
+    );
+
+    let updatedTripTemplates = tripTemplates;
+    let updatedSchedules = schedules;
+
+    if (targetStudent && targetSchedule && scheduleType === 'MORNING') {
+      const isCheong = targetStudent.schoolId === 'CHEONG';
+      const vehicleId = isCheong ? 'v2' : 'v1';
+      const travelMinutes = getSchoolTravelMinutes(targetStudent.schoolId, routeSegments);
+      const newDeparture = (newMinute - travelMinutes) as MinuteOfDay;
+      const oldDeparture = (targetSchedule.assignedMinute - travelMinutes) as MinuteOfDay;
+      const delta = newDeparture - oldDeparture;
+
+      if (delta !== 0) {
+        // 1. 해당 호차의 TripTemplate 출발시간 동기화 (운행시간표와 실시간 연동)
+        const weekday = getWeekdayNumber(serviceDate);
+        updatedTripTemplates = tripTemplates.map((tpl) => {
+          if (tpl.type === 'MORNING' && tpl.vehicleId === vehicleId && tpl.weekdays.includes(weekday)) {
+            return {
+              ...tpl,
+              defaultDepartureMinute: newDeparture,
+              referenceReturnMinute:
+                tpl.referenceReturnMinute !== undefined
+                  ? ((tpl.referenceReturnMinute + delta) as MinuteOfDay)
+                  : undefined,
+            };
+          }
+          return tpl;
+        });
+
+        // 2. 동일 차량에 탑승하는 학생들의 assignedMinute 동기화
+        const sameVehicleSchoolIds = isCheong
+          ? new Set(['CHEONG'])
+          : new Set(['NLCS', 'BHA', 'KIS', 'SJA']);
+
+        updatedSchedules = schedules.map((s) => {
+          if (s.date === serviceDate && s.type === 'MORNING') {
+            const stu = students.find((st) => st.id === s.studentId);
+            if (stu && sameVehicleSchoolIds.has(stu.schoolId)) {
+              const updatedMin = (s.assignedMinute + delta) as MinuteOfDay;
+              return {
+                ...s,
+                assignedMinute: updatedMin,
+                calculatedMinute: updatedMin,
+              };
+            }
+          }
+          return s;
+        });
+      } else {
+        updatedSchedules = schedules.map((s) => {
+          if (s.studentId === studentId && s.date === serviceDate && s.type === scheduleType) {
+            return {
+              ...s,
+              assignedMinute: newMinute,
+              calculatedMinute: newMinute,
+            };
+          }
+          return s;
+        });
       }
-      return s;
-    });
+    } else {
+      updatedSchedules = schedules.map((s) => {
+        if (s.studentId === studentId && s.date === serviceDate && s.type === scheduleType) {
+          return {
+            ...s,
+            assignedMinute: newMinute,
+            calculatedMinute: newMinute,
+          };
+        }
+        return s;
+      });
+    }
 
     set((state) => ({
       schedules: updatedSchedules,
+      tripTemplates: updatedTripTemplates,
       history: [...state.history.slice(-9), snapshot],
       saveStatus: 'saving',
     }));
@@ -576,6 +645,7 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       students: [...students],
       schedules: [...get().schedules],
       routeSegments: [...get().routeSegments],
+      tripTemplates: [...get().tripTemplates],
     };
 
     const reordered = [...students];
@@ -634,6 +704,7 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       students: prev.students,
       schedules: prev.schedules,
       routeSegments: prev.routeSegments,
+      tripTemplates: prev.tripTemplates || get().tripTemplates,
       history: history.slice(0, -1),
     });
   },

@@ -6,6 +6,7 @@ import { Student, StudentSchedule, School, MinuteOfDay } from '@/types';
 import { getTimelinePositionPercent, formatMinute } from '@/lib/scheduling/time';
 import { ScheduleBlock } from './ScheduleBlock';
 import { useScheduleStore } from '@/lib/store/useScheduleStore';
+import { getSchoolTravelMinutes } from '@/lib/scheduling/routeCalculator';
 
 interface StudentRowProps {
   student: Student;
@@ -32,7 +33,7 @@ export const StudentRow: React.FC<StudentRowProps> = ({
   conflictMessage,
   isNewSchoolGroup,
 }) => {
-  const { selectStudent, selectedStudentId, serviceDate, scheduleType, holidays, draggingMinute } = useScheduleStore();
+  const { selectStudent, selectedStudentId, serviceDate, scheduleType, holidays, draggingMinute, routeSegments } = useScheduleStore();
   const isSelected = selectedStudentId === student.id;
   const isMorning = scheduleType === 'MORNING';
 
@@ -148,11 +149,10 @@ export const StudentRow: React.FC<StudentRowProps> = ({
           );
         })}
 
-        {/* [출발시간 점선 활성화] 등교 시 선택되거나 드래그 중일 때: 단지 출발시간(10분 전/저청초 5분 전) 수직 점선 및 배지 표시 */}
+        {/* [출발시간 점선 활성화] 등교 시 선택되거나 드래그 중일 때: 단지 출발시간(학교별 누적소요시간 전) 수직 점선 및 배지 표시 */}
         {(() => {
           if (!isMorning || !schedule || isInactive || (!isSelected && !isDragging)) return null;
-          const isCheong = school?.shortName === '저청초' || student.schoolId === 'CHEONG';
-          const travelMinutes = isCheong ? 5 : 10;
+          const travelMinutes = school ? getSchoolTravelMinutes(school.id, routeSegments) : 10;
           const currentMinute = (isDragging && draggingMinute !== null) ? draggingMinute : schedule.assignedMinute;
           const departureMinute = (currentMinute - travelMinutes) as MinuteOfDay;
           const departurePercent = getTimelinePositionPercent(departureMinute, startMinute, endMinute);
@@ -178,6 +178,20 @@ export const StudentRow: React.FC<StudentRowProps> = ({
             </>
           );
         })()}
+
+        {/* 희망시간 고스트 타깃 마커 (Ghost Target Pin): 운용시간과 희망시간의 차이를 즉시 식별 */}
+        {isMorning && schedule && !isInactive && schedule.requestedMinute && (
+          <div
+            className="absolute top-0 bottom-0 pointer-events-none z-5 flex flex-col items-center justify-center -translate-x-1/2 opacity-70 group-hover:opacity-100 transition-opacity"
+            style={{ left: `${getTimelinePositionPercent(schedule.requestedMinute, startMinute, endMinute)}%` }}
+            title={`희망 도착 시각: ${formatMinute(schedule.requestedMinute)}`}
+          >
+            {/* 세로 미세 점선 */}
+            <div className="w-px h-full border-l border-dashed border-slate-400/80" />
+            {/* 고스트 타겟 다이아몬드 마커 */}
+            <div className="w-2 h-2 rotate-45 border border-slate-500 bg-white/95 shadow-2xs" />
+          </div>
+        )}
 
         {/* 드래그 중인 출발 시간 기준 좌측 가이드 선 (얇고 연한 소프트 블루) */}
         {dragPercent !== null && (

@@ -3,6 +3,7 @@ import { GripVertical, ArrowRightLeft } from 'lucide-react';
 import { Student, StudentSchedule, School, MinuteOfDay } from '@/types';
 import { formatMinute, getTimelinePositionPercent } from '@/lib/scheduling/time';
 import { useScheduleStore } from '@/lib/store/useScheduleStore';
+import { getSchoolTravelMinutes } from '@/lib/scheduling/routeCalculator';
 
 interface ScheduleBlockProps {
   student: Student;
@@ -31,6 +32,7 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
     updateAssignedTime,
     toggleAlternateSchedule,
     setDraggingMinute,
+    routeSegments,
   } = useScheduleStore();
 
   const [isDragging, setIsDragging] = useState(false);
@@ -113,17 +115,21 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
   }, [isDragging, student.id, startMinute, endMinute, timelineContainerRef, updateAssignedTime, setDraggingMinute, schedule.type]);
 
   const isMorning = schedule.type === 'MORNING';
-  const isCheong = school.shortName === '저청초' || school.id === 'CHEONG';
-  const travelMinutes = isCheong ? 5 : 10;
+  // 학교별 누적 소요시간 계산 (저청초: 5분, NLCS: 10분, BHA: 15분, KIS: 20분, SJA: 24분)
+  const travelMinutes = isMorning ? getSchoolTravelMinutes(school.id, routeSegments) : 10;
 
   const displayMinute = isDragging ? dragMinute : schedule.assignedMinute;
   const leftPercent = getTimelinePositionPercent(displayMinute, startMinute, endMinute);
 
-  // 등교: displayMinute는 학교 도착 시각 (예: 07:50)
-  // 단지 출발 시각 = 도착 시각 - 소요시간 (예: 07:40)
+  // 등교: displayMinute는 학교 도착 시각 (예: 07:45)
+  // 단지 출발 시각 = 도착 시각 - 누적 소요시간 (예: 07:45 - 15분 = 07:30)
   const departureMinute = (displayMinute - travelMinutes) as MinuteOfDay;
   const departurePercent = getTimelinePositionPercent(departureMinute, startMinute, endMinute);
   const blockWidthPercent = Math.max(0, leftPercent - departurePercent);
+
+  // 희망시간 vs 실제 운용시간 차이 계산
+  const requestedMinute = schedule.requestedMinute;
+  const diff = requestedMinute !== undefined ? displayMinute - requestedMinute : 0;
 
   // 학교 대표 색상의 진한 배경 스타일 (흰색 글씨와 완벽한 대비 및 높은 가독성)
   const getSchoolPastelStyle = () => {
@@ -192,7 +198,17 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
       }}
       title={`${student.name} (${school.shortName}): ${
         isMorning
-          ? `단지 ${formatMinute(departureMinute)} 출발 ➔ 학교 ${formatMinute(displayMinute)} 도착 (${travelMinutes}분 소요)`
+          ? `단지 ${formatMinute(departureMinute)} 출발 ➔ 학교 ${formatMinute(displayMinute)} 도착 (소요 ${travelMinutes}분)${
+              requestedMinute !== undefined
+                ? ` | 희망: ${formatMinute(requestedMinute)}${
+                    diff === 0
+                      ? ' (희망 일치)'
+                      : diff < 0
+                      ? ` (${Math.abs(diff)}분 조기 도착)`
+                      : ` (${diff}분 지연 도착)`
+                  }`
+                : ''
+            }`
           : `출발 ${formatMinute(displayMinute)}`
       } / 5분 단위 드래그 조정 가능${conflictMessage ? ` - [충돌: ${conflictMessage}]` : ''}`}
     >
@@ -201,26 +217,49 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
         <div
           className={`absolute -top-7 ${isMorning ? 'right-0' : 'left-0'} px-2 py-0.5 bg-slate-900 text-white text-xs font-black rounded shadow-md pointer-events-none whitespace-nowrap font-mono z-30`}
         >
-          {isMorning ? `도착 ${formatMinute(displayMinute)}` : `출발 ${formatMinute(displayMinute)}`}
+          {isMorning
+            ? `도착 ${formatMinute(displayMinute)} (단지 ${formatMinute(departureMinute)} 출발)`
+            : `출발 ${formatMinute(displayMinute)}`}
           <div
             className={`absolute top-full ${isMorning ? 'right-2' : 'left-2'} border-4 border-transparent border-t-slate-900`}
           />
         </div>
       )}
 
-      {/* 충돌 표시 뱃지 (블록 내부 공간을 전혀 차지하지 않도록 우측 상단 플로팅 뱃지로 배치) */}
+      {/* 충돌 경고 배지: 단순 빨간 점에서 직관적인 ⚠️ 아이콘과 클릭 상세 안내로 개선 */}
       {hasConflict && (
-        <span
-          className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-white animate-pulse z-30 shadow-xs pointer-events-none"
-          title={conflictMessage}
-        />
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            alert(`⚠️ 스케줄 충돌 경고\n\n- 대상 학생: ${student.name} (${school.shortName})\n- 충돌 사유: ${conflictMessage || '운행 일정에 충돌이 감지되었습니다.'}`);
+          }}
+          className="absolute -top-2.5 -right-2 px-1 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-bold ring-2 ring-white flex items-center gap-0.5 shadow-md hover:bg-rose-700 transition cursor-pointer z-30 animate-pulse"
+          title={`⚠️ [스케줄 충돌] ${conflictMessage || '일정 충돌'} (클릭 시 상세 안내)`}
+        >
+          <span className="text-[10px] leading-none">⚠️</span>
+        </button>
       )}
 
-      {/* 내부 콘텐츠: 등교 시 학생 이름만 전체 폭에 선명하게 표시 (미니타겟 링 삭제) */}
+      {/* 내부 콘텐츠: 등교 시 학생 이름 및 희망시간 차이 배지 표시 */}
       {isMorning ? (
-        <span className="text-xs sm:text-[13px] font-black text-white tracking-tight truncate text-center w-full px-0.5 select-none leading-none drop-shadow-xs">
-          {student.name}
-        </span>
+        <div className="flex items-center justify-between w-full px-1 overflow-hidden">
+          <span className="text-xs sm:text-[13px] font-black text-white tracking-tight truncate select-none leading-none drop-shadow-xs">
+            {student.name}
+          </span>
+          {diff !== 0 && (
+            <span
+              className={`text-[9.5px] font-black px-1 py-0.5 rounded leading-none shrink-0 font-mono shadow-2xs ml-1 ${
+                diff < 0
+                  ? 'bg-sky-400 text-sky-950'
+                  : 'bg-amber-300 text-amber-950'
+              }`}
+              title={`희망 ${formatMinute(requestedMinute!)} 대비 ${Math.abs(diff)}분 ${diff < 0 ? '빠름' : '늦음'}`}
+            >
+              {diff < 0 ? `▼-${Math.abs(diff)}` : `▲+${diff}`}
+            </span>
+          )}
+        </div>
       ) : (
         <>
           {/* 하교: 출발 시간 */}

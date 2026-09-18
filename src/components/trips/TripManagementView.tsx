@@ -172,10 +172,10 @@ export const TripManagementView: React.FC = () => {
             <table className="w-full text-left border-collapse border border-slate-700 table-fixed text-[10.5px] bg-white">
               <thead>
                 <tr className="bg-slate-100 text-slate-900 font-black border-b border-slate-500">
-                  <th className="py-2 px-1.5 w-[8%] text-center border-r border-slate-400">호차</th>
-                  <th className="py-2 px-2.5 w-[72%] border-r border-slate-400">운행 코스 및 시간</th>
-                  <th className="py-2 px-1.5 w-[10%] text-center border-r border-slate-400">운행 요일</th>
-                  <th className="py-2 px-1.5 w-[10%] text-center">단지 복귀</th>
+                  <th className="py-2 px-1.5 w-[7%] text-center border-r border-slate-400">호차</th>
+                  <th className="py-2 px-2.5 w-[75%] border-r border-slate-400">운행 코스 및 시간</th>
+                  <th className="py-2 px-1.5 w-[9%] text-center border-r border-slate-400">운행 요일</th>
+                  <th className="py-2 px-1.5 w-[9%] text-center">단지 복귀</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-300 text-slate-900 bg-white">
@@ -191,16 +191,20 @@ export const TripManagementView: React.FC = () => {
                           {data.combinedSteps.map((step, idx) => (
                             <React.Fragment key={idx}>
                               {idx > 0 && (
-                                <span className="text-slate-300 font-bold w-4 text-center shrink-0 text-[9px]">
+                                <span className="text-slate-300 font-bold w-3 text-center shrink-0 text-[9px]">
                                   →
                                 </span>
                               )}
                               <span
                                 className={`inline-flex items-center whitespace-nowrap ${
                                   idx === 0
+                                    ? 'w-[68px] shrink-0'
+                                    : idx === 1
+                                    ? 'w-[74px] shrink-0'
+                                    : idx === 2
                                     ? 'w-[78px] shrink-0'
-                                    : step.time
-                                    ? 'w-[88px] shrink-0'
+                                    : idx === 3
+                                    ? 'w-[72px] shrink-0'
                                     : 'shrink-0'
                                 }`}
                               >
@@ -248,10 +252,10 @@ export const TripManagementView: React.FC = () => {
             <table className="w-full text-left border-collapse border border-slate-700 table-fixed text-[10.5px] bg-white">
               <thead>
                 <tr className="bg-slate-100 text-slate-900 font-black border-b border-slate-500">
-                  <th className="py-2 px-1.5 w-[8%] text-center border-r border-slate-400">호차</th>
-                  <th className="py-2 px-2.5 w-[72%] border-r border-slate-400">운행 코스 및 시간</th>
-                  <th className="py-2 px-1.5 w-[10%] text-center border-r border-slate-400">운행 요일</th>
-                  <th className="py-2 px-1.5 w-[10%] text-center">단지 복귀</th>
+                  <th className="py-2 px-1.5 w-[7%] text-center border-r border-slate-400">호차</th>
+                  <th className="py-2 px-2.5 w-[75%] border-r border-slate-400">운행 코스 및 시간</th>
+                  <th className="py-2 px-1.5 w-[9%] text-center border-r border-slate-400">운행 요일</th>
+                  <th className="py-2 px-1.5 w-[9%] text-center">단지 복귀</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-300 text-slate-900 bg-white">
@@ -267,14 +271,14 @@ export const TripManagementView: React.FC = () => {
                           {data.combinedSteps.map((step, idx) => (
                             <React.Fragment key={idx}>
                               {idx > 0 && (
-                                <span className="text-slate-300 font-bold w-4 text-center shrink-0 text-[9px]">
+                                <span className="text-slate-300 font-bold w-3 text-center shrink-0 text-[9px]">
                                   →
                                 </span>
                               )}
                               <span
                                 className={`inline-flex items-center whitespace-nowrap ${
                                   step.time
-                                    ? 'w-[88px] shrink-0'
+                                    ? 'w-[76px] shrink-0'
                                     : 'shrink-0'
                                 }`}
                               >

@@ -224,18 +224,18 @@ export const INITIAL_STUDENTS: Student[] = [
     name: '이라임',
     building: '117동',
     unit: '404호',
-    schoolId: 'SJA',
+    schoolId: 'BHA',
     grade: '7학년',
     gender: '여',
     sortOrder: 5,
     active: true,
     notes: '하교시 셔틀 미이용',
     weeklySchedule: {
-      1: { weekday: 1, morningMinute: 490, afternoonMinute: 930, morningActive: true, afternoonActive: false, active: true }, // 8시10분
-      2: { weekday: 2, morningMinute: 490, afternoonMinute: 930, morningActive: true, afternoonActive: false, active: true },
-      3: { weekday: 3, morningMinute: 490, afternoonMinute: 930, morningActive: false, afternoonActive: false, active: false }, // 수 미이용
-      4: { weekday: 4, morningMinute: 490, afternoonMinute: 930, morningActive: true, afternoonActive: false, active: true },
-      5: { weekday: 5, morningMinute: 490, afternoonMinute: 930, morningActive: true, afternoonActive: false, active: true },
+      1: { weekday: 1, morningMinute: 470, afternoonMinute: 930, morningActive: true, afternoonActive: false, active: true }, // 7시50분 희망
+      2: { weekday: 2, morningMinute: 470, afternoonMinute: 930, morningActive: true, afternoonActive: false, active: true },
+      3: { weekday: 3, morningMinute: 470, afternoonMinute: 930, morningActive: false, afternoonActive: false, active: false }, // 수 미이용
+      4: { weekday: 4, morningMinute: 470, afternoonMinute: 930, morningActive: true, afternoonActive: false, active: true },
+      5: { weekday: 5, morningMinute: 470, afternoonMinute: 930, morningActive: true, afternoonActive: false, active: true },
     },
   },
   {
@@ -692,15 +692,25 @@ export function generateStudentSchedulesForDate(
     if (!ws || !ws.active) return;
 
     if (ws.morningActive) {
+      let assignedMinute = ws.morningMinute;
+      // 1호차 기본 등교(07:30 단지 출발) 및 2호차(08:20 단지 출발) 차량 도착시간 자동 연동
+      if (ws.morningMinute <= 490) { // 08:10 이하 정규 등교
+        if (st.schoolId === 'NLCS') assignedMinute = 460; // 07:40
+        else if (st.schoolId === 'BHA') assignedMinute = 465; // 07:45
+        else if (st.schoolId === 'KIS') assignedMinute = 470; // 07:50
+        else if (st.schoolId === 'SJA') assignedMinute = 474; // 07:54
+        else if (st.schoolId === 'CHEONG') assignedMinute = 505; // 08:25 (2호차)
+      }
+
       result.push({
         id: `sc-${st.id}-${dateStr}-m`,
         studentId: st.id,
         schoolId: st.schoolId,
         date: dateStr,
         type: 'MORNING',
-        requestedMinute: ws.morningMinute,
-        assignedMinute: ws.morningMinute,
-        calculatedMinute: ws.morningMinute,
+        requestedMinute: ws.morningMinute, // 학부모 희망 도착시간 (예: 07:50)
+        assignedMinute: assignedMinute,    // 실제 차량 배정 도착시간 (예: BHA 07:45, NLCS 07:40)
+        calculatedMinute: assignedMinute,
         dwellMinutes: 1,
         alternateMinutes: undefined,
         selectedAlternateIndex: ws.selectedAlternateIndex,
