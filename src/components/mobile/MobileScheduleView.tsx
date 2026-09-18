@@ -398,22 +398,22 @@ export const MobileScheduleView: React.FC = () => {
             {/* 시트 상단 바 */}
             <div className="sticky top-0 bg-white p-4 border-b border-slate-200 flex items-center justify-between z-10">
               <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-blue-600" />
-                <h3 className="font-extrabold text-sm text-slate-900">
+                <Calendar className="w-5 h-5 text-blue-600 shrink-0" />
+                <h3 className="font-extrabold text-sm text-slate-900 truncate">
                   2026-2027 4대 학교 학사일정 및 방학 매트릭스
                 </h3>
               </div>
               <button
                 onClick={() => setIsCalendarSheetOpen(false)}
-                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-500"
+                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-500 cursor-pointer shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-4 flex flex-col gap-4">
+            <div className="p-4 flex flex-col gap-4 overflow-y-auto flex-1 overscroll-contain">
               {/* 4대 학교 학사일정 비교 매트릭스 */}
-              <SchoolCalendarMatrix />
+              <SchoolCalendarMatrix onJump={() => setIsCalendarSheetOpen(false)} />
 
               {/* 등록된 방학/휴교 전체 목록 */}
               <div className="flex flex-col gap-2">
