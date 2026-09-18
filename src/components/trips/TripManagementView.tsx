@@ -88,27 +88,21 @@ export const TripManagementView: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-5 select-none animate-fadeIn print-container max-w-5xl w-full print:mx-auto">
+    <div className="flex flex-col gap-5 select-none animate-fadeIn print-container max-w-5xl w-full print:mx-auto print:bg-white">
       {/* ========================================================================= */}
       {/* 1. [인쇄 전용] 그대로 게시 가능한 수준의 여백과 균형성을 갖춘 A4 공고문   */}
       {/* ========================================================================= */}
-      <div className="hidden print:flex flex-col justify-between w-full text-slate-900 select-none min-h-[268mm]">
+      <div className="hidden print:flex flex-col justify-between w-full bg-white text-slate-900 select-none min-h-[268mm] p-0 m-0">
         <div>
-          {/* A4 최상단: 품격 있는 공고문 헤더 */}
-          <div className="text-center pb-2.5 mb-3 border-b-2 border-slate-900">
-            <span className="text-[11px] font-bold text-blue-800 tracking-wider">
-              [ 아주더하이클래스 입주민 통학 안내문 ]
-            </span>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5 mb-1.5">
-              제주국제학교 통학 차량 운행시간표
+          {/* A4 최상단: 단정한 공고문 헤더 (글자 군더더기 없이 딱 제목만 표시) */}
+          <div className="text-center pb-2 mb-4 border-b-2 border-slate-900 bg-white">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight py-2">
+              통학차량 운행 시간표
             </h1>
-            <div className="text-[10px] text-slate-600 font-medium bg-slate-50 border border-slate-300 rounded py-0.5 px-3 inline-block">
-              시행 기준일자: <strong>{serviceDate}</strong>부 | 운행 구분: <strong>1호차 · 2호차 실운행표 (등교 및 하교 통합본)</strong> | 주관: <strong>관리사무소</strong>
-            </div>
           </div>
 
           {/* 1-A. 등교(오전) 운행시간표 섹션 */}
-          <div className="mb-4">
+          <div className="mb-4 bg-white">
             <div className="flex items-center justify-between mb-1.5 px-0.5">
               <h2 className="text-xs font-black text-slate-900 flex items-center gap-1.5">
                 <span className="w-2 h-3.5 bg-blue-700 inline-block rounded-xs"></span>
@@ -119,7 +113,7 @@ export const TripManagementView: React.FC = () => {
               </span>
             </div>
 
-            <table className="w-full text-left border-collapse border border-slate-700 table-fixed text-[10.5px]">
+            <table className="w-full text-left border-collapse border border-slate-700 table-fixed text-[10.5px] bg-white">
               <thead>
                 <tr className="bg-slate-100 text-slate-900 font-black border-b border-slate-500">
                   <th className="py-1.5 px-1.5 w-[8%] text-center border-r border-slate-400">호차</th>
@@ -130,11 +124,11 @@ export const TripManagementView: React.FC = () => {
                   <th className="py-1.5 px-1.5 w-[10%] text-center">단지 복귀</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-300 text-slate-900">
-                {morningTemplates.map((tpl, idx) => {
+              <tbody className="divide-y divide-slate-300 text-slate-900 bg-white">
+                {morningTemplates.map((tpl) => {
                   const data = getTemplateData(tpl);
                   return (
-                    <tr key={tpl.id} className={idx % 2 === 1 ? 'bg-slate-50/70' : 'bg-white'}>
+                    <tr key={tpl.id} className="bg-white">
                       <td className="py-1.5 px-1.5 text-center font-bold border-r border-slate-300">
                         {data.vehicleName}
                       </td>
@@ -161,7 +155,7 @@ export const TripManagementView: React.FC = () => {
           </div>
 
           {/* 1-B. 하교(오후) 운행시간표 섹션 */}
-          <div className="mb-4">
+          <div className="mb-4 bg-white">
             <div className="flex items-center justify-between mb-1.5 px-0.5">
               <h2 className="text-xs font-black text-slate-900 flex items-center gap-1.5">
                 <span className="w-2 h-3.5 bg-amber-700 inline-block rounded-xs"></span>
@@ -172,7 +166,7 @@ export const TripManagementView: React.FC = () => {
               </span>
             </div>
 
-            <table className="w-full text-left border-collapse border border-slate-700 table-fixed text-[10.5px]">
+            <table className="w-full text-left border-collapse border border-slate-700 table-fixed text-[10.5px] bg-white">
               <thead>
                 <tr className="bg-slate-100 text-slate-900 font-black border-b border-slate-500">
                   <th className="py-1.5 px-1.5 w-[8%] text-center border-r border-slate-400">호차</th>
@@ -183,11 +177,11 @@ export const TripManagementView: React.FC = () => {
                   <th className="py-1.5 px-1.5 w-[10%] text-center">단지 복귀</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-300 text-slate-900">
-                {afternoonTemplates.map((tpl, idx) => {
+              <tbody className="divide-y divide-slate-300 text-slate-900 bg-white">
+                {afternoonTemplates.map((tpl) => {
                   const data = getTemplateData(tpl);
                   return (
-                    <tr key={tpl.id} className={idx % 2 === 1 ? 'bg-slate-50/70' : 'bg-white'}>
+                    <tr key={tpl.id} className="bg-white">
                       <td className="py-1.5 px-1.5 text-center font-bold border-r border-slate-300">
                         {data.vehicleName}
                       </td>
@@ -215,7 +209,7 @@ export const TripManagementView: React.FC = () => {
         </div>
 
         {/* 1-C. 공고문 하단: 입주민 유의사항 및 관리사무소 직인/서명란 */}
-        <div className="border border-slate-400 rounded-lg p-3 bg-slate-50/50 mt-1">
+        <div className="border border-slate-400 rounded-lg p-3 bg-white mt-1">
           <div className="text-[11px] font-bold text-slate-900 mb-1 flex items-center gap-1">
             <span>📌 [ 통학버스 이용 입주민 유의사항 ]</span>
           </div>
@@ -328,7 +322,7 @@ export const TripManagementView: React.FC = () => {
                   </th>
                   <th className="py-2.5 px-3 w-20 text-center whitespace-nowrap">운행 요일</th>
                   <th className="py-2.5 px-3 w-28 whitespace-nowrap">단지 복귀</th>
-                  <th className="py-2.5 px-3 text-center w-24 whitespace-nowrap">상태</th>
+                  <th className="py-2.5 px-3 text-center w-16 whitespace-nowrap print:hidden">상태</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
@@ -362,16 +356,20 @@ export const TripManagementView: React.FC = () => {
                           </span>
                         )}
                       </td>
-                      <td className="py-2.5 px-3 text-center text-sm whitespace-nowrap">
-                        {data.hasInvalidSeq ? (
-                          <span className="font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200 text-xs">
-                            운행 불가
-                          </span>
-                        ) : (
-                          <span className="font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200 text-xs">
-                            운행 가능
-                          </span>
-                        )}
+                      <td className="py-2.5 px-3 text-center text-sm whitespace-nowrap print:hidden">
+                        <div className="flex items-center justify-center">
+                          {data.hasInvalidSeq ? (
+                            <span
+                              className="w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-red-200 animate-pulse shadow-xs inline-block"
+                              title="운행 충돌 / 시간 오류 발생"
+                            />
+                          ) : (
+                            <span
+                              className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-200 shadow-xs inline-block"
+                              title="정상 운행 가능"
+                            />
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

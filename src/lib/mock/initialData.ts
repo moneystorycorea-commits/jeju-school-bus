@@ -702,7 +702,7 @@ export function generateStudentSchedulesForDate(
         assignedMinute: ws.morningMinute,
         calculatedMinute: ws.morningMinute,
         dwellMinutes: 1,
-        alternateMinutes: ws.alternateMinutes,
+        alternateMinutes: undefined,
         selectedAlternateIndex: ws.selectedAlternateIndex,
         notes: ws.notes || st.notes,
       });

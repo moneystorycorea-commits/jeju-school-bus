@@ -208,48 +208,19 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
         </div>
       )}
 
-      {/* 내부 콘텐츠: 등교 시 학생 이름만 표시 (NLCS|07:50 제거, 나머지 기능 유지) */}
+      {/* 충돌 표시 뱃지 (블록 내부 공간을 전혀 차지하지 않도록 우측 상단 플로팅 뱃지로 배치) */}
+      {hasConflict && (
+        <span
+          className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-white animate-pulse z-30 shadow-xs pointer-events-none"
+          title={conflictMessage}
+        />
+      )}
+
+      {/* 내부 콘텐츠: 등교 시 학생 이름만 전체 폭에 선명하게 표시 (미니타겟 링 삭제) */}
       {isMorning ? (
-        <>
-          {/* 학생 이름 (중앙 볼드 표시, 좌우 여백 및 말줄임 안전 처리) */}
-          <span className="text-xs sm:text-[12.5px] font-black text-white tracking-tight truncate text-center flex-1 min-w-0">
-            {student.name}
-          </span>
-
-          {/* 대체 희망시간 전환 버튼 (예: 4시 ⇄ 5시15분) */}
-          {schedule.alternateMinutes && schedule.alternateMinutes.length > 1 && !isDragging && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleAlternateSchedule(student.id, schedule.date, schedule.type);
-              }}
-              className="p-0.5 rounded bg-white/20 hover:bg-white/35 text-white transition cursor-pointer shrink-0"
-              title="대체 희망시간 전환"
-            >
-              <ArrowRightLeft className="w-2.5 h-2.5" />
-            </button>
-          )}
-
-          {/* 충돌 표시 닷 */}
-          {hasConflict && (
-            <span
-              className="w-2 h-2 rounded-full bg-red-400 ring-1.5 ring-white animate-pulse shrink-0 shadow-xs"
-              title={conflictMessage}
-            />
-          )}
-
-          {/* [아이디어 4] 미니 타겟 링 (학교 도착 목표 시각 인디케이터) */}
-          <div
-            className="relative flex items-center justify-center w-2.5 h-2.5 shrink-0 ml-auto"
-            title={`학교 도착 목표 시각: ${formatMinute(displayMinute)}`}
-          >
-            <span className="absolute inset-0 rounded-full border border-white/70 animate-ping opacity-30" />
-            <span className="w-2.5 h-2.5 rounded-full border-[1.5px] border-white flex items-center justify-center bg-white/20 shadow-xs">
-              <span className="w-1 h-1 rounded-full bg-white shadow-xs" />
-            </span>
-          </div>
-        </>
+        <span className="text-xs sm:text-[13px] font-black text-white tracking-tight truncate text-center w-full px-0.5 select-none leading-none drop-shadow-xs">
+          {student.name}
+        </span>
       ) : (
         <>
           {/* 하교: 출발 시간 */}
@@ -265,7 +236,7 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
             {school.shortName}
           </span>
 
-          {/* 대체 희망시간 전환 버튼 */}
+          {/* 대체 희망시간 전환 버튼 (하교 시) */}
           {schedule.alternateMinutes && schedule.alternateMinutes.length > 1 && !isDragging && (
             <button
               type="button"
@@ -278,14 +249,6 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
             >
               <ArrowRightLeft className="w-3 h-3" />
             </button>
-          )}
-
-          {/* 충돌 표시 닷 */}
-          {hasConflict && (
-            <span
-              className="w-2 h-2 rounded-full bg-red-400 ring-1.5 ring-white animate-pulse ml-0.5 shrink-0 shadow-xs"
-              title={conflictMessage}
-            />
           )}
 
           {/* 우측 그립 아이콘 (화이트) */}
