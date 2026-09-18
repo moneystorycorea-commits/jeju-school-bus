@@ -5,6 +5,8 @@ import {
   getWeekdayNumber,
   getTodayDateString,
   getDaysDifference,
+  cleanHolidayName,
+  formatCompactHolidayRange,
 } from '@/lib/scheduling/time';
 import { formatGradeDisplay } from '@/lib/constants/schools';
 import { getSchoolTravelMinutes } from '@/lib/scheduling/routeCalculator';
@@ -23,40 +25,6 @@ import {
   Layers,
 } from 'lucide-react';
 import { UserRole, SchoolHoliday } from '@/types';
-
-// 괄호 안 영문 텍스트 제거 (예: 'NLCS 교사연수 휴교 (INSET Day)' -> 'NLCS 교사연수 휴교')
-const cleanHolidayName = (name: string): string => {
-  return name.replace(/\s*\([^)]*[a-zA-Z]+[^)]*\)/g, '').trim();
-};
-
-// 콤팩트 날짜 포맷터 (예: '26/8/17(월)~18(화)' 또는 '26/8/20(목)')
-const formatCompactHolidayRange = (startStr: string, endStr: string): string => {
-  const [sY, sM, sD] = startStr.split('-').map(Number);
-  const [eY, eM, eD] = endStr.split('-').map(Number);
-
-  const dayOfWeekNames = ['일', '월', '화', '수', '목', '금', '토'];
-  const sDate = new Date(sY, sM - 1, sD);
-  const eDate = new Date(eY, eM - 1, eD);
-  const sDayName = dayOfWeekNames[sDate.getDay()];
-  const eDayName = dayOfWeekNames[eDate.getDay()];
-
-  const shortSY = String(sY).slice(-2);
-  const shortEY = String(eY).slice(-2);
-
-  if (startStr === endStr) {
-    return `${shortSY}/${sM}/${sD}(${sDayName})`;
-  }
-
-  if (sY === eY && sM === eM) {
-    return `${shortSY}/${sM}/${sD}(${sDayName})~${eD}(${eDayName})`;
-  }
-
-  if (sY === eY && sM !== eM) {
-    return `${shortSY}/${sM}/${sD}(${sDayName})~${eM}/${eD}(${eDayName})`;
-  }
-
-  return `${shortSY}/${sM}/${sD}(${sDayName})~${shortEY}/${eM}/${eD}(${eDayName})`;
-};
 
 export const MobileScheduleView: React.FC = () => {
   const {
@@ -388,7 +356,7 @@ export const MobileScheduleView: React.FC = () => {
                 {/* 2행: 시간 안내 및 상태 배지 (슬림 바) */}
                 {holiday ? (
                   <div className="py-1 px-2 rounded-lg bg-amber-100/70 border border-amber-300/80 text-amber-950 text-xs font-bold flex items-center justify-between">
-                    <span>🌴 {holiday.name}</span>
+                    <span>🌴 {cleanHolidayName(holiday.name)}</span>
                     <span className="text-[10px] text-amber-800">통학 미운행</span>
                   </div>
                 ) : schedule ? (

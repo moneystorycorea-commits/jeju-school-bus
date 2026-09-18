@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { School, SchoolHoliday } from '@/types';
-import { formatKoreanDate, getDaysDifference, getTodayDateString } from '@/lib/scheduling/time';
+import {
+  formatKoreanDate,
+  getDaysDifference,
+  getTodayDateString,
+  cleanHolidayName,
+  formatCompactHolidayRange,
+} from '@/lib/scheduling/time';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -312,7 +318,7 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
       return {
         school: s,
         holiday: match || null,
-        dates: match ? `${match.startDate.substring(5)} ~ ${match.endDate.substring(5)}` : '일정 없음',
+        dates: match ? formatCompactHolidayRange(match.startDate, match.endDate) : '일정 없음',
         days: match ? getDaysDifference(match.startDate, match.endDate) : 0,
         fullStartDate: match?.startDate,
         fullEndDate: match?.endDate,
@@ -379,7 +385,9 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-base leading-none">🌴</span>
-              <span className="text-xs font-black text-amber-950">{activeHoliday.name}</span>
+              <span className="text-xs font-black text-amber-950">
+                {cleanHolidayName(activeHoliday.name)}
+              </span>
               {activeSchool && (
                 <span
                   className="text-[10px] font-black px-1.5 py-0.2 rounded"
@@ -399,7 +407,7 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
             <div className="flex flex-col">
               <span className="text-[10px] font-bold text-slate-500">지정 기간</span>
               <span className="font-mono text-xs font-extrabold text-amber-950">
-                {activeHoliday.startDate} ~ {activeHoliday.endDate}
+                {formatCompactHolidayRange(activeHoliday.startDate, activeHoliday.endDate)}
               </span>
             </div>
             <div className="text-right">
@@ -416,7 +424,9 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
             onClick={() => onGoToSchedule(activeHoliday.startDate)}
             className="w-full py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-xs transition active:scale-[0.99] cursor-pointer"
           >
-            <span>이 기간 첫날({activeHoliday.startDate}) 운행표 화면으로 이동</span>
+            <span>
+              이 기간 첫날({formatCompactHolidayRange(activeHoliday.startDate, activeHoliday.startDate)}) 운행표 화면으로 이동
+            </span>
             <ExternalLink className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -779,9 +789,11 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
                   >
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm">🌴</span>
-                      <div className="flex flex-col">
+                      <div className="flex flex-col gap-0.5">
                         <div className="flex items-center gap-1">
-                          <span className="text-xs font-bold text-slate-900">{h.name}</span>
+                          <span className="text-xs font-bold text-slate-900">
+                            {cleanHolidayName(h.name)}
+                          </span>
                           {sc && (
                             <span
                               className="text-[9.5px] font-black px-1.5 py-0.2 rounded"
@@ -791,9 +803,14 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
                             </span>
                           )}
                         </div>
-                        <span className="text-[10px] font-mono text-slate-500">
-                          {h.startDate} ~ {h.endDate} ({getDaysDifference(h.startDate, h.endDate)}일간)
-                        </span>
+                        <div className="flex items-center gap-1.5 text-[10.5px] font-mono text-slate-500">
+                          <span className="font-bold text-slate-700">
+                            {formatCompactHolidayRange(h.startDate, h.endDate)}
+                          </span>
+                          <span className="font-black text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200/60 text-[9.5px]">
+                            {getDaysDifference(h.startDate, h.endDate)}일간
+                          </span>
+                        </div>
                       </div>
                     </div>
 

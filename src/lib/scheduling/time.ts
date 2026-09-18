@@ -76,3 +76,41 @@ export function getDaysDifference(startStr: string, endStr: string): number {
   const diffTime = date2.getTime() - date1.getTime();
   return Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
 }
+
+// 괄호 안 영문 텍스트 제거 (예: 'NLCS 교사연수 휴교 (INSET Day)' -> 'NLCS 교사연수 휴교')
+export function cleanHolidayName(name: string): string {
+  if (!name) return '';
+  return name.replace(/\s*[\(\[][^)\]]*[a-zA-Z]+[^)\]]*[\)\]]/g, '').trim();
+}
+
+// 콤팩트 날짜 포맷터 (예: '26/8/17(월)~18(화)' 또는 '26/8/20(목)')
+export function formatCompactHolidayRange(startStr: string, endStr: string): string {
+  if (!startStr) return '';
+  const effectiveEnd = endStr || startStr;
+
+  const [sY, sM, sD] = startStr.split('-').map(Number);
+  const [eY, eM, eD] = effectiveEnd.split('-').map(Number);
+
+  const dayOfWeekNames = ['일', '월', '화', '수', '목', '금', '토'];
+  const sDate = new Date(sY, sM - 1, sD);
+  const eDate = new Date(eY, eM - 1, eD);
+  const sDayName = dayOfWeekNames[sDate.getDay()];
+  const eDayName = dayOfWeekNames[eDate.getDay()];
+
+  const shortSY = String(sY).slice(-2);
+  const shortEY = String(eY).slice(-2);
+
+  if (startStr === effectiveEnd) {
+    return `${shortSY}/${sM}/${sD}(${sDayName})`;
+  }
+
+  if (sY === eY && sM === eM) {
+    return `${shortSY}/${sM}/${sD}(${sDayName})~${eD}(${eDayName})`;
+  }
+
+  if (sY === eY && sM !== eM) {
+    return `${shortSY}/${sM}/${sD}(${sDayName})~${eM}/${eD}(${eDayName})`;
+  }
+
+  return `${shortSY}/${sM}/${sD}(${sDayName})~${shortEY}/${eM}/${eD}(${eDayName})`;
+}
