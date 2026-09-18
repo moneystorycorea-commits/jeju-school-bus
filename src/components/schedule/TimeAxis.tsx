@@ -55,15 +55,15 @@ export const TimeAxis: React.FC<TimeAxisProps> = ({ startMinute, endMinute }) =>
             style={{ left: `${percent}%` }}
           >
             {isHour ? (
-              <span className={`text-[11px] font-bold pt-0.5 font-mono tracking-tight ${isCurrentActiveSlot ? 'text-blue-700 font-black' : 'text-slate-800'}`}>
+              <span className={`text-xs font-black pt-0.5 font-mono tracking-tight ${isCurrentActiveSlot ? 'text-blue-700' : 'text-slate-800'}`}>
                 {formatMinute(minute)}
               </span>
             ) : isHalfHour ? (
-              <span className={`text-[10px] font-semibold pt-0.5 font-mono tracking-tight ${isCurrentActiveSlot ? 'text-blue-600 font-bold' : 'text-slate-500'}`}>
+              <span className={`text-[11px] font-bold pt-0.5 font-mono tracking-tight ${isCurrentActiveSlot ? 'text-blue-600 font-black' : 'text-slate-600'}`}>
                 :{String(minuteInHour).padStart(2, '0')}
               </span>
             ) : (
-              <span className={`hidden md:inline-block text-[8.5px] font-medium pt-1 font-mono ${isCurrentActiveSlot ? 'text-blue-600 font-bold' : 'text-slate-400'}`}>
+              <span className={`hidden md:inline-block text-[9.5px] font-semibold pt-1 font-mono ${isCurrentActiveSlot ? 'text-blue-600 font-bold' : 'text-slate-400'}`}>
                 :{String(minuteInHour).padStart(2, '0')}
               </span>
             )}

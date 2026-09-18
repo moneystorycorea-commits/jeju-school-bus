@@ -234,20 +234,20 @@ export const TripManagementView: React.FC = () => {
       {/* 2. [화면 전용] 탭 전환형 차량 운행시간표 (인쇄 시 숨김: no-print)         */}
       {/* ========================================================================= */}
       <div className="flex flex-col gap-5 no-print">
-        {/* 상단 요약 배너 및 컨트롤 */}
+        {/* 상단 요약 배너 및 컨트롤 (학생관리 페이지와 동일한 text-xl 및 text-sm 폰트 체계) */}
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20 shrink-0">
-              <Bus className="w-5 h-5" />
+            <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20 shrink-0">
+              <Bus className="w-6 h-6" />
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-slate-900 tracking-tight">차량 운행시간표</h2>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold border border-blue-200">
+                <h2 className="text-xl font-bold text-slate-900 tracking-tight">차량 운행시간표</h2>
+                <span className="text-xs sm:text-sm px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold border border-blue-200">
                   1호차 · 2호차 실운행표
                 </span>
               </div>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
+              <p className="text-sm text-slate-500 font-medium mt-0.5">
                 박스 없는 간결한 텍스트 시간표이며, [시간표 인쇄] 클릭 시 등/하교가 한 페이지에 완벽한 비율로 출력됩니다.
               </p>
             </div>
@@ -259,7 +259,7 @@ export const TripManagementView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setScheduleType('MORNING')}
-                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${
                   scheduleType === 'MORNING'
                     ? 'bg-blue-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -270,7 +270,7 @@ export const TripManagementView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setScheduleType('AFTERNOON')}
-                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${
                   scheduleType === 'AFTERNOON'
                     ? 'bg-blue-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -284,7 +284,7 @@ export const TripManagementView: React.FC = () => {
             <button
               type="button"
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition cursor-pointer shadow-xs"
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold transition cursor-pointer shadow-xs"
               title="등·하교 통합 시간표를 한 페이지에 인쇄하거나 PDF로 저장"
             >
               <Printer className="w-4 h-4" />
@@ -293,23 +293,23 @@ export const TripManagementView: React.FC = () => {
           </div>
         </div>
 
-        {/* 화면용 테이블 */}
+        {/* 화면용 테이블 (학생관리 페이지와 동일한 14px text-sm 폰트 규격 적용) */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-slate-900">
+          <div className="px-5 py-3 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <h3 className="text-base font-bold text-slate-900">
                 {scheduleType === 'MORNING' ? '등교 운행시간표' : '하교 운행시간표'}
               </h3>
-              <span className="text-xs text-slate-500 font-normal">
-                (텍스트 요약형)
+              <span className="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold border border-blue-200">
+                텍스트 요약형
               </span>
             </div>
             <button
               type="button"
               onClick={handlePrint}
-              className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer"
+              className="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1.5 cursor-pointer"
             >
-              <Printer className="w-3.5 h-3.5" />
+              <Printer className="w-4 h-4" />
               <span>등/하교 통합 출력</span>
             </button>
           </div>
@@ -317,58 +317,58 @@ export const TripManagementView: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-slate-700 text-xs font-bold">
+                <tr className="border-b border-slate-200 bg-slate-50 text-slate-700 text-sm font-bold">
                   <th className="py-2.5 px-3 w-16 whitespace-nowrap">호차</th>
-                  <th className="py-2.5 px-3 w-20 whitespace-nowrap">
+                  <th className="py-2.5 px-3 w-24 whitespace-nowrap">
                     {scheduleType === 'MORNING' ? '단지 출발' : '학교 출발'}
                   </th>
-                  <th className="py-2.5 px-3 min-w-[160px] whitespace-nowrap">경유 순서</th>
-                  <th className="py-2.5 px-3 min-w-[170px] whitespace-nowrap">
+                  <th className="py-2.5 px-3 min-w-[200px] whitespace-nowrap">경유 순서</th>
+                  <th className="py-2.5 px-3 min-w-[240px] whitespace-nowrap">
                     {scheduleType === 'MORNING' ? '학교 도착 (자동계산)' : '학교 픽업 (자동계산)'}
                   </th>
-                  <th className="py-2.5 px-3 w-16 whitespace-nowrap">운행 요일</th>
-                  <th className="py-2.5 px-3 w-24 whitespace-nowrap">단지 복귀</th>
-                  <th className="py-2.5 px-3 text-center w-16 whitespace-nowrap">상태</th>
+                  <th className="py-2.5 px-3 w-20 text-center whitespace-nowrap">운행 요일</th>
+                  <th className="py-2.5 px-3 w-28 whitespace-nowrap">단지 복귀</th>
+                  <th className="py-2.5 px-3 text-center w-24 whitespace-nowrap">상태</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+              <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                 {activeTemplates.map((template) => {
                   const data = getTemplateData(template);
 
                   return (
                     <tr key={template.id} className="hover:bg-slate-50 transition">
-                      <td className="py-2.5 px-3 font-bold text-slate-900 text-xs whitespace-nowrap">
+                      <td className="py-2.5 px-3 font-bold text-slate-900 text-sm whitespace-nowrap">
                         {data.vehicleName}
                       </td>
-                      <td className="py-2.5 px-3 font-bold text-blue-600 font-mono text-xs whitespace-nowrap">
+                      <td className="py-2.5 px-3 font-bold text-blue-600 font-mono text-sm whitespace-nowrap">
                         {data.departureTime}
                       </td>
-                      <td className="py-2.5 px-3 font-medium text-slate-800 text-xs whitespace-nowrap">
+                      <td className="py-2.5 px-3 font-semibold text-slate-800 text-sm whitespace-nowrap">
                         {data.routeStopsText}
                       </td>
-                      <td className="py-2.5 px-3 font-mono font-medium text-slate-700 text-xs whitespace-nowrap">
+                      <td className="py-2.5 px-3 font-mono font-medium text-slate-700 text-sm whitespace-nowrap">
                         {data.arrivalTimesText}
                       </td>
-                      <td className="py-2.5 px-3 font-medium text-slate-700 text-xs whitespace-nowrap">
+                      <td className="py-2.5 px-3 font-bold text-slate-800 text-sm text-center whitespace-nowrap">
                         {data.weekdaysText}
                       </td>
-                      <td className="py-2.5 px-3 font-mono text-xs whitespace-nowrap">
+                      <td className="py-2.5 px-3 font-mono text-sm whitespace-nowrap">
                         <span className={`font-bold ${data.hasInvalidSeq ? 'text-red-600 line-through' : 'text-slate-900'}`}>
                           {data.refReturn ? formatMinute(data.refReturn) : '-'}
                         </span>
                         {data.calcReturn && data.calcReturn !== data.refReturn && (
-                          <span className="text-slate-500 ml-1 text-[11px]">
+                          <span className="text-slate-500 ml-1 text-xs">
                             ({formatMinute(data.calcReturn)})
                           </span>
                         )}
                       </td>
-                      <td className="py-2.5 px-3 text-center text-xs whitespace-nowrap">
+                      <td className="py-2.5 px-3 text-center text-sm whitespace-nowrap">
                         {data.hasInvalidSeq ? (
-                          <span className="font-bold text-red-600">
+                          <span className="font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200 text-xs">
                             운행 불가
                           </span>
                         ) : (
-                          <span className="font-bold text-emerald-600">
+                          <span className="font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200 text-xs">
                             운행 가능
                           </span>
                         )}

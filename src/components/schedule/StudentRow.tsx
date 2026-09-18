@@ -96,26 +96,26 @@ export const StudentRow: React.FC<StudentRowProps> = ({
           <GripVertical className="w-3.5 h-3.5" />
         </button>
 
-        {/* 1. 이름 */}
+        {/* 1. 이름 (학생관리 테이블과 동일한 text-sm font-bold) */}
         <div className="flex-1 min-w-0 pl-1 pr-1 flex items-center">
-          <span className="text-xs md:text-sm font-bold text-slate-900 tracking-tight truncate hover:text-blue-600 transition">
+          <span className="text-sm font-bold text-slate-900 tracking-tight truncate hover:text-blue-600 transition">
             {student.name}
           </span>
         </div>
 
-        {/* 2. 학교 뱃지 */}
+        {/* 2. 학교 뱃지 (학생관리 테이블과 동일한 text-xs font-black px-2 py-0.5) */}
         <div className="w-14 shrink-0 flex items-center justify-center">
           {school && (
-            <span className={`text-[10.5px] font-black px-1.5 py-0.2 rounded border shadow-2xs ${school.badgeBg}`}>
+            <span className={`text-xs font-black px-2 py-0.5 rounded border shadow-2xs ${school.badgeBg}`}>
               {school.shortName}
             </span>
           )}
         </div>
 
-        {/* 3. 학년 원형 배지 */}
-        <div className="w-10 shrink-0 flex items-center justify-center">
+        {/* 3. 학년 원형 배지 (text-xs font-black font-mono) */}
+        <div className="w-11 shrink-0 flex items-center justify-center">
           <div
-            className="w-5.5 h-5.5 rounded-full bg-slate-100 text-slate-800 font-black text-[11px] flex items-center justify-center border border-slate-300 font-mono shadow-2xs"
+            className="w-6 h-6 rounded-full bg-slate-100 text-slate-800 font-black text-xs flex items-center justify-center border border-slate-300 font-mono shadow-2xs"
             title={student.grade && student.grade !== '?' ? `재학 학년: ${student.grade}` : '학년 미등록 (?)'}
           >
             {(() => {
@@ -161,13 +161,13 @@ export const StudentRow: React.FC<StudentRowProps> = ({
             <span>🌴 {schoolHoliday.name} (방학 기간)</span>
           </div>
         ) : isInactive ? (
-          <div className="h-7.5 flex items-center gap-1.5 px-3 rounded-md bg-slate-100/90 border border-dashed border-slate-300 text-slate-500 text-xs font-medium ml-4 shadow-2xs">
+          <div className="h-7.5 flex items-center gap-2 px-3 rounded-md bg-slate-100/90 border border-dashed border-slate-300 text-slate-500 text-xs ml-4 shadow-2xs">
             <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-            <span className="font-bold text-slate-600">
+            <span className="font-bold text-slate-700 text-xs sm:text-sm">
               {scheduleType === 'MORNING' ? '등교 셔틀 미이용' : '하교 셔틀 미이용'}
             </span>
             {(ws?.notes || student.notes) && (
-              <span className="text-xs text-slate-400 max-w-[280px] truncate">
+              <span className="text-xs text-slate-400 max-w-[280px] truncate font-medium">
                 ({ws?.notes || student.notes})
               </span>
             )}

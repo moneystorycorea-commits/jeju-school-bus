@@ -179,7 +179,7 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
       {/* 플로팅 실시간 시간 툴팁 (드래그 중) */}
       {isDragging && (
         <div
-          className={`absolute -top-7 ${isMorning ? 'right-0' : 'left-0'} px-2 py-0.5 bg-slate-900 text-white text-[11px] font-bold rounded shadow-md pointer-events-none whitespace-nowrap font-mono z-30`}
+          className={`absolute -top-7 ${isMorning ? 'right-0' : 'left-0'} px-2 py-0.5 bg-slate-900 text-white text-xs font-black rounded shadow-md pointer-events-none whitespace-nowrap font-mono z-30`}
         >
           {isMorning ? '도착' : '출발'} {formatMinute(displayMinute)}
           <div
@@ -188,7 +188,7 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
         </div>
       )}
 
-      {/* 내부 콘텐츠 (등교: 학교명 | 도착시간, 하교: 출발시간 | 학교명) */}
+      {/* 내부 콘텐츠 (등교: 학교명 | 도착시간, 하교: 출발시간 | 학교명 - text-sm font-black) */}
       {isMorning ? (
         <>
           {/* 학교 라벨 */}
@@ -199,15 +199,15 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
           {/* 미니 구분선 */}
           <span className="w-px h-3.5 bg-white/35 shrink-0" />
 
-          {/* 학교 도착 시간 (오른쪽 가이드라인에 맞닿는 배치) */}
-          <span className="text-[13px] font-black text-white font-mono tracking-tight shrink-0">
+          {/* 학교 도착 시간 (오른쪽 가이드라인에 맞닿는 배치, text-sm font-black) */}
+          <span className="text-sm font-black text-white font-mono tracking-tight shrink-0">
             {formatMinute(displayMinute)}
           </span>
         </>
       ) : (
         <>
-          {/* 출발 시간 */}
-          <span className="text-[13px] font-black text-white font-mono tracking-tight shrink-0">
+          {/* 출발 시간 (text-sm font-black) */}
+          <span className="text-sm font-black text-white font-mono tracking-tight shrink-0">
             {formatMinute(displayMinute)}
           </span>
 

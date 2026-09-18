@@ -78,7 +78,7 @@ export const TopToolbar: React.FC = () => {
 
         <button
           onClick={handleToday}
-          className="px-2.5 py-1 text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition cursor-pointer"
+          className="px-2.5 py-1 text-sm font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition cursor-pointer"
         >
           오늘
         </button>
@@ -87,7 +87,7 @@ export const TopToolbar: React.FC = () => {
         <button
           onClick={undo}
           disabled={history.length === 0}
-          className={`flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg border transition ${
+          className={`flex items-center gap-1.5 px-2.5 py-1 text-sm font-bold rounded-lg border transition ${
             history.length > 0
               ? 'text-slate-700 bg-white border-slate-300 hover:bg-slate-50 cursor-pointer shadow-2xs'
               : 'text-slate-300 bg-slate-50 border-slate-200 cursor-not-allowed'
@@ -123,27 +123,27 @@ export const TopToolbar: React.FC = () => {
         </button>
       </div>
 
-      {/* 우측: 액션 버튼군 */}
+      {/* 우측: 액션 버튼군 (학생관리 페이지와 동일한 text-sm font-bold) */}
       <div className="flex items-center gap-2">
         <button
           onClick={openStudentModal}
-          className="flex items-center gap-1.5 px-3 py-1 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold shadow-2xs transition cursor-pointer"
+          className="flex items-center gap-1.5 px-3 py-1 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 text-sm font-bold shadow-2xs transition cursor-pointer"
         >
-          <UserPlus className="w-3.5 h-3.5 text-blue-600" />
+          <UserPlus className="w-4 h-4 text-blue-600" />
           <span>학생 추가</span>
         </button>
 
         <button
           onClick={() => setDetailDrawerTab('route')}
-          className="flex items-center gap-1.5 px-3 py-1 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold shadow-2xs transition cursor-pointer"
+          className="flex items-center gap-1.5 px-3 py-1 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 text-sm font-bold shadow-2xs transition cursor-pointer"
         >
-          <SlidersHorizontal className="w-3.5 h-3.5 text-slate-600" />
+          <SlidersHorizontal className="w-4 h-4 text-slate-600" />
           <span>운행 설정</span>
         </button>
 
         <button
           onClick={saveChanges}
-          className={`flex items-center gap-1.5 px-3.5 py-1 rounded-lg text-xs font-bold text-white shadow-sm transition cursor-pointer ${
+          className={`flex items-center gap-1.5 px-3.5 py-1 rounded-lg text-sm font-bold text-white shadow-sm transition cursor-pointer ${
             saveStatus === 'saving'
               ? 'bg-blue-400'
               : saveStatus === 'error'
@@ -158,7 +158,7 @@ export const TopToolbar: React.FC = () => {
             </>
           ) : (
             <>
-              <Check className="w-3.5 h-3.5" />
+              <Check className="w-4 h-4" />
               <span>저장됨</span>
             </>
           )}
