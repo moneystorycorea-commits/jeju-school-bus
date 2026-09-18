@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { X, UserPlus, Check, Copy, Clock } from 'lucide-react';
 import { useScheduleStore } from '@/lib/store/useScheduleStore';
 import { parseTimeToMinute } from '@/lib/scheduling/time';
@@ -6,13 +6,30 @@ import { StudentWeeklySchedule } from '@/types';
 import { COMPLEX_BUILDINGS, getUnitsForBuilding } from '@/lib/constants/buildingUnits';
 
 export const StudentFormModal: React.FC = () => {
-  const { isStudentModalOpen, closeStudentModal, addStudent, schools } = useScheduleStore();
+  const { isStudentModalOpen, closeStudentModal, addStudent, schools, students } = useScheduleStore();
+
+  // 기존 등록 학생 수가 많은 순서대로 학교 정렬 (동률일 경우 학교명 순)
+  const sortedSchools = useMemo(() => {
+    const counts: Record<string, number> = {};
+    students.forEach((s) => {
+      counts[s.schoolId] = (counts[s.schoolId] || 0) + 1;
+    });
+
+    return [...schools].sort((a, b) => {
+      const countA = counts[a.id] || 0;
+      const countB = counts[b.id] || 0;
+      if (countB !== countA) return countB - countA; // 많은 순 내림차순
+      return a.shortName.localeCompare(b.shortName);
+    });
+  }, [schools, students]);
+
+  const defaultSchoolId = sortedSchools[0]?.id || 'NLCS';
 
   const [name, setName] = useState('');
   const [building, setBuilding] = useState('');
   const [unit, setUnit] = useState('');
-  const [schoolId, setSchoolId] = useState('CHEONG'); // 저청초 기본
-  const [grade, setGrade] = useState('1학년');
+  const [schoolId, setSchoolId] = useState(defaultSchoolId);
+  const [grade, setGrade] = useState('G1');
   const [emergencyContact, setEmergencyContact] = useState('');
 
   const [gender, setGender] = useState<'남' | '여'>('남');
@@ -50,6 +67,16 @@ export const StudentFormModal: React.FC = () => {
       setGrade(validGrades[0]);
     }
   };
+
+  // 모달이 열릴 때 재학생 수가 가장 많은 최상위 학교(NLCS 등)로 자동 초기화
+  useEffect(() => {
+    if (isStudentModalOpen) {
+      const topSchoolId = sortedSchools[0]?.id || 'NLCS';
+      setSchoolId(topSchoolId);
+      const validGrades = getGradeOptions(topSchoolId);
+      setGrade(validGrades[0] || 'G1');
+    }
+  }, [isStudentModalOpen, sortedSchools]);
 
   // 요일별 등/하교 희망시간 상태 (1:월, 2:화, 3:수, 4:목, 5:금)
   const weekdays = [
@@ -273,7 +300,7 @@ export const StudentFormModal: React.FC = () => {
                 onChange={(e) => handleSchoolChange(e.target.value)}
                 className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium bg-white cursor-pointer"
               >
-                {schools.map((sc) => (
+                {sortedSchools.map((sc) => (
                   <option key={sc.id} value={sc.id}>
                     {sc.shortName}
                   </option>

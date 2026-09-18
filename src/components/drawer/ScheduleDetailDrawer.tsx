@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   X,
   Plus,
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useScheduleStore } from '@/lib/store/useScheduleStore';
 import { formatMinute, getWeekdayNumber } from '@/lib/scheduling/time';
+import { RouteSegment } from '@/types';
 
 export const ScheduleDetailDrawer: React.FC = () => {
   const {
@@ -100,6 +101,82 @@ export const ScheduleDetailDrawer: React.FC = () => {
   const [newHolidayStartDate, setNewHolidayStartDate] = useState(serviceDate);
   const [newHolidayEndDate, setNewHolidayEndDate] = useState(serviceDate);
   const [newHolidayType, setNewHolidayType] = useState<'vacation' | 'school_closed' | 'school_event' | 'other'>('vacation');
+
+  // 기존 등록 학생 수가 많은 순서대로 학교 정렬 (동률일 경우 학교명 순)
+  const sortedSchools = useMemo(() => {
+    const counts: Record<string, number> = {};
+    students.forEach((s) => {
+      counts[s.schoolId] = (counts[s.schoolId] || 0) + 1;
+    });
+
+    return [...schools].sort((a, b) => {
+      const countA = counts[a.id] || 0;
+      const countB = counts[b.id] || 0;
+      if (countB !== countA) return countB - countA;
+      return a.shortName.localeCompare(b.shortName);
+    });
+  }, [schools, students]);
+
+  // 구간 소요시간 필터: 'all' | 'today' | 'v1' | 'v2'
+  const [routeFilter, setRouteFilter] = useState<'all' | 'today' | 'v1' | 'v2'>('all');
+
+  const weekdayNames: Record<number, string> = { 1: '월', 2: '화', 3: '수', 4: '목', 5: '금' };
+
+  // 현재 요일에 실제 탑승하는 학생들의 학교 ID
+  const activeSchoolsToday = useMemo(() => {
+    const active = new Set<string>();
+    students.forEach((s) => {
+      const ws = s.weeklySchedule?.[selectedWeekday];
+      if (ws && (ws.morningActive || ws.afternoonActive)) {
+        active.add(s.schoolId);
+      }
+    });
+    return active;
+  }, [students, selectedWeekday]);
+
+  const getSegmentVehicle = (seg: RouteSegment): '1호차' | '2호차' => {
+    const v1Locs = new Set(['NLCS_MAIN', 'NLCS_JUNIOR', 'CHEONG_MAIN', 'CHEONG_MID_MAIN']);
+    if (v1Locs.has(seg.originLocationId) || v1Locs.has(seg.destinationLocationId)) {
+      return '1호차';
+    }
+    return '2호차';
+  };
+
+  const getSegmentSchoolIds = (seg: RouteSegment): string[] => {
+    const ids: string[] = [];
+    if (seg.originLocationId.includes('NLCS') || seg.destinationLocationId.includes('NLCS')) ids.push('NLCS');
+    if (seg.originLocationId.includes('CHEONG_MID') || seg.destinationLocationId.includes('CHEONG_MID')) ids.push('CHEONG_MID');
+    else if (seg.originLocationId.includes('CHEONG') || seg.destinationLocationId.includes('CHEONG')) ids.push('CHEONG');
+    if (seg.originLocationId.includes('BHA') || seg.destinationLocationId.includes('BHA')) ids.push('BHA');
+    if (seg.originLocationId.includes('SJA') || seg.destinationLocationId.includes('SJA')) ids.push('SJA');
+    if (seg.originLocationId.includes('KIS') || seg.destinationLocationId.includes('KIS')) ids.push('KIS');
+    return ids;
+  };
+
+  const filteredRouteSegments = useMemo(() => {
+    return routeSegments.filter((seg) => {
+      if (routeFilter === 'all') return true;
+      if (routeFilter === 'v1') return getSegmentVehicle(seg) === '1호차';
+      if (routeFilter === 'v2') return getSegmentVehicle(seg) === '2호차';
+      if (routeFilter === 'today') {
+        const segSchools = getSegmentSchoolIds(seg);
+        return segSchools.some((sch) => activeSchoolsToday.has(sch));
+      }
+      return true;
+    });
+  }, [routeSegments, routeFilter, activeSchoolsToday]);
+
+  const formatLocationName = (locId: string): string => {
+    return locId
+      .replace('COMPLEX_MAIN', '아주더하이클래스')
+      .replace('CHEONG_MID_MAIN', '저청중 정문')
+      .replace('CHEONG_MAIN', '저청초 정문')
+      .replace('NLCS_MAIN', 'NLCS 본관')
+      .replace('NLCS_JUNIOR', 'NLCS 주니어')
+      .replace('BHA_GATE1', 'BHA G1')
+      .replace('SJA_GATE3', 'SJA G3')
+      .replace('KIS_MAIN', 'KIS 본관');
+  };
 
   // 드로어가 닫혀 있을 때: 오른쪽 구간 커서 감지 스트립 & 플로팅 탭 렌더링
   if (!isDetailDrawerOpen) {
@@ -544,7 +621,7 @@ export const ScheduleDetailDrawer: React.FC = () => {
                       onChange={(e) => setNewHolidaySchoolId(e.target.value)}
                       className="w-full mt-1 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-800"
                     >
-                      {schools.map((sc) => (
+                      {sortedSchools.map((sc) => (
                         <option key={sc.id} value={sc.id}>
                           {sc.shortName} ({sc.name})
                         </option>
@@ -712,53 +789,120 @@ export const ScheduleDetailDrawer: React.FC = () => {
               </button>
             </div>
 
-            <div className="flex flex-col gap-2 max-h-80 overflow-y-auto pr-1">
-              {routeSegments.map((seg) => {
-                const originLabel = seg.originLocationId
-                  .replace('COMPLEX_MAIN', '아주더하이클래스')
-                  .replace('CHEONG_MAIN', '저청초')
-                  .replace('_MAIN', '')
-                  .replace('_GATE1', ' G1')
-                  .replace('_GATE3', ' G3');
-                const destLabel = seg.destinationLocationId
-                  .replace('COMPLEX_MAIN', '아주더하이클래스')
-                  .replace('CHEONG_MAIN', '저청초')
-                  .replace('_MAIN', '')
-                  .replace('_GATE1', ' G1')
-                  .replace('_GATE3', ' G3');
+            {/* 필터 탭: [전체], [오늘 운행 학교], [1호차], [2호차] */}
+            <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => setRouteFilter('all')}
+                className={`flex-1 py-1 px-1.5 rounded-lg text-center transition cursor-pointer ${
+                  routeFilter === 'all'
+                    ? 'bg-white text-slate-900 shadow-xs font-black'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                전체 ({routeSegments.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setRouteFilter('today')}
+                className={`flex-1 py-1 px-1.5 rounded-lg text-center transition cursor-pointer ${
+                  routeFilter === 'today'
+                    ? 'bg-blue-600 text-white shadow-xs font-black'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+                title={`현재 선택된 ${weekdayNames[selectedWeekday] || '월'}요일 운행 학교만 필터링`}
+              >
+                오늘({weekdayNames[selectedWeekday] || '월'}) 운행
+              </button>
+              <button
+                type="button"
+                onClick={() => setRouteFilter('v1')}
+                className={`py-1 px-2 rounded-lg transition cursor-pointer ${
+                  routeFilter === 'v1'
+                    ? 'bg-blue-100 text-blue-900 shadow-xs font-black'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                1호차
+              </button>
+              <button
+                type="button"
+                onClick={() => setRouteFilter('v2')}
+                className={`py-1 px-2 rounded-lg transition cursor-pointer ${
+                  routeFilter === 'v2'
+                    ? 'bg-purple-100 text-purple-900 shadow-xs font-black'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                2호차
+              </button>
+            </div>
 
-                return (
-                  <div
-                    key={seg.id}
-                    className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs hover:border-slate-300 transition"
-                  >
-                    <span className="font-bold text-slate-800 truncate max-w-[200px]">
-                      {originLabel} → {destLabel}
-                    </span>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="w-8 text-center font-bold text-slate-900 font-mono text-xs">
-                        {seg.travelMinutes}분
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => updateRouteSegmentTravelTime(seg.id, -1)}
-                        className="w-6 h-6 rounded-md bg-white border border-slate-300 flex items-center justify-center hover:bg-slate-100 text-slate-700 cursor-pointer shadow-2xs"
-                        title="소요시간 1분 감소"
-                      >
-                        <Minus className="w-3 h-3" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => updateRouteSegmentTravelTime(seg.id, 1)}
-                        className="w-6 h-6 rounded-md bg-white border border-slate-300 flex items-center justify-center hover:bg-slate-100 text-slate-700 cursor-pointer shadow-2xs"
-                        title="소요시간 1분 증가"
-                      >
-                        <Plus className="w-3 h-3" />
-                      </button>
+            {/* 오늘 운행 모드 안내 배너 */}
+            {routeFilter === 'today' && (
+              <div className="px-2.5 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-[11px] text-blue-900 font-semibold flex items-center justify-between">
+                <span>🗓️ {weekdayNames[selectedWeekday] || '월'}요일 실제 탑승 학교</span>
+                <span className="font-bold text-blue-700 font-mono">
+                  {Array.from(activeSchoolsToday).join(', ') || '운행 없음'}
+                </span>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-2 max-h-84 overflow-y-auto pr-1">
+              {filteredRouteSegments.length === 0 ? (
+                <div className="p-4 text-center text-xs text-slate-400 font-medium bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  해당 조건에 일치하는 운행 구간이 없습니다.
+                </div>
+              ) : (
+                filteredRouteSegments.map((seg) => {
+                  const vehicle = getSegmentVehicle(seg);
+                  const isV1 = vehicle === '1호차';
+
+                  return (
+                    <div
+                      key={seg.id}
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs hover:border-slate-300 transition gap-2"
+                    >
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-black shrink-0 ${
+                            isV1
+                              ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                              : 'bg-purple-100 text-purple-800 border border-purple-200'
+                          }`}
+                        >
+                          {vehicle}
+                        </span>
+                        <span className="font-bold text-slate-800 truncate" title={`${formatLocationName(seg.originLocationId)} → ${formatLocationName(seg.destinationLocationId)}`}>
+                          {formatLocationName(seg.originLocationId)} → {formatLocationName(seg.destinationLocationId)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="w-8 text-center font-bold text-slate-900 font-mono text-xs">
+                          {seg.travelMinutes}분
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => updateRouteSegmentTravelTime(seg.id, -1)}
+                          className="w-6 h-6 rounded-md bg-white border border-slate-300 flex items-center justify-center hover:bg-slate-100 text-slate-700 cursor-pointer shadow-2xs"
+                          title="소요시간 1분 감소"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateRouteSegmentTravelTime(seg.id, 1)}
+                          className="w-6 h-6 rounded-md bg-white border border-slate-300 flex items-center justify-center hover:bg-slate-100 text-slate-700 cursor-pointer shadow-2xs"
+                          title="소요시간 1분 증가"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
         )}

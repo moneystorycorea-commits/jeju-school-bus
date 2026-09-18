@@ -37,7 +37,7 @@ export const AppHeader: React.FC = () => {
           )}
         </button>
 
-        {/* 역할(Role) 스위처 - 테스트용 */}
+        {/* 역할(Role) 스위처 - 권한 설정 드롭다운 */}
         <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs sm:text-sm">
           <span className="text-slate-600 px-0.5 font-bold flex items-center gap-1 text-xs">
             <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
@@ -52,25 +52,6 @@ export const AppHeader: React.FC = () => {
             <option value="guardian">학부모 (GUARDIAN)</option>
             <option value="student">학생 (STUDENT)</option>
           </select>
-        </div>
-
-        {/* 아주더하이클래스 관리자 프로필 & 로고 */}
-        <div className="flex items-center gap-2 pl-2.5 border-l border-slate-200">
-          <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center p-0.5 shadow-2xs overflow-hidden">
-            <img
-              src="/logo-highclass.png"
-              alt="아주더하이클래스"
-              className="w-full h-full object-contain"
-            />
-          </div>
-          <div className="hidden sm:flex flex-col text-left leading-tight">
-            <span className="text-xs sm:text-sm font-black text-slate-900 tracking-tight">
-              {currentRole === 'admin' ? '아주더하이클래스' : currentRole === 'guardian' ? '학부모' : '학생'}
-            </span>
-            <span className="text-[11px] text-slate-500 font-medium">
-              {currentRole === 'admin' ? '관리사무소' : '106동 301호'}
-            </span>
-          </div>
         </div>
       </div>
     </header>

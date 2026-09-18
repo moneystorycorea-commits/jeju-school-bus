@@ -122,25 +122,39 @@ export const INITIAL_LOCATIONS: Location[] = [
     type: 'school_gate',
     schoolId: 'CHEONG',
   },
+  {
+    id: 'CHEONG_MID_MAIN',
+    name: '저청중 정문',
+    shortName: '저청중',
+    type: 'school_gate',
+    schoolId: 'CHEONG_MID',
+  },
 ];
 
 export const INITIAL_ROUTE_SEGMENTS: RouteSegment[] = [
-  // 1호차: 단지 <-> NLCS (10분), 단지 <-> 저청 (5분)
+  // [1호차 전담 구간 - NLCS, 저청초, 저청중]
   { id: 'rs-comp-nlcs', originLocationId: 'COMPLEX_MAIN', destinationLocationId: 'NLCS_MAIN', travelMinutes: 10, bufferMinutes: 0, profile: 'normal' },
   { id: 'rs-nlcs-comp', originLocationId: 'NLCS_MAIN', destinationLocationId: 'COMPLEX_MAIN', travelMinutes: 10, bufferMinutes: 0, profile: 'normal' },
   { id: 'rs-comp-cheong', originLocationId: 'COMPLEX_MAIN', destinationLocationId: 'CHEONG_MAIN', travelMinutes: 5, bufferMinutes: 0, profile: 'normal' },
   { id: 'rs-cheong-comp', originLocationId: 'CHEONG_MAIN', destinationLocationId: 'COMPLEX_MAIN', travelMinutes: 5, bufferMinutes: 0, profile: 'normal' },
+  { id: 'rs-comp-cheong-mid', originLocationId: 'COMPLEX_MAIN', destinationLocationId: 'CHEONG_MID_MAIN', travelMinutes: 5, bufferMinutes: 0, profile: 'normal' },
+  { id: 'rs-cheong-mid-comp', originLocationId: 'CHEONG_MID_MAIN', destinationLocationId: 'COMPLEX_MAIN', travelMinutes: 5, bufferMinutes: 0, profile: 'normal' },
+  { id: 'rs-cheong-cheong-mid', originLocationId: 'CHEONG_MAIN', destinationLocationId: 'CHEONG_MID_MAIN', travelMinutes: 2, bufferMinutes: 0, profile: 'normal' },
+  { id: 'rs-cheong-mid-cheong', originLocationId: 'CHEONG_MID_MAIN', destinationLocationId: 'CHEONG_MAIN', travelMinutes: 2, bufferMinutes: 0, profile: 'normal' },
+  { id: 'rs-nlcs-cheong', originLocationId: 'NLCS_MAIN', destinationLocationId: 'CHEONG_MAIN', travelMinutes: 7, bufferMinutes: 0, profile: 'normal' },
+  { id: 'rs-cheong-nlcs', originLocationId: 'CHEONG_MAIN', destinationLocationId: 'NLCS_MAIN', travelMinutes: 7, bufferMinutes: 0, profile: 'normal' },
 
-  // 2호차: 단지 -> BHA (10분) -> SJA (4분) -> KIS (4분) -> 단지 (15분)
+  // [2호차 전담 구간 - BHA, SJA, KIS]
   { id: 'rs-comp-bha', originLocationId: 'COMPLEX_MAIN', destinationLocationId: 'BHA_GATE1', travelMinutes: 10, bufferMinutes: 0, profile: 'normal' },
   { id: 'rs-bha-sja', originLocationId: 'BHA_GATE1', destinationLocationId: 'SJA_GATE3', travelMinutes: 4, bufferMinutes: 0, profile: 'normal' },
   { id: 'rs-sja-kis', originLocationId: 'SJA_GATE3', destinationLocationId: 'KIS_MAIN', travelMinutes: 4, bufferMinutes: 0, profile: 'normal' },
   { id: 'rs-kis-comp', originLocationId: 'KIS_MAIN', destinationLocationId: 'COMPLEX_MAIN', travelMinutes: 15, bufferMinutes: 0, profile: 'normal' },
-  
-  // 대체 및 복귀/연결 경로
   { id: 'rs-bha-comp', originLocationId: 'BHA_GATE1', destinationLocationId: 'COMPLEX_MAIN', travelMinutes: 10, bufferMinutes: 0, profile: 'normal' },
   { id: 'rs-sja-comp', originLocationId: 'SJA_GATE3', destinationLocationId: 'COMPLEX_MAIN', travelMinutes: 15, bufferMinutes: 0, profile: 'normal' },
   { id: 'rs-bha-kis', originLocationId: 'BHA_GATE1', destinationLocationId: 'KIS_MAIN', travelMinutes: 6, bufferMinutes: 0, profile: 'normal' },
+  { id: 'rs-kis-bha', originLocationId: 'KIS_MAIN', destinationLocationId: 'BHA_GATE1', travelMinutes: 6, bufferMinutes: 0, profile: 'normal' },
+  { id: 'rs-sja-bha', originLocationId: 'SJA_GATE3', destinationLocationId: 'BHA_GATE1', travelMinutes: 4, bufferMinutes: 0, profile: 'normal' },
+  { id: 'rs-kis-sja', originLocationId: 'KIS_MAIN', destinationLocationId: 'SJA_GATE3', travelMinutes: 4, bufferMinutes: 0, profile: 'normal' },
   { id: 'rs-comp-sja', originLocationId: 'COMPLEX_MAIN', destinationLocationId: 'SJA_GATE3', travelMinutes: 10, bufferMinutes: 0, profile: 'normal' },
   { id: 'rs-comp-kis', originLocationId: 'COMPLEX_MAIN', destinationLocationId: 'KIS_MAIN', travelMinutes: 10, bufferMinutes: 0, profile: 'normal' },
 ];
