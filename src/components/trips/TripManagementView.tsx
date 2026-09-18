@@ -75,11 +75,70 @@ export const TripManagementView: React.FC = () => {
         }).join(' · ')
       : '-';
 
+    // 단지출발 + 경유순서 + 학교도착을 하나로 결합한 단계별 코스 (combinedSteps)
+    const combinedSteps: { name: string; time: string; isStart?: boolean }[] = [];
+
+    if (isMorning) {
+      // 1. 단지 출발
+      combinedSteps.push({
+        name: '단지',
+        time: formatMinute(template.defaultDepartureMinute),
+        isStart: true,
+      });
+
+      // 2. 경유 학교들 및 각 학교 도착 시간
+      template.stops.forEach((stop) => {
+        const schoolCode = stop.locationId.split('_')[0];
+        const gateSuffix = stop.locationId.includes('GATE')
+          ? ` G${stop.locationId.split('GATE')[1]}`
+          : '';
+        const sc = schools.find((s) => s.id === schoolCode);
+        const displayName = (schoolCode === 'CHEONG' ? '저청초' : (sc?.shortName || schoolCode)) + gateSuffix;
+        const instStop = instance?.stops.find((s) => s.locationId === stop.locationId);
+        const time = instStop ? formatMinute(instStop.arrivalMinute) : '';
+
+        combinedSteps.push({
+          name: displayName,
+          time,
+        });
+      });
+    } else {
+      // 하교: 경유 학교들 픽업 시간 -> 단지
+      template.stops.forEach((stop, idx) => {
+        const schoolCode = stop.locationId.split('_')[0];
+        const gateSuffix = stop.locationId.includes('GATE')
+          ? ` G${stop.locationId.split('GATE')[1]}`
+          : '';
+        const sc = schools.find((s) => s.id === schoolCode);
+        const displayName = (schoolCode === 'CHEONG' ? '저청초' : (sc?.shortName || schoolCode)) + gateSuffix;
+        const instStop = instance?.stops.find((s) => s.locationId === stop.locationId);
+        const time = instStop ? formatMinute(instStop.arrivalMinute) : formatMinute(template.defaultDepartureMinute);
+
+        combinedSteps.push({
+          name: displayName,
+          time,
+          isStart: idx === 0,
+        });
+      });
+
+      // 단지 도착
+      combinedSteps.push({
+        name: '단지',
+        time: '',
+      });
+    }
+
+    const combinedRouteText = combinedSteps
+      .map((s) => (s.time ? `${s.name} ${s.time}` : s.name))
+      .join(' → ');
+
     return {
       vehicleName,
       departureTime: formatMinute(template.defaultDepartureMinute),
       routeStopsText,
       arrivalTimesText,
+      combinedSteps,
+      combinedRouteText,
       weekdaysText: formatWeekdays(template.weekdays),
       refReturn,
       calcReturn,
@@ -117,9 +176,7 @@ export const TripManagementView: React.FC = () => {
               <thead>
                 <tr className="bg-slate-100 text-slate-900 font-black border-b border-slate-500">
                   <th className="py-1.5 px-1.5 w-[8%] text-center border-r border-slate-400">호차</th>
-                  <th className="py-1.5 px-1.5 w-[12%] text-center border-r border-slate-400">단지 출발</th>
-                  <th className="py-1.5 px-2 w-[34%] border-r border-slate-400">경유 순서</th>
-                  <th className="py-1.5 px-2 w-[26%] border-r border-slate-400">학교 도착 예정 (계산)</th>
+                  <th className="py-1.5 px-2.5 w-[72%] border-r border-slate-400">운행 코스 및 시간</th>
                   <th className="py-1.5 px-1.5 w-[10%] text-center border-r border-slate-400">운행 요일</th>
                   <th className="py-1.5 px-1.5 w-[10%] text-center">단지 복귀</th>
                 </tr>
@@ -132,14 +189,22 @@ export const TripManagementView: React.FC = () => {
                       <td className="py-1.5 px-1.5 text-center font-bold border-r border-slate-300">
                         {data.vehicleName}
                       </td>
-                      <td className="py-1.5 px-1.5 text-center font-mono font-bold text-blue-700 border-r border-slate-300">
-                        {data.departureTime}
-                      </td>
-                      <td className="py-1.5 px-2 font-medium border-r border-slate-300 break-words leading-tight">
-                        {data.routeStopsText}
-                      </td>
-                      <td className="py-1.5 px-2 font-mono text-[10px] font-medium border-r border-slate-300 break-words leading-tight">
-                        {data.arrivalTimesText}
+                      <td className="py-1.5 px-2.5 border-r border-slate-300 leading-tight">
+                        <div className="flex flex-wrap items-center gap-y-1 gap-x-1.5 text-[10px]">
+                          {data.combinedSteps.map((step, idx) => (
+                            <span key={idx} className="inline-flex items-center gap-1 whitespace-nowrap">
+                              {idx > 0 && <span className="text-slate-400 font-bold mx-0.5 text-[9px]">→</span>}
+                              <span className={step.isStart ? "font-black text-blue-900" : "font-bold text-slate-800"}>
+                                {step.name}
+                              </span>
+                              {step.time && (
+                                <span className="font-mono font-bold text-[9.5px] text-blue-700 bg-blue-50 px-1 py-0.2 rounded border border-blue-200/70">
+                                  {step.time}
+                                </span>
+                              )}
+                            </span>
+                          ))}
+                        </div>
                       </td>
                       <td className="py-1.5 px-1.5 text-center font-bold border-r border-slate-300">
                         {data.weekdaysText}
@@ -170,9 +235,7 @@ export const TripManagementView: React.FC = () => {
               <thead>
                 <tr className="bg-slate-100 text-slate-900 font-black border-b border-slate-500">
                   <th className="py-1.5 px-1.5 w-[8%] text-center border-r border-slate-400">호차</th>
-                  <th className="py-1.5 px-1.5 w-[12%] text-center border-r border-slate-400">학교 출발</th>
-                  <th className="py-1.5 px-2 w-[34%] border-r border-slate-400">경유 순서</th>
-                  <th className="py-1.5 px-2 w-[26%] border-r border-slate-400">학교 픽업 예정 (계산)</th>
+                  <th className="py-1.5 px-2.5 w-[72%] border-r border-slate-400">운행 코스 및 시간</th>
                   <th className="py-1.5 px-1.5 w-[10%] text-center border-r border-slate-400">운행 요일</th>
                   <th className="py-1.5 px-1.5 w-[10%] text-center">단지 복귀</th>
                 </tr>
@@ -185,14 +248,22 @@ export const TripManagementView: React.FC = () => {
                       <td className="py-1.5 px-1.5 text-center font-bold border-r border-slate-300">
                         {data.vehicleName}
                       </td>
-                      <td className="py-1.5 px-1.5 text-center font-mono font-bold text-amber-700 border-r border-slate-300">
-                        {data.departureTime}
-                      </td>
-                      <td className="py-1.5 px-2 font-medium border-r border-slate-300 break-words leading-tight">
-                        {data.routeStopsText}
-                      </td>
-                      <td className="py-1.5 px-2 font-mono text-[10px] font-medium border-r border-slate-300 break-words leading-tight">
-                        {data.arrivalTimesText}
+                      <td className="py-1.5 px-2.5 border-r border-slate-300 leading-tight">
+                        <div className="flex flex-wrap items-center gap-y-1 gap-x-1.5 text-[10px]">
+                          {data.combinedSteps.map((step, idx) => (
+                            <span key={idx} className="inline-flex items-center gap-1 whitespace-nowrap">
+                              {idx > 0 && <span className="text-slate-400 font-bold mx-0.5 text-[9px]">→</span>}
+                              <span className={step.isStart ? "font-black text-amber-900" : "font-bold text-slate-800"}>
+                                {step.name}
+                              </span>
+                              {step.time && (
+                                <span className="font-mono font-bold text-[9.5px] text-amber-700 bg-amber-50 px-1 py-0.2 rounded border border-amber-200/70">
+                                  {step.time}
+                                </span>
+                              )}
+                            </span>
+                          ))}
+                        </div>
                       </td>
                       <td className="py-1.5 px-1.5 text-center font-bold border-r border-slate-300">
                         {data.weekdaysText}
@@ -313,13 +384,7 @@ export const TripManagementView: React.FC = () => {
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50 text-slate-700 text-sm font-bold">
                   <th className="py-2.5 px-3 w-16 whitespace-nowrap">호차</th>
-                  <th className="py-2.5 px-3 w-24 whitespace-nowrap">
-                    {scheduleType === 'MORNING' ? '단지 출발' : '학교 출발'}
-                  </th>
-                  <th className="py-2.5 px-3 min-w-[200px] whitespace-nowrap">경유 순서</th>
-                  <th className="py-2.5 px-3 min-w-[240px] whitespace-nowrap">
-                    {scheduleType === 'MORNING' ? '학교 도착 (자동계산)' : '학교 픽업 (자동계산)'}
-                  </th>
+                  <th className="py-2.5 px-3.5 min-w-[340px]">운행 코스 및 시간</th>
                   <th className="py-2.5 px-3 w-20 text-center whitespace-nowrap">운행 요일</th>
                   <th className="py-2.5 px-3 w-28 whitespace-nowrap">단지 복귀</th>
                   <th className="py-2.5 px-3 text-center w-16 whitespace-nowrap print:hidden">상태</th>
@@ -334,14 +399,28 @@ export const TripManagementView: React.FC = () => {
                       <td className="py-2.5 px-3 font-bold text-slate-900 text-sm whitespace-nowrap">
                         {data.vehicleName}
                       </td>
-                      <td className="py-2.5 px-3 font-bold text-blue-600 font-mono text-sm whitespace-nowrap">
-                        {data.departureTime}
-                      </td>
-                      <td className="py-2.5 px-3 font-semibold text-slate-800 text-sm whitespace-nowrap">
-                        {data.routeStopsText}
-                      </td>
-                      <td className="py-2.5 px-3 font-mono font-medium text-slate-700 text-sm whitespace-nowrap">
-                        {data.arrivalTimesText}
+                      <td className="py-2.5 px-3.5 text-sm">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {data.combinedSteps.map((step, idx) => (
+                            <span key={idx} className="inline-flex items-center gap-1.5">
+                              {idx > 0 && <span className="text-slate-400 font-bold text-xs mx-0.5">→</span>}
+                              <span className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-lg px-2 py-1 shadow-2xs transition">
+                                <span className={`text-xs ${step.isStart ? 'font-black text-slate-900' : 'font-bold text-slate-800'}`}>
+                                  {step.name}
+                                </span>
+                                {step.time && (
+                                  <span className={`font-mono font-bold text-xs px-1.5 py-0.5 rounded border ${
+                                    template.type === 'MORNING'
+                                      ? 'text-blue-700 bg-blue-50 border-blue-200/70'
+                                      : 'text-amber-700 bg-amber-50 border-amber-200/70'
+                                  }`}>
+                                    {step.time}
+                                  </span>
+                                )}
+                              </span>
+                            </span>
+                          ))}
+                        </div>
                       </td>
                       <td className="py-2.5 px-3 font-bold text-slate-800 text-sm text-center whitespace-nowrap">
                         {data.weekdaysText}
