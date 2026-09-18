@@ -43,6 +43,56 @@ export const StudentDetailPanel: React.FC = () => {
     selectStudent(students[nextIndex].id, false, true);
   };
 
+  // 터치 제스처 (손으로 좌우로 쓸어서 이전/다음 학생 넘기기)
+  const touchStartXRef = React.useRef<number | null>(null);
+  const touchStartYRef = React.useRef<number | null>(null);
+  const isHorizontalSwipeRef = React.useRef<boolean | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
+    isHorizontalSwipeRef.current = null;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null || touchStartYRef.current === null) return;
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const diffX = currentX - touchStartXRef.current;
+    const diffY = currentY - touchStartYRef.current;
+
+    // 수평 스와이프인지 수직 스크롤인지 판별 (10px 이상 이동 시)
+    if (isHorizontalSwipeRef.current === null) {
+      if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) {
+        isHorizontalSwipeRef.current = Math.abs(diffX) > Math.abs(diffY);
+      }
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null || isHorizontalSwipeRef.current !== true) {
+      touchStartXRef.current = null;
+      touchStartYRef.current = null;
+      isHorizontalSwipeRef.current = null;
+      return;
+    }
+    const endX = e.changedTouches[0].clientX;
+    const diffX = endX - touchStartXRef.current;
+    const minSwipeThreshold = 40; // 40px 이상 이동 시 넘김
+
+    if (diffX < -minSwipeThreshold) {
+      // 왼쪽으로 밂 -> 다음 학생
+      handleNextStudent();
+    } else if (diffX > minSwipeThreshold) {
+      // 오른쪽으로 밂 -> 이전 학생
+      handlePrevStudent();
+    }
+
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+    isHorizontalSwipeRef.current = null;
+  };
+
   useEffect(() => {
     if (!isStudentPanelOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -69,7 +119,6 @@ export const StudentDetailPanel: React.FC = () => {
 
   const school = schools.find((sc) => sc.id === student.schoolId);
   const privateInfo = getPrivateInfo(student.id);
-  const studentIndex = students.findIndex((s) => s.id === student.id) + 1;
 
   // 비상연락망 마스킹 처리
   const rawPhone = privateInfo?.emergencyContact || '010-3849-1234';
@@ -109,28 +158,29 @@ export const StudentDetailPanel: React.FC = () => {
 
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-[740px] w-full p-5 sm:p-7 md:p-8 flex flex-col gap-4 sm:gap-5 select-none animate-scaleIn max-h-[92vh] overflow-y-auto z-10"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        className="relative bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-[740px] w-full p-5 sm:p-7 md:p-8 flex flex-col gap-4 sm:gap-5 select-none animate-scaleIn max-h-[92vh] overflow-y-auto z-10 touch-pan-y"
       >
         {/* 모달 헤더 */}
         <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-100">
           <div className="flex items-center gap-2.5 sm:gap-3.5">
-            {/* 이전/다음 학생 이동 미니 버튼 & 번호 뱃지 */}
-            <div className="flex items-center gap-1">
+            {/* 이전/다음 학생 이동 미니 버튼 (9/16 텍스트 삭제 및 슬림 디자인) */}
+            <div className="flex items-center rounded-xl bg-slate-100 p-0.5 border border-slate-200 shrink-0">
               <button
                 type="button"
                 onClick={handlePrevStudent}
-                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition cursor-pointer"
+                className="w-7 h-7 rounded-lg hover:bg-white text-slate-600 hover:text-slate-900 flex items-center justify-center transition cursor-pointer active:scale-95"
                 title="이전 학생 (←)"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-blue-600 text-white text-xs sm:text-base font-black flex items-center justify-center shadow-sm">
-                {studentIndex}/{students.length}
-              </div>
+              <div className="w-[1px] h-3.5 bg-slate-300 mx-0.5" />
               <button
                 type="button"
                 onClick={handleNextStudent}
-                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition cursor-pointer"
+                className="w-7 h-7 rounded-lg hover:bg-white text-slate-600 hover:text-slate-900 flex items-center justify-center transition cursor-pointer active:scale-95"
                 title="다음 학생 (→)"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -151,7 +201,11 @@ export const StudentDetailPanel: React.FC = () => {
                   </span>
                 )}
               </div>
-              <span className="text-[11px] sm:text-xs font-semibold text-slate-400 mt-0.5">학생 정보 및 주간 통학 프로필</span>
+              <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold text-slate-400 mt-0.5">
+                <span>학생 정보 및 주간 통학 프로필</span>
+                <span className="text-slate-300">·</span>
+                <span className="text-blue-600 font-bold">👈 쓸어서 넘기기 👉</span>
+              </div>
             </div>
           </div>
 
