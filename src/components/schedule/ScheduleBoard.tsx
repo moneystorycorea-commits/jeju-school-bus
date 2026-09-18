@@ -35,8 +35,8 @@ export const ScheduleBoard: React.FC = () => {
   const [sortBy, setSortBy] = useState<'manual' | 'grade' | 'school' | 'name'>('manual');
 
   // 등교: 07:00 (420) ~ 10:30 (630)
-  // 하교: 13:00 (780) ~ 18:30 (1110)
-  const startMinute = scheduleType === 'MORNING' ? 420 : 630;
+  // 하교: 13:00 (780) ~ 18:30 (1110) - 13시 이전 불필요한 공백 제거
+  const startMinute = scheduleType === 'MORNING' ? 420 : 780;
   const endMinute = scheduleType === 'MORNING' ? 630 : 1110;
 
   const conflicts = getConflicts();
