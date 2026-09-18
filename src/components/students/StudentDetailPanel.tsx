@@ -4,6 +4,7 @@ import {
   Eye,
   EyeOff,
   Phone,
+  PhoneCall,
   Home,
   GraduationCap,
   User,
@@ -29,12 +30,69 @@ export const StudentDetailPanel: React.FC = () => {
 
   const [showFullPhone, setShowFullPhone] = useState(false);
   const [showFullStudentPhone, setShowFullStudentPhone] = useState(false);
+  const [phoneToast, setPhoneToast] = useState<string | null>(null);
+  const toastTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 학생 전환 시 민감정보 마스킹 상태 자동 초기화
+  // 학생 전환 시 민감정보 마스킹 상태 및 토스트 자동 초기화
   useEffect(() => {
     setShowFullPhone(false);
     setShowFullStudentPhone(false);
+    setPhoneToast(null);
   }, [selectedStudentId]);
+
+  const fallbackCopyText = (text: string) => {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    } catch (e) {}
+  };
+
+  const copyAndCall = (phone: string, label: string) => {
+    if (currentRole !== 'admin' || !phone) return;
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+
+    // 클립보드에 원본 번호 복사
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(phone).catch(() => fallbackCopyText(phone));
+    } else {
+      fallbackCopyText(phone);
+    }
+
+    setPhoneToast(`${label} 번호 복사 및 통화 연결 (${phone})`);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => {
+      setPhoneToast(null);
+    }, 2500);
+
+    // 모바일 전화 다이얼러 호출 (번호 자동 복붙 상태)
+    window.location.href = `tel:${cleanPhone}`;
+  };
+
+  const handleLinkClick = (e: React.MouseEvent, phone: string, label: string) => {
+    if (currentRole !== 'admin' || !phone) {
+      e.preventDefault();
+      return;
+    }
+    // 클립보드에 원본 번호 복사
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(phone).catch(() => fallbackCopyText(phone));
+    } else {
+      fallbackCopyText(phone);
+    }
+
+    setPhoneToast(`${label} 번호 복사 및 통화 연결 (${phone})`);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => {
+      setPhoneToast(null);
+    }, 2500);
+  };
 
   const handlePrevStudent = () => {
     const currentIndex = students.findIndex((s) => s.id === selectedStudentId);
@@ -177,6 +235,14 @@ export const StudentDetailPanel: React.FC = () => {
         onTouchEnd={handleTouchEnd}
         className="relative bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-[740px] w-full p-5 sm:p-7 md:p-8 flex flex-col gap-3.5 sm:gap-4.5 select-none max-h-[92vh] overflow-y-auto z-10 touch-pan-y"
       >
+        {/* 전화번호 복사 및 바로 연결 알림 토스트 */}
+        {phoneToast && (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 px-4 py-2 bg-slate-900/95 text-white text-xs sm:text-sm font-bold rounded-full shadow-2xl backdrop-blur-md flex items-center gap-2 border border-slate-700 animate-in fade-in slide-in-from-top-2 duration-150 pointer-events-none">
+            <PhoneCall className="w-4 h-4 text-emerald-400 shrink-0 animate-pulse" />
+            <span>{phoneToast}</span>
+          </div>
+        )}
+
         {/* 상단 시퀀스 인디케이터 바 (얇고 세련된 페이지네이션 바) */}
         <div className="w-full flex items-center gap-1">
           {students.map((s) => {
@@ -262,11 +328,34 @@ export const StudentDetailPanel: React.FC = () => {
           </span>
 
           <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm">
-            <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+            {currentRole === 'admin' ? (
+              <button
+                type="button"
+                onClick={() => copyAndCall(rawPhone, '보호자')}
+                className="p-1 -ml-1 rounded-md text-blue-600 hover:bg-blue-100/80 hover:text-blue-800 transition cursor-pointer active:scale-95 flex items-center justify-center"
+                title="보호자에게 전화 걸기 (클립보드 복사)"
+              >
+                <Phone className="w-4 h-4 shrink-0" />
+              </button>
+            ) : (
+              <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+            )}
             보호자 연락처
           </span>
           <div className="flex items-center gap-2">
-            <span className="font-mono font-extrabold text-slate-900">{displayPhone}</span>
+            {currentRole === 'admin' ? (
+              <a
+                href={`tel:${rawPhone.replace(/[^0-9]/g, '')}`}
+                onClick={(e) => handleLinkClick(e, rawPhone, '보호자')}
+                className="font-mono font-extrabold text-blue-700 hover:text-blue-900 flex items-center gap-1.5 py-0.5 px-1.5 -ml-1.5 rounded-lg hover:bg-blue-50 active:scale-95 transition cursor-pointer group"
+                title="보호자에게 전화 걸기 (클립보드 복사)"
+              >
+                <span className="underline decoration-blue-300 underline-offset-4">{displayPhone}</span>
+                <PhoneCall className="w-3.5 h-3.5 text-blue-500 group-hover:text-blue-700 shrink-0 opacity-80 group-hover:opacity-100" />
+              </a>
+            ) : (
+              <span className="font-mono font-extrabold text-slate-900">{displayPhone}</span>
+            )}
             {currentRole === 'admin' && (
               <button
                 type="button"
@@ -280,13 +369,36 @@ export const StudentDetailPanel: React.FC = () => {
           </div>
 
           <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm">
-            <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+            {currentRole === 'admin' && rawStudentPhone ? (
+              <button
+                type="button"
+                onClick={() => copyAndCall(rawStudentPhone, '학생')}
+                className="p-1 -ml-1 rounded-md text-blue-600 hover:bg-blue-100/80 hover:text-blue-800 transition cursor-pointer active:scale-95 flex items-center justify-center"
+                title="학생에게 전화 걸기 (클립보드 복사)"
+              >
+                <Phone className="w-4 h-4 shrink-0" />
+              </button>
+            ) : (
+              <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+            )}
             학생 연락처
           </span>
           <div className="flex items-center gap-2">
-            <span className={`font-mono font-extrabold ${rawStudentPhone ? 'text-slate-900' : 'text-slate-400 font-normal'}`}>
-              {displayStudentPhone}
-            </span>
+            {currentRole === 'admin' && rawStudentPhone ? (
+              <a
+                href={`tel:${rawStudentPhone.replace(/[^0-9]/g, '')}`}
+                onClick={(e) => handleLinkClick(e, rawStudentPhone, '학생')}
+                className="font-mono font-extrabold text-blue-700 hover:text-blue-900 flex items-center gap-1.5 py-0.5 px-1.5 -ml-1.5 rounded-lg hover:bg-blue-50 active:scale-95 transition cursor-pointer group"
+                title="학생에게 전화 걸기 (클립보드 복사)"
+              >
+                <span className="underline decoration-blue-300 underline-offset-4">{displayStudentPhone}</span>
+                <PhoneCall className="w-3.5 h-3.5 text-blue-500 group-hover:text-blue-700 shrink-0 opacity-80 group-hover:opacity-100" />
+              </a>
+            ) : (
+              <span className={`font-mono font-extrabold ${rawStudentPhone ? 'text-slate-900' : 'text-slate-400 font-normal'}`}>
+                {displayStudentPhone}
+              </span>
+            )}
             {currentRole === 'admin' && rawStudentPhone && (
               <button
                 type="button"
