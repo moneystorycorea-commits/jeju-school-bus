@@ -320,15 +320,6 @@ export const StudentDetailPanel: React.FC = () => {
             </div>
           </div>
         )}
-
-        {/* 모달 닫기 버튼 */}
-        <button
-          type="button"
-          onClick={closeStudentPanel}
-          className="w-full py-2.5 sm:py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-sm md:text-base transition cursor-pointer shadow-xs mt-1"
-        >
-          확인 (닫기)
-        </button>
       </div>
     </div>
   );
