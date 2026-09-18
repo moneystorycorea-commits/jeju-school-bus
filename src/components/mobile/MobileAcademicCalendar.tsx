@@ -131,6 +131,69 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
     });
   }, [selectedDayDate, holidays, schoolFilter]);
 
+  // 현재 학교 필터가 적용된 정렬된 학사일정 목록 (시작일 오름차순)
+  const currentFilteredHolidays = useMemo(() => {
+    return holidays
+      .filter((h) => schoolFilter === 'ALL' || h.schoolId === schoolFilter || h.schoolId === 'ALL')
+      .sort((a, b) => a.startDate.localeCompare(b.startDate));
+  }, [holidays, schoolFilter]);
+
+  // 현재 활성화된 이벤트의 인덱스
+  const currentEventIndex = useMemo(() => {
+    if (!activeHoliday) return -1;
+    return currentFilteredHolidays.findIndex((h) => h.id === activeHoliday.id);
+  }, [currentFilteredHolidays, activeHoliday]);
+
+  // 이전 이벤트로 넘기기
+  const handlePrevEvent = () => {
+    if (currentFilteredHolidays.length === 0) return;
+    let nextIdx = currentEventIndex - 1;
+    if (nextIdx < 0) {
+      nextIdx = currentFilteredHolidays.length - 1; // 루프
+    }
+    const prevH = currentFilteredHolidays[nextIdx];
+    onSelectHoliday(prevH);
+  };
+
+  // 다음 이벤트로 넘기기
+  const handleNextEvent = () => {
+    if (currentFilteredHolidays.length === 0) return;
+    let nextIdx = currentEventIndex + 1;
+    if (nextIdx >= currentFilteredHolidays.length) {
+      nextIdx = 0; // 루프
+    }
+    const nextH = currentFilteredHolidays[nextIdx];
+    onSelectHoliday(nextH);
+  };
+
+  // 터치 스와이프 제스처 핸들러
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchEndX, setTouchEndX] = useState<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.targetTouches[0].clientX);
+    setTouchEndX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEndX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartX === null || touchEndX === null) return;
+    const distance = touchStartX - touchEndX;
+    const minSwipeDistance = 40; // 픽셀 기준
+    if (distance > minSwipeDistance) {
+      // 손가락을 왼쪽으로 밂 (Next)
+      handleNextEvent();
+    } else if (distance < -minSwipeDistance) {
+      // 손가락을 오른쪽으로 밂 (Prev)
+      handlePrevEvent();
+    }
+    setTouchStartX(null);
+    setTouchEndX(null);
+  };
+
   // 활성 이벤트 학교 정보
   const activeSchool = schools.find((s) => s.id === activeHoliday?.schoolId);
   const activeDaysCount = activeHoliday
@@ -139,10 +202,59 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
 
   return (
     <div className="flex flex-col gap-3">
-      {/* 1. 활성화된 이벤트 기간 안내 배너 (이벤트 클릭 시 강조) */}
-      {activeHoliday && (
-        <div className="p-3 bg-gradient-to-r from-amber-500/10 via-amber-100/50 to-orange-100/40 border-2 border-amber-300 rounded-2xl flex flex-col gap-2 shadow-xs animate-in fade-in duration-200">
-          <div className="flex items-start justify-between gap-2">
+      {/* 1. 활성화된 이벤트 기간 안내 배너 (좌우 넘기기 제스처 및 이전/다음 버튼 연동) */}
+      {activeHoliday ? (
+        <div
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          className="p-3 bg-gradient-to-r from-amber-500/10 via-amber-100/50 to-orange-100/40 border-2 border-amber-300 rounded-2xl flex flex-col gap-2.5 shadow-xs transition select-none touch-pan-y animate-in fade-in duration-150"
+        >
+          {/* 이전 / 다음 이벤트 내비게이션 바 */}
+          <div className="flex items-center justify-between pb-1 border-b border-amber-200/80">
+            <button
+              type="button"
+              onClick={handlePrevEvent}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white/95 hover:bg-white text-slate-700 text-xs font-black shadow-2xs border border-amber-200 transition cursor-pointer active:scale-95"
+              title="이전 학사일정으로 이동"
+            >
+              <ChevronLeft className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+              <span>이전</span>
+            </button>
+
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-mono font-black text-amber-950 bg-amber-200/90 px-2 py-0.5 rounded-full border border-amber-300">
+                {currentEventIndex >= 0 ? `${currentEventIndex + 1} / ${currentFilteredHolidays.length}` : ''}
+              </span>
+              <span className="text-[10px] font-black text-amber-800">
+                👈 좌우 스와이프 👉
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={handleNextEvent}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white/95 hover:bg-white text-slate-700 text-xs font-black shadow-2xs border border-amber-200 transition cursor-pointer active:scale-95"
+                title="다음 학사일정으로 이동"
+              >
+                <span>다음</span>
+                <ChevronRight className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onSelectHoliday(null)}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-amber-200/50 transition cursor-pointer shrink-0 ml-1"
+                title="기간 강조 닫기"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* 이벤트 본문 정보 (행사명, 학교, 카테고리) */}
+          <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-base leading-none">🌴</span>
               <span className="text-xs font-black text-amber-950">{activeHoliday.name}</span>
@@ -158,17 +270,10 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
                 통학버스 미운행
               </span>
             </div>
-            <button
-              type="button"
-              onClick={() => onSelectHoliday(null)}
-              className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-amber-200/50 transition cursor-pointer shrink-0"
-              title="기간 강조 닫기"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
           </div>
 
-          <div className="flex items-center justify-between text-xs bg-white/80 p-2 rounded-xl border border-amber-200/70">
+          {/* 지정 기간 & 총 기간 */}
+          <div className="flex items-center justify-between text-xs bg-white/85 p-2 rounded-xl border border-amber-200/70 shadow-2xs">
             <div className="flex flex-col">
               <span className="text-[10px] font-bold text-slate-500">지정 기간</span>
               <span className="font-mono text-xs font-extrabold text-amber-950">
@@ -191,6 +296,28 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
           >
             <span>이 기간 첫날({activeHoliday.startDate}) 운행표 화면으로 이동</span>
             <ExternalLink className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ) : (
+        /* 이벤트 박스가 닫혔을 때 다시 열 수 있는 바로가기 카드 */
+        <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-2xl flex items-center justify-between shadow-2xs">
+          <div className="flex items-center gap-2">
+            <span className="text-sm">🌴</span>
+            <div className="flex flex-col">
+              <span className="text-xs font-black text-amber-950">학사일정 둘러보기</span>
+              <span className="text-[10px] text-amber-800">좌우로 넘기며 캘린더 기간을 확인할 수 있습니다</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (currentFilteredHolidays.length > 0) {
+                onSelectHoliday(currentFilteredHolidays[0]);
+              }
+            }}
+            className="px-2.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-2xs transition active:scale-95 cursor-pointer"
+          >
+            일정 카드 열기 ➔
           </button>
         </div>
       )}
@@ -258,7 +385,15 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
               <button
                 key={schId}
                 type="button"
-                onClick={() => setSchoolFilter(schId)}
+                onClick={() => {
+                  setSchoolFilter(schId);
+                  const filtered = holidays
+                    .filter((h) => schId === 'ALL' || h.schoolId === schId || h.schoolId === 'ALL')
+                    .sort((a, b) => a.startDate.localeCompare(b.startDate));
+                  if (filtered.length > 0) {
+                    onSelectHoliday(filtered[0]);
+                  }
+                }}
                 className={`px-2 py-0.5 rounded-md transition cursor-pointer shrink-0 ${
                   isSelected
                     ? 'bg-slate-900 text-white font-black shadow-2xs'
