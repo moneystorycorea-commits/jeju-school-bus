@@ -309,6 +309,16 @@ export const ScheduleDetailDrawer: React.FC = () => {
     }
   };
 
+  // 달력 날짜 더블클릭 시: serviceDate 업데이트 후 스케줄 상세설정 창 자동 닫기 -> 해당 일자 스케줄 화면 전면 노출
+  const handleDateDoubleClick = (day: number) => {
+    handleDateClick(day);
+    if (leaveTimerRef.current) {
+      clearTimeout(leaveTimerRef.current);
+      leaveTimerRef.current = null;
+    }
+    closeDetailDrawer();
+  };
+
   // 방학 등록 제출 핸들러
   const handleAddHolidaySubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -421,9 +431,12 @@ export const ScheduleDetailDrawer: React.FC = () => {
             {/* 3-A. 운행 일자 달력 (클릭 시 왼쪽 창 요일별 운행표 연동 + 학교별 방학 표시) */}
             <div className="flex flex-col gap-2 border border-slate-200 rounded-2xl p-3 bg-slate-50/50">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <CalendarIcon className="w-4 h-4 text-blue-600" />
                   <span className="text-sm font-bold text-slate-900">운행 일자 달력</span>
+                  <span className="text-[10.5px] text-blue-600 font-semibold hidden sm:inline ml-1 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200/60">
+                    💡 일자 더블클릭 시 상세창이 닫히고 스케줄 화면으로 이동
+                  </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
@@ -458,7 +471,14 @@ export const ScheduleDetailDrawer: React.FC = () => {
                     setViewMonth(8); // 9월
                     setServiceDate('2026-09-21');
                   }}
+                  onDoubleClick={() => {
+                    setViewYear(2026);
+                    setViewMonth(8);
+                    setServiceDate('2026-09-21');
+                    closeDetailDrawer();
+                  }}
                   className="px-2 py-0.5 rounded-full bg-blue-100/70 text-blue-800 hover:bg-blue-200 shrink-0 cursor-pointer"
+                  title="클릭: 9월 이동 / 더블클릭: 스케줄 화면 전환"
                 >
                   🌕 9월 추석방학
                 </button>
@@ -469,7 +489,14 @@ export const ScheduleDetailDrawer: React.FC = () => {
                     setViewMonth(9); // 10월
                     setServiceDate('2026-10-31');
                   }}
+                  onDoubleClick={() => {
+                    setViewYear(2026);
+                    setViewMonth(9);
+                    setServiceDate('2026-10-31');
+                    closeDetailDrawer();
+                  }}
                   className="px-2 py-0.5 rounded-full bg-orange-100/70 text-orange-800 hover:bg-orange-200 shrink-0 cursor-pointer"
+                  title="클릭: 10월 이동 / 더블클릭: 스케줄 화면 전환"
                 >
                   🍁 10-11월 가을방학
                 </button>
@@ -480,7 +507,14 @@ export const ScheduleDetailDrawer: React.FC = () => {
                     setViewMonth(11); // 12월
                     setServiceDate('2026-12-21');
                   }}
+                  onDoubleClick={() => {
+                    setViewYear(2026);
+                    setViewMonth(11);
+                    setServiceDate('2026-12-21');
+                    closeDetailDrawer();
+                  }}
                   className="px-2 py-0.5 rounded-full bg-indigo-100/70 text-indigo-800 hover:bg-indigo-200 shrink-0 cursor-pointer"
+                  title="클릭: 12월 이동 / 더블클릭: 스케줄 화면 전환"
                 >
                   ❄️ 12월 겨울방학
                 </button>
@@ -491,7 +525,14 @@ export const ScheduleDetailDrawer: React.FC = () => {
                     setViewMonth(1); // 2월
                     setServiceDate('2027-02-08');
                   }}
+                  onDoubleClick={() => {
+                    setViewYear(2027);
+                    setViewMonth(1);
+                    setServiceDate('2027-02-08');
+                    closeDetailDrawer();
+                  }}
                   className="px-2 py-0.5 rounded-full bg-red-100/70 text-red-800 hover:bg-red-200 shrink-0 cursor-pointer"
+                  title="클릭: 2월 이동 / 더블클릭: 스케줄 화면 전환"
                 >
                   🧧 2월 설날방학
                 </button>
@@ -502,7 +543,14 @@ export const ScheduleDetailDrawer: React.FC = () => {
                     setViewMonth(3); // 4월
                     setServiceDate('2027-04-05');
                   }}
+                  onDoubleClick={() => {
+                    setViewYear(2027);
+                    setViewMonth(3);
+                    setServiceDate('2027-04-05');
+                    closeDetailDrawer();
+                  }}
                   className="px-2 py-0.5 rounded-full bg-emerald-100/70 text-emerald-800 hover:bg-emerald-200 shrink-0 cursor-pointer"
+                  title="클릭: 4월 이동 / 더블클릭: 스케줄 화면 전환"
                 >
                   🌸 4월 봄방학
                 </button>
@@ -513,7 +561,14 @@ export const ScheduleDetailDrawer: React.FC = () => {
                     setViewMonth(5); // 6월
                     setServiceDate('2027-06-11');
                   }}
+                  onDoubleClick={() => {
+                    setViewYear(2027);
+                    setViewMonth(5);
+                    setServiceDate('2027-06-11');
+                    closeDetailDrawer();
+                  }}
                   className="px-2 py-0.5 rounded-full bg-purple-100/70 text-purple-800 hover:bg-purple-200 shrink-0 cursor-pointer"
+                  title="클릭: 6월 이동 / 더블클릭: 스케줄 화면 전환"
                 >
                   🎓 6월 종업식
                 </button>
@@ -595,6 +650,11 @@ export const ScheduleDetailDrawer: React.FC = () => {
                       key={day}
                       type="button"
                       onClick={() => handleDateClick(day)}
+                      onDoubleClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        handleDateDoubleClick(day);
+                      }}
                       className={`min-h-[66px] sm:min-h-[70px] h-[66px] sm:h-[70px] rounded-xl font-bold transition flex flex-col items-center justify-between p-1 cursor-pointer relative text-xs sm:text-sm overflow-hidden select-none ${
                         isSelected
                           ? 'bg-blue-50/90 text-blue-900 font-extrabold border-2 border-blue-600 ring-2 ring-blue-300 shadow-sm'
@@ -608,8 +668,8 @@ export const ScheduleDetailDrawer: React.FC = () => {
                       }`}
                       title={
                         uniqueDayHolidays.length > 0
-                          ? `${dateStr}: ${uniqueDayHolidays.map((h) => `${h.schoolId === 'ALL' ? '전체' : h.schoolId} - ${h.name}`).join(', ')}`
-                          : dateStr
+                          ? `${dateStr}: ${uniqueDayHolidays.map((h) => `${h.schoolId === 'ALL' ? '전체' : h.schoolId} - ${h.name}`).join(', ')} (더블클릭 시 상세설정 창 닫고 스케줄 화면 이동)`
+                          : `${dateStr} (더블클릭 시 상세설정 창 닫고 스케줄 화면 이동)`
                       }
                     >
                       {/* 상단 날짜 번호 영역 */}
