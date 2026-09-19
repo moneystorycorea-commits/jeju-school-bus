@@ -4,6 +4,13 @@ import { useScheduleStore } from '@/lib/store/useScheduleStore';
 import { formatMinute } from '@/lib/scheduling/time';
 import { calculateTripInstance } from '@/lib/scheduling/routeCalculator';
 import { TripTemplate } from '@/types';
+import {
+  downloadWeeklyRoutineWord,
+  downloadWeeklyRoutineHml,
+  formatStudentWeeklySummary,
+  getVehicleStudents,
+} from '@/lib/scheduling/weeklyRoutineExport';
+import { formatGradeDisplay } from '@/lib/constants/schools';
 
 export const TripManagementView: React.FC = () => {
   const {
@@ -14,7 +21,12 @@ export const TripManagementView: React.FC = () => {
     locations,
     schools,
     serviceDate,
+    students,
+    privateInfoMap,
+    getPrivateInfo,
   } = useScheduleStore();
+
+  const { v1Students, v2Students } = getVehicleStudents(students);
 
   const morningTemplates = tripTemplates.filter((t) => t.type === 'MORNING');
   const afternoonTemplates = tripTemplates.filter((t) => t.type === 'AFTERNOON');
@@ -50,120 +62,26 @@ export const TripManagementView: React.FC = () => {
 
   // 워드(.doc) 편집용 파일 다운로드 핸들러
   const handleExportWord = () => {
-    const morningRowsHtml = sortedMorningTemplates.map((tpl) => {
-      const data = getTemplateData(tpl);
-      const isV1 = tpl.vehicleId === 'v1';
-      const stepsHtml = data.combinedSteps.map((s) => `${s.name} ${s.time}`.trim()).join(' &rarr; ');
-      return `
-        <tr style="background-color: ${isV1 ? '#f0f6fd' : '#ffffff'};">
-          <td style="padding: 8px 10px; border: 1px solid #94a3b8; text-align: center; font-weight: bold; color: ${isV1 ? '#1d4ed8' : '#334155'}; font-size: 11pt;">${data.vehicleName}</td>
-          <td style="padding: 8px 12px; border: 1px solid #94a3b8; font-weight: 600; font-size: 11pt; color: #0f172a;">${stepsHtml}</td>
-          <td style="padding: 8px 10px; border: 1px solid #94a3b8; text-align: center; font-weight: bold; font-size: 11pt;">${data.weekdaysText}</td>
-          <td style="padding: 8px 10px; border: 1px solid #94a3b8; text-align: center; font-family: Consolas, monospace; font-weight: bold; font-size: 11pt;">${data.refReturn ? formatMinute(data.refReturn) : '-'}</td>
-        </tr>
-      `;
-    }).join('');
+    downloadWeeklyRoutineWord(
+      tripTemplates,
+      routeSegments,
+      locations,
+      schools,
+      students,
+      privateInfoMap
+    );
+  };
 
-    const afternoonRowsHtml = sortedAfternoonTemplates.map((tpl) => {
-      const data = getTemplateData(tpl);
-      const isV1 = tpl.vehicleId === 'v1';
-      const stepsHtml = data.combinedSteps.map((s) => `${s.name} ${s.time}`.trim()).join(' &rarr; ');
-      return `
-        <tr style="background-color: ${isV1 ? '#f0f6fd' : '#ffffff'};">
-          <td style="padding: 8px 10px; border: 1px solid #94a3b8; text-align: center; font-weight: bold; color: ${isV1 ? '#1d4ed8' : '#334155'}; font-size: 11pt;">${data.vehicleName}</td>
-          <td style="padding: 8px 12px; border: 1px solid #94a3b8; font-weight: 600; font-size: 11pt; color: #0f172a;">${stepsHtml}</td>
-          <td style="padding: 8px 10px; border: 1px solid #94a3b8; text-align: center; font-weight: bold; font-size: 11pt;">${data.weekdaysText}</td>
-          <td style="padding: 8px 10px; border: 1px solid #94a3b8; text-align: center; font-family: Consolas, monospace; font-weight: bold; font-size: 11pt;">${data.refReturn ? formatMinute(data.refReturn) : '-'}</td>
-        </tr>
-      `;
-    }).join('');
-
-    const wordDocContent = `
-      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-      <head>
-        <meta charset='utf-8'>
-        <title>아주 더 하이클래스 제주 통학차량 운행시간표</title>
-        <!--[if gte mso 9]>
-        <xml>
-          <w:WordDocument>
-            <w:View>Print</w:View>
-            <w:Zoom>100</w:Zoom>
-            <w:DoNotOptimizeForBrowser/>
-          </w:WordDocument>
-        </xml>
-        <![endif]-->
-        <style>
-          @page {
-            size: A4 portrait;
-            margin: 20mm 15mm 15mm 15mm;
-          }
-          body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; margin: 0; color: #0f172a; line-height: 1.4; }
-          h1 { text-align: center; font-size: 22pt; font-weight: 900; margin: 0 0 4px 0; color: #0f172a; letter-spacing: 0.15em; }
-          .subtitle { text-align: center; font-size: 11pt; font-weight: bold; color: #475569; margin-bottom: 20px; }
-          h2 { font-size: 13pt; font-weight: 900; margin: 16px 0 6px 0; color: #1e3a8a; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 11pt; }
-          th { background-color: #f1f5f9; border: 1.5px solid #475569; padding: 8px 6px; text-align: center; font-weight: 900; color: #0f172a; }
-          td { border: 1px solid #94a3b8; padding: 7px 8px; }
-          .notice-box { border: 2px solid #334155; background-color: #f8fafc; padding: 14px 18px; border-radius: 8px; margin-top: 16px; }
-          .notice-title { font-size: 12pt; font-weight: 900; color: #0f172a; margin-bottom: 8px; }
-          .notice-item { font-size: 11pt; font-weight: bold; line-height: 1.6; color: #1e293b; margin-bottom: 4px; }
-          .office-name { text-align: center; font-size: 14pt; font-weight: 900; letter-spacing: 0.35em; margin-top: 16px; padding-top: 12px; border-top: 2px solid #64748b; color: #0f172a; }
-        </style>
-      </head>
-      <body>
-        <h1>아 주 더 하 이 클 래 스  제 주</h1>
-        <div class="subtitle">【 2026-2027학년도 단지 내 통학버스 정규 운행시간표 】</div>
-
-        <h2>1. 등교(오전) 운행시간표</h2>
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 10%;">호차</th>
-              <th style="width: 68%;">운행 코스 및 시간</th>
-              <th style="width: 11%;">운행 요일</th>
-              <th style="width: 11%;">단지 복귀</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${morningRowsHtml}
-          </tbody>
-        </table>
-
-        <h2>2. 하교(오후) 운행시간표 (출발시간순 정렬)</h2>
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 10%;">호차</th>
-              <th style="width: 68%;">운행 코스 및 시간</th>
-              <th style="width: 11%;">운행 요일</th>
-              <th style="width: 11%;">단지 복귀</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${afternoonRowsHtml}
-          </tbody>
-        </table>
-
-        <div class="notice-box">
-          <div class="notice-title">📌 [ 통학버스 이용 입주민 유의사항 ]</div>
-          <div class="notice-item">1. 학생 안전을 위해 <b>출발 5분 전까지</b> 단지 내 지정 탑승 위치에 대기하여 주시기 바랍니다.</div>
-          <div class="notice-item">2. 학교 학사일정(단축수업, 시험, 방학 등) 변경이나 미이용 시 <b>관리사무소로 사전 연락</b> 부탁드립니다.</div>
-          <div class="notice-item">3. 기상 악화(폭설, 태풍 등) 및 제주 도로 교통상황에 따라 일부 운행 시간이 탄력적으로 조정될 수 있습니다.</div>
-          <div class="office-name">아 주 더 하 이 클 래 스  관 리 사 무 소</div>
-        </div>
-      </body>
-      </html>
-    `;
-
-    const blob = new Blob(['\ufeff' + wordDocContent], { type: 'application/msword;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = '제주_아주더하이클래스_통학차량_운행시간표.doc';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  // 한컴 2020 호환 한글(.hml) 다운로드 핸들러
+  const handleExportHml = () => {
+    downloadWeeklyRoutineHml(
+      tripTemplates,
+      routeSegments,
+      locations,
+      schools,
+      students,
+      privateInfoMap
+    );
   };
 
   // 템플릿 데이터 추출 헬퍼 (모든 요일 및 등/하교 템플릿의 실제 계산 시간을 완벽 산출)
@@ -525,6 +443,155 @@ export const TripManagementView: React.FC = () => {
       </div>
 
       {/* ========================================================================= */}
+      {/* 1-B. [인쇄 전용] Page 2: 차량별 주간 정규 탑승 배정 학생 명단 (총 16명)     */}
+      {/* ========================================================================= */}
+      <div
+        className="hidden print:flex flex-col justify-between w-full bg-white text-slate-900 select-none min-h-[268mm] pt-5 pb-2 px-1 m-0"
+        style={{
+          fontFamily: "'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif",
+          pageBreakBefore: 'always',
+          breakBefore: 'page',
+        }}
+      >
+        <div>
+          {/* A4 최상단: 단정한 공고문 헤더 */}
+          <div className="text-center pb-2.5 mb-4 border-b-2 border-slate-900 bg-white">
+            <h1 className="text-2xl font-black text-slate-900 tracking-wider py-1">
+              통학차량 탑승 배정 학생 명단
+            </h1>
+            <p className="text-xs font-bold text-slate-600 mt-0.5">
+              아주 더 하이클래스 제주 2026-2027학년도 정상 운행 주간 루틴 기준 (총 {students.length}명)
+            </p>
+          </div>
+
+          {/* 1호차 학생 테이블 */}
+          <div className="mb-4 bg-white">
+            <div className="flex items-center justify-between mb-1.5 px-0.5">
+              <h2 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
+                <span className="w-2 h-4 bg-blue-700 inline-block rounded-xs"></span>
+                <span>1. 1호차 탑승 학생 (NLCS · 저청초/중 - {v1Students.length}명)</span>
+              </h2>
+            </div>
+            <table className="w-full text-left border-collapse border border-slate-700 table-fixed text-[10.5px]">
+              <thead>
+                <tr className="bg-slate-100 text-slate-900 font-black border-b border-slate-500 text-center" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+                  <th className="py-1 px-1 w-[5%] border-r border-slate-400">No.</th>
+                  <th className="py-1 px-1.5 w-[11%] border-r border-slate-400">성명(성별)</th>
+                  <th className="py-1 px-1 w-[10%] border-r border-slate-400">동·호수</th>
+                  <th className="py-1 px-1.5 w-[12%] border-r border-slate-400">학교/학년</th>
+                  <th className="py-1 px-1 w-[10%] border-r border-slate-400">정차 게이트</th>
+                  <th className="py-1 px-1.5 w-[14%] border-r border-slate-400">보호자(연락처)</th>
+                  <th className="py-1 px-1.5 w-[11%] border-r border-slate-400">학생 연락처</th>
+                  <th className="py-1 px-1.5 w-[18%] border-r border-slate-400">주간 등·하교 루틴</th>
+                  <th className="py-1 px-1 w-[9%]">특이사항</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-300 text-slate-900">
+                {v1Students.map((st, idx) => {
+                  const sc = schools.find((s) => s.id === st.schoolId);
+                  const priv = getPrivateInfo(st.id);
+                  const contact = priv?.emergencyContact || '010-3849-1234';
+                  const guardian = priv?.guardianName ? `${priv.guardianName}` : '-';
+                  const studentPhone = priv?.studentPhone || '-';
+                  const summary = formatStudentWeeklySummary(st);
+                  return (
+                    <tr
+                      key={st.id}
+                      className={idx % 2 === 1 ? 'bg-[#f0f6fd]' : 'bg-white'}
+                      style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
+                    >
+                      <td className="py-1 px-1 text-center font-black text-slate-700 border-r border-slate-300">{idx + 1}</td>
+                      <td className="py-1 px-1.5 font-black text-slate-950 border-r border-slate-300 whitespace-nowrap">{st.name} ({st.gender || '-'})</td>
+                      <td className="py-1 px-1 font-bold text-slate-800 border-r border-slate-300 whitespace-nowrap">{st.building} {st.unit}</td>
+                      <td className="py-1 px-1.5 border-r border-slate-300 whitespace-nowrap">
+                        <span className="font-black text-slate-900">{sc?.shortName || st.schoolId}</span>
+                        <span className="text-blue-900 font-bold ml-1">({formatGradeDisplay(st.grade, st.schoolId)})</span>
+                      </td>
+                      <td className="py-1 px-1 text-center font-bold text-slate-800 border-r border-slate-300 text-[10px]">{st.gate || '-'}</td>
+                      <td className="py-1 px-1.5 font-mono text-slate-800 border-r border-slate-300 text-[10px] whitespace-nowrap">
+                        {guardian} ({contact.slice(-4)})
+                      </td>
+                      <td className="py-1 px-1.5 font-mono text-slate-800 border-r border-slate-300 text-[10px] whitespace-nowrap">{studentPhone}</td>
+                      <td className="py-1 px-1.5 font-mono text-slate-900 border-r border-slate-300 text-[9.5px] leading-tight whitespace-nowrap">
+                        등 {summary.morningText} / 하 {summary.afternoonText}
+                      </td>
+                      <td className="py-1 px-1 text-slate-600 text-[9.5px] truncate max-w-[80px]">{st.notes || '-'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* 2호차 학생 테이블 */}
+          <div className="mb-4 bg-white">
+            <div className="flex items-center justify-between mb-1.5 px-0.5">
+              <h2 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
+                <span className="w-2 h-4 bg-slate-800 inline-block rounded-xs"></span>
+                <span>2. 2호차 탑승 학생 (BHA · SJA · KIS - {v2Students.length}명)</span>
+              </h2>
+            </div>
+            <table className="w-full text-left border-collapse border border-slate-700 table-fixed text-[10.5px]">
+              <thead>
+                <tr className="bg-slate-100 text-slate-900 font-black border-b border-slate-500 text-center" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+                  <th className="py-1 px-1 w-[5%] border-r border-slate-400">No.</th>
+                  <th className="py-1 px-1.5 w-[11%] border-r border-slate-400">성명(성별)</th>
+                  <th className="py-1 px-1 w-[10%] border-r border-slate-400">동·호수</th>
+                  <th className="py-1 px-1.5 w-[12%] border-r border-slate-400">학교/학년</th>
+                  <th className="py-1 px-1 w-[10%] border-r border-slate-400">정차 게이트</th>
+                  <th className="py-1 px-1.5 w-[14%] border-r border-slate-400">보호자(연락처)</th>
+                  <th className="py-1 px-1.5 w-[11%] border-r border-slate-400">학생 연락처</th>
+                  <th className="py-1 px-1.5 w-[18%] border-r border-slate-400">주간 등·하교 루틴</th>
+                  <th className="py-1 px-1 w-[9%]">특이사항</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-300 text-slate-900">
+                {v2Students.map((st, idx) => {
+                  const sc = schools.find((s) => s.id === st.schoolId);
+                  const priv = getPrivateInfo(st.id);
+                  const contact = priv?.emergencyContact || '010-3849-1234';
+                  const guardian = priv?.guardianName ? `${priv.guardianName}` : '-';
+                  const studentPhone = priv?.studentPhone || '-';
+                  const summary = formatStudentWeeklySummary(st);
+                  return (
+                    <tr
+                      key={st.id}
+                      className={idx % 2 === 1 ? 'bg-slate-50/80' : 'bg-white'}
+                      style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
+                    >
+                      <td className="py-1 px-1 text-center font-black text-slate-700 border-r border-slate-300">{idx + 1}</td>
+                      <td className="py-1 px-1.5 font-black text-slate-950 border-r border-slate-300 whitespace-nowrap">{st.name} ({st.gender || '-'})</td>
+                      <td className="py-1 px-1 font-bold text-slate-800 border-r border-slate-300 whitespace-nowrap">{st.building} {st.unit}</td>
+                      <td className="py-1 px-1.5 border-r border-slate-300 whitespace-nowrap">
+                        <span className="font-black text-slate-900">{sc?.shortName || st.schoolId}</span>
+                        <span className="text-blue-900 font-bold ml-1">({formatGradeDisplay(st.grade, st.schoolId)})</span>
+                      </td>
+                      <td className="py-1 px-1 text-center font-bold text-slate-800 border-r border-slate-300 text-[10px]">{st.gate || '-'}</td>
+                      <td className="py-1 px-1.5 font-mono text-slate-800 border-r border-slate-300 text-[10px] whitespace-nowrap">
+                        {guardian} ({contact.slice(-4)})
+                      </td>
+                      <td className="py-1 px-1.5 font-mono text-slate-800 border-r border-slate-300 text-[10px] whitespace-nowrap">{studentPhone}</td>
+                      <td className="py-1 px-1.5 font-mono text-slate-900 border-r border-slate-300 text-[9.5px] leading-tight whitespace-nowrap">
+                        등 {summary.morningText} / 하 {summary.afternoonText}
+                      </td>
+                      <td className="py-1 px-1 text-slate-600 text-[9.5px] truncate max-w-[80px]">{st.notes || '-'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* 공고문 하단 관리사무소 서명 */}
+        <div className="border-t-2 border-slate-400 pt-2 text-center bg-white">
+          <div className="text-center font-black text-xs text-slate-900 tracking-[0.3em]">
+            아 주 더 하 이 클 래 스  관 리 사 무 소
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
       {/* 2. [화면 전용] 탭 전환형 차량 운행시간표 (인쇄 시 숨김: no-print)         */}
       {/* ========================================================================= */}
       <div className="flex flex-col gap-5 no-print">
@@ -541,9 +608,6 @@ export const TripManagementView: React.FC = () => {
                   1호차 · 2호차 실운행표
                 </span>
               </div>
-              <p className="text-sm text-slate-500 font-medium mt-0.5">
-                박스 없는 간결한 텍스트 시간표이며, [시간표 인쇄] 클릭 시 등/하교가 한 페이지에 완벽한 비율로 출력됩니다.
-              </p>
             </div>
           </div>
 
@@ -574,26 +638,40 @@ export const TripManagementView: React.FC = () => {
               </button>
             </div>
 
-            {/* 바로 인쇄 / PDF 출력 버튼 */}
+            {/* 1. PDF 인쇄 / 다운로드 버튼 (어도비 빨강 대표 아이콘) */}
             <button
               type="button"
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold transition cursor-pointer shadow-xs"
-              title="등·하교 통합 시간표를 한 페이지에 인쇄하거나 PDF로 저장"
+              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#e02b20] hover:bg-[#c42319] text-white text-sm font-black transition cursor-pointer shadow-md shadow-red-500/20 active:scale-95"
+              title="주간 통합 시간표 및 탑승 배정표 A4 인쇄 / PDF 다운로드"
             >
-              <Printer className="w-4 h-4" />
-              <span>시간표 인쇄 / PDF</span>
+              <span className="px-1.5 py-0.5 rounded bg-white text-[#e02b20] text-[10px] font-black tracking-tight leading-none shadow-2xs">PDF</span>
+              <FileDown className="w-4 h-4" />
+              <span>PDF 다운로드 / 인쇄</span>
             </button>
 
-            {/* 편집용 워드 파일 다운로드 버튼 */}
+            {/* 2. MS Word 워드 다운로드 버튼 (MS 오피스 워드의 파랑 대표 아이콘) */}
             <button
               type="button"
               onClick={handleExportWord}
-              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-sm font-bold transition cursor-pointer shadow-xs"
-              title="편집 가능한 MS Word(.doc) 문서로 다운로드"
+              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#185abd] hover:bg-[#104a9e] text-white text-sm font-black transition cursor-pointer shadow-md shadow-blue-700/20 active:scale-95"
+              title="편집 가능한 MS Word(.doc) 문서 다운로드"
             >
+              <span className="px-1.5 py-0.5 rounded bg-white text-[#185abd] text-[10px] font-black tracking-tight leading-none shadow-2xs">DOC</span>
               <FileDown className="w-4 h-4" />
               <span>워드 다운로드 (.doc)</span>
+            </button>
+
+            {/* 3. 한컴 2020 호환 한글 다운로드 버튼 (한컴 청록/하늘 대표 아이콘) */}
+            <button
+              type="button"
+              onClick={handleExportHml}
+              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#0090c9] hover:bg-[#007ba8] text-white text-sm font-black transition cursor-pointer shadow-md shadow-cyan-600/20 active:scale-95"
+              title="한컴오피스 한글 2020 완벽 호환 문서(.hml) 다운로드"
+            >
+              <span className="px-1.5 py-0.5 rounded bg-white text-[#0090c9] text-[10px] font-black tracking-tight leading-none shadow-2xs">HWP</span>
+              <FileDown className="w-4 h-4" />
+              <span>한글 다운로드 (.hml)</span>
             </button>
           </div>
         </div>

@@ -528,24 +528,27 @@ export const MobileAcademicCalendar: React.FC<MobileAcademicCalendarProps> = ({
           ))}
         </div>
 
-        {/* 학교 필터 칩 (클릭 시 동일 이벤트/월 유지 지능형 탐색) */}
+        {/* 학교 필터 칩 (색상 바탕에 흰글씨 단일 버튼으로 통일) */}
         <div className="flex items-center gap-1.5 overflow-x-auto text-[10.5px] font-bold pt-0.5 scrollbar-none">
           <span className="text-slate-400 shrink-0 text-[10px]">학교 필터:</span>
           {['ALL', 'NLCS', 'BHA', 'KIS', 'SJA'].map((schId) => {
             const sc = schools.find((s) => s.id === schId);
             const isSelected = schoolFilter === schId;
+            const bgColor = schId === 'ALL' ? '#d97706' : (sc?.color || '#334155');
+            const label = schId === 'ALL' ? '전체' : (sc?.shortName || schId);
             return (
               <button
                 key={schId}
                 type="button"
                 onClick={() => handleSchoolFilterClick(schId)}
-                className={`px-2 py-0.5 rounded-md transition cursor-pointer shrink-0 ${
+                style={{ backgroundColor: bgColor }}
+                className={`px-2.5 py-0.5 rounded-lg text-xs font-black text-white transition cursor-pointer shrink-0 shadow-2xs ${
                   isSelected
-                    ? 'bg-slate-900 text-white font-black shadow-2xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200'
+                    ? 'ring-2 ring-offset-1 ring-slate-800 scale-105 shadow-md brightness-105'
+                    : 'opacity-45 hover:opacity-85'
                 }`}
               >
-                {schId === 'ALL' ? '전체 학교' : sc?.shortName || schId}
+                {label}
               </button>
             );
           })}

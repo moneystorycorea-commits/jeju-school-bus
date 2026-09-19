@@ -574,32 +574,30 @@ export const ScheduleDetailDrawer: React.FC = () => {
                 </button>
               </div>
 
-              {/* 달력 학교 필터 칩 (학교별 대표 색상 선 및 약자 프리뷰 포함) */}
+              {/* 달력 학교 필터 칩 (색상 바탕에 흰글씨 단일 버튼으로 통일) */}
               <div className="flex items-center gap-1.5 text-[11px] font-bold flex-wrap">
                 <span className="text-slate-400 text-[10px] shrink-0">학교 필터:</span>
                 {['ALL', 'NLCS', 'BHA', 'KIS', 'SJA'].map((schId) => {
                   const sc = schools.find((s) => s.id === schId);
                   const isSelected = calendarSchoolFilter === schId;
                   const lineColor = getSchoolHolidayColor(schId);
-                  const abbr = getSchoolAbbr(schId);
+                  const label = schId === 'ALL' ? '전체' : (sc?.shortName || schId);
                   return (
                     <button
                       key={schId}
                       type="button"
                       onClick={() => setCalendarSchoolFilter(schId)}
-                      className={`px-2 py-0.5 rounded-md text-[10px] transition cursor-pointer font-bold flex items-center gap-1.5 ${
+                      style={{
+                        backgroundColor: lineColor,
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-black text-white transition-all cursor-pointer shadow-2xs flex items-center justify-center ${
                         isSelected
-                          ? 'bg-slate-800 text-white shadow-2xs font-extrabold ring-1 ring-slate-700'
-                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                          ? 'ring-2 ring-offset-1 ring-slate-800 shadow-md brightness-105 scale-105'
+                          : 'opacity-40 hover:opacity-85 hover:brightness-105'
                       }`}
+                      title={`${label} 일정 필터`}
                     >
-                      <span
-                        className="px-1 py-[0.5px] rounded-[2px] text-[8.5px] font-black text-white inline-block shrink-0 leading-tight shadow-2xs"
-                        style={{ backgroundColor: lineColor }}
-                      >
-                        {abbr}
-                      </span>
-                      <span>{schId === 'ALL' ? '전체 학교' : sc?.shortName || schId}</span>
+                      {label}
                     </button>
                   );
                 })}

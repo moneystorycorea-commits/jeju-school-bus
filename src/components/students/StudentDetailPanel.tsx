@@ -11,6 +11,8 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  MapPin,
+  FileText,
 } from 'lucide-react';
 import { useScheduleStore } from '@/lib/store/useScheduleStore';
 import { formatMinute } from '@/lib/scheduling/time';
@@ -313,10 +315,21 @@ export const StudentDetailPanel: React.FC = () => {
             <span>
               {school?.shortName || student.schoolId} · <span className="text-blue-700 font-mono font-black">{formatGradeDisplay(student.grade, student.schoolId)}</span>
             </span>
-            {student.gate && (
-              <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+          </span>
+
+          <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm min-h-[32px]">
+            <span className="p-1 -ml-1 inline-flex items-center justify-center shrink-0">
+              <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+            </span>
+            정차 게이트
+          </span>
+          <span className="font-extrabold text-slate-900 min-h-[32px] flex items-center">
+            {student.gate ? (
+              <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-bold border border-blue-200 text-xs sm:text-sm">
                 {student.gate}
               </span>
+            ) : (
+              <span className="text-slate-400 font-medium text-xs sm:text-sm">-</span>
             )}
           </span>
 
@@ -419,7 +432,10 @@ export const StudentDetailPanel: React.FC = () => {
           </div>
 
           <span className="text-slate-500 font-bold flex items-center gap-1.5 sm:gap-2 whitespace-nowrap text-xs sm:text-sm min-h-[44px]">
-            특이사항
+            <span className="p-1 -ml-1 inline-flex items-center justify-center shrink-0">
+              <FileText className="w-4 h-4 text-slate-400 shrink-0" />
+            </span>
+            특이사항 / 비고
           </span>
           <div className="p-2.5 sm:p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-800 leading-relaxed min-h-[44px] flex items-center">
             {student.notes ? (

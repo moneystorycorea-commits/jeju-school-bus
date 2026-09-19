@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { Users, UserPlus, Eye, EyeOff, ArrowUpDown, ArrowUp, ArrowDown, Printer } from 'lucide-react';
 import { useScheduleStore } from '@/lib/store/useScheduleStore';
-import { formatMinute } from '@/lib/scheduling/time';
 import { formatGradeDisplay } from '@/lib/constants/schools';
+import { formatStudentWeeklySummary } from '@/lib/scheduling/weeklyRoutineExport';
 
-type SortField = 'index' | 'name' | 'gender' | 'address' | 'school' | 'grade' | 'guardian' | 'time';
+type SortField = 'index' | 'name' | 'gender' | 'address' | 'school' | 'grade' | 'gate' | 'guardian' | 'time';
 type SortDirection = 'asc' | 'desc';
 
 export const StudentManagementView: React.FC = () => {
@@ -15,10 +15,10 @@ export const StudentManagementView: React.FC = () => {
     getPrivateInfo,
     openStudentModal,
     selectStudent,
-    setActiveNav,
   } = useScheduleStore();
 
   const [showPhoneMap, setShowPhoneMap] = useState<Record<string, boolean>>({});
+  const [showStudentPhoneMap, setShowStudentPhoneMap] = useState<Record<string, boolean>>({});
   const [sortField, setSortField] = useState<SortField>('index');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
@@ -28,6 +28,10 @@ export const StudentManagementView: React.FC = () => {
 
   const togglePhone = (id: string) => {
     setShowPhoneMap((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const toggleStudentPhone = (id: string) => {
+    setShowStudentPhoneMap((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const handleSort = (field: SortField) => {
@@ -76,6 +80,12 @@ export const StudentManagementView: React.FC = () => {
             return match ? parseInt(match[0], 10) : -1;
           };
           cmp = parseGrade(a.grade) - parseGrade(b.grade);
+          break;
+        }
+        case 'gate': {
+          const gA = a.gate || '';
+          const gB = b.gate || '';
+          cmp = gA.localeCompare(gB, 'ko');
           break;
         }
         case 'guardian': {
@@ -150,18 +160,19 @@ export const StudentManagementView: React.FC = () => {
             </p>
           </div>
 
-          {/* 인쇄용 학생 명단 테이블 */}
-          <table className="w-full text-left border-collapse border border-slate-700 table-fixed text-[11px]">
+          {/* 인쇄용 학생 명단 테이블 (학생추가 기준 11개 항목 일관성 반영) */}
+          <table className="w-full text-left border-collapse border border-slate-700 table-fixed text-[10.5px]">
             <thead>
               <tr className="bg-slate-100 text-slate-900 font-black border-b border-slate-500 text-center" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
-                <th className="py-1.5 px-1 w-[5%] border-r border-slate-400">No.</th>
-                <th className="py-1.5 px-1.5 w-[9%] border-r border-slate-400">성명</th>
-                <th className="py-1.5 px-1 w-[5%] border-r border-slate-400">성별</th>
-                <th className="py-1.5 px-1.5 w-[12%] border-r border-slate-400">동·호수</th>
-                <th className="py-1.5 px-2 w-[18%] border-r border-slate-400">학교 / 학년</th>
-                <th className="py-1.5 px-2 w-[19%] border-r border-slate-400">보호자 / 비상연락처</th>
-                <th className="py-1.5 px-2 w-[21%] border-r border-slate-400">등·하교 요약</th>
-                <th className="py-1.5 px-1.5 w-[11%]">비고</th>
+                <th className="py-1 px-1 w-[5%] border-r border-slate-400">No.</th>
+                <th className="py-1 px-1.5 w-[11%] border-r border-slate-400">성명(성별)</th>
+                <th className="py-1 px-1 w-[10%] border-r border-slate-400">동·호수</th>
+                <th className="py-1 px-1.5 w-[12%] border-r border-slate-400">학교/학년</th>
+                <th className="py-1 px-1 w-[10%] border-r border-slate-400">정차 게이트</th>
+                <th className="py-1 px-1.5 w-[14%] border-r border-slate-400">보호자(연락처)</th>
+                <th className="py-1 px-1.5 w-[11%] border-r border-slate-400">학생 연락처</th>
+                <th className="py-1 px-1.5 w-[18%] border-r border-slate-400">주간 등·하교 루틴</th>
+                <th className="py-1 px-1 w-[9%]">특이사항</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-300 text-slate-900">
@@ -169,21 +180,9 @@ export const StudentManagementView: React.FC = () => {
                 const sc = schools.find((s) => s.id === st.schoolId);
                 const priv = getPrivateInfo(st.id);
                 const contact = priv?.emergencyContact || '010-3849-1234';
-                const guardian = priv?.guardianName ? `${priv.guardianName} (${contact})` : contact;
-                
-                // 등하교 요약
-                const monWs = st.weeklySchedule?.[1];
-                const monM = monWs?.morningActive !== false ? formatMinute(monWs?.morningMinute || 460) : '미이용';
-                const monA = monWs?.afternoonActive !== false ? formatMinute(monWs?.afternoonMinute || 930) : '미이용';
-                const isUniform = [2, 3, 4, 5].every((d) => {
-                  const ws = st.weeklySchedule?.[d];
-                  const m = ws?.morningActive !== false ? formatMinute(ws?.morningMinute || 460) : '미이용';
-                  const a = ws?.afternoonActive !== false ? formatMinute(ws?.afternoonMinute || 930) : '미이용';
-                  return m === monM && a === monA;
-                });
-                const scheduleSummary = isUniform
-                  ? `등 ${monM} / 하 ${monA}`
-                  : `등 ${monM}~ / 하 ${monA}~`;
+                const guardian = priv?.guardianName ? `${priv.guardianName}` : '-';
+                const studentPhone = priv?.studentPhone || '-';
+                const summary = formatStudentWeeklySummary(st);
 
                 return (
                   <tr
@@ -191,30 +190,33 @@ export const StudentManagementView: React.FC = () => {
                     className={idx % 2 === 1 ? 'bg-slate-50/80' : 'bg-white'}
                     style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
                   >
-                    <td className="py-1.5 px-1 text-center font-black text-slate-700 border-r border-slate-300">
+                    <td className="py-1 px-1 text-center font-black text-slate-700 border-r border-slate-300">
                       {idx + 1}
                     </td>
-                    <td className="py-1.5 px-1.5 font-black text-slate-950 border-r border-slate-300 whitespace-nowrap">
-                      {st.name}
+                    <td className="py-1 px-1.5 font-black text-slate-950 border-r border-slate-300 whitespace-nowrap">
+                      {st.name} ({st.gender || '-'})
                     </td>
-                    <td className="py-1.5 px-1 text-center font-bold text-slate-700 border-r border-slate-300">
-                      {st.gender || '-'}
-                    </td>
-                    <td className="py-1.5 px-1.5 font-bold text-slate-800 border-r border-slate-300 whitespace-nowrap">
+                    <td className="py-1 px-1 font-bold text-slate-800 border-r border-slate-300 whitespace-nowrap">
                       {st.building} {st.unit}
                     </td>
-                    <td className="py-1.5 px-2 border-r border-slate-300 whitespace-nowrap">
-                      <span className="font-extrabold text-slate-900">{sc?.shortName || st.schoolId}</span>
+                    <td className="py-1 px-1.5 border-r border-slate-300 whitespace-nowrap">
+                      <span className="font-black text-slate-900">{sc?.shortName || st.schoolId}</span>
                       <span className="text-blue-900 font-bold ml-1">({formatGradeDisplay(st.grade, st.schoolId)})</span>
                     </td>
-                    <td className="py-1.5 px-2 font-mono font-bold text-slate-800 border-r border-slate-300 whitespace-nowrap text-[10.5px]">
-                      {guardian}
+                    <td className="py-1 px-1 text-center font-bold text-slate-800 border-r border-slate-300 text-[10px]">
+                      {st.gate || '-'}
                     </td>
-                    <td className="py-1.5 px-2 font-mono font-bold text-slate-900 border-r border-slate-300 whitespace-nowrap text-[10.5px]">
-                      {scheduleSummary}
+                    <td className="py-1 px-1.5 font-mono text-slate-800 border-r border-slate-300 whitespace-nowrap text-[10px]">
+                      {guardian} ({contact.slice(-4)})
                     </td>
-                    <td className="py-1.5 px-1.5 text-slate-600 text-[10px] truncate max-w-[80px]">
-                      {st.notes || st.gate || '-'}
+                    <td className="py-1 px-1.5 font-mono text-slate-800 border-r border-slate-300 whitespace-nowrap text-[10px]">
+                      {studentPhone}
+                    </td>
+                    <td className="py-1 px-1.5 font-mono text-slate-900 border-r border-slate-300 whitespace-nowrap text-[9.5px]">
+                      등 {summary.morningText} / 하 {summary.afternoonText}
+                    </td>
+                    <td className="py-1 px-1 text-slate-600 text-[9.5px] truncate max-w-[80px]">
+                      {st.notes || '-'}
                     </td>
                   </tr>
                 );
@@ -307,9 +309,12 @@ export const StudentManagementView: React.FC = () => {
                 {renderSortHeader('동 · 호수', 'address', false, 'w-28')}
                 {renderSortHeader('재학 학교', 'school', true, 'w-20')}
                 {renderSortHeader('학년', 'grade', true, 'w-16')}
+                {renderSortHeader('정차 게이트', 'gate', true, 'w-24')}
                 {renderSortHeader('보호자', 'guardian', false, 'w-20')}
                 <th className="py-2.5 px-3 text-sm font-bold text-slate-700 whitespace-nowrap w-36">보호자 연락처</th>
-                {renderSortHeader('기본 등교 (월/수)', 'time', false, 'w-40')}
+                <th className="py-2.5 px-3 text-sm font-bold text-slate-700 whitespace-nowrap w-36">학생 연락처</th>
+                {renderSortHeader('주간 등·하교 루틴', 'time', false, 'w-48')}
+                <th className="py-2.5 px-3 text-sm font-bold text-slate-700 whitespace-nowrap w-44">특이사항 / 비고</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
@@ -321,17 +326,20 @@ export const StudentManagementView: React.FC = () => {
                 const displayPhone = isRevealed ? rawPhone : '***-****-' + rawPhone.slice(-4);
                 const guardian = privateInfo?.guardianName || '-';
 
-                const monM = st.weeklySchedule?.[1]?.morningMinute || 460;
-                const wedM = st.weeklySchedule?.[3]?.morningMinute || monM;
+                const rawStudentPhone = privateInfo?.studentPhone;
+                const isStudentRevealed = currentRole === 'admin' && showStudentPhoneMap[st.id];
+                const displayStudentPhone = rawStudentPhone
+                  ? (isStudentRevealed ? rawStudentPhone : '***-****-' + rawStudentPhone.slice(-4))
+                  : '-';
 
+                const summary = formatStudentWeeklySummary(st);
                 const gradeDisplay = formatGradeDisplay(st.grade, st.schoolId);
 
                 return (
                   <tr
                     key={st.id}
                     onClick={() => {
-                      selectStudent(st.id, true, true);
-                      setActiveNav('schedule');
+                      selectStudent(st.id, false, true);
                     }}
                     className="hover:bg-blue-50/50 cursor-pointer transition select-none group"
                     title="클릭하여 학생 상세 정보 및 일정 편집"
@@ -360,6 +368,15 @@ export const StudentManagementView: React.FC = () => {
                     <td className="py-2.5 px-3 text-center font-bold text-slate-800 text-sm whitespace-nowrap">
                       {gradeDisplay}
                     </td>
+                    <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                      {st.gate ? (
+                        <span className="text-xs font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                          {st.gate}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-400">-</span>
+                      )}
+                    </td>
                     <td className="py-2.5 px-3 font-medium text-slate-700 text-sm whitespace-nowrap">
                       {guardian}
                     </td>
@@ -385,8 +402,40 @@ export const StudentManagementView: React.FC = () => {
                         )}
                       </div>
                     </td>
-                    <td className="py-2.5 px-3 font-mono font-bold text-slate-800 text-sm whitespace-nowrap">
-                      월 {formatMinute(monM)} / 수 {formatMinute(wedM)}
+                    <td className="py-2.5 px-3 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`font-mono text-sm ${rawStudentPhone ? 'font-bold text-slate-800' : 'text-slate-400 font-normal'}`}>
+                          {displayStudentPhone}
+                        </span>
+                        {currentRole === 'admin' && rawStudentPhone ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleStudentPhone(st.id);
+                            }}
+                            className="text-slate-400 hover:text-slate-700 p-0.5 cursor-pointer transition"
+                            title={isStudentRevealed ? '번호 가리기' : '전체 번호 확인 (관리자)'}
+                          >
+                            {isStudentRevealed ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        ) : null}
+                      </div>
+                    </td>
+                    <td className="py-2.5 px-3 whitespace-nowrap">
+                      <div className="flex flex-col text-xs leading-snug">
+                        <span className="font-bold text-blue-700">등 {summary.morningText}</span>
+                        <span className="font-medium text-slate-600">하 {summary.afternoonText}</span>
+                      </div>
+                    </td>
+                    <td className="py-2.5 px-3 whitespace-nowrap">
+                      {st.notes ? (
+                        <span className="text-xs text-slate-700 truncate max-w-[140px] block font-medium" title={st.notes}>
+                          {st.notes}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-400">-</span>
+                      )}
                     </td>
                   </tr>
                 );
